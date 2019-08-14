@@ -1,42 +1,48 @@
 Percipio depth CAMera  MultiLanguage Sdk
 =======================================
-Í¼ÑúÉî¶ÈÏà»ú¶àÓïÑÔ½Ó¿Ú·â×°¿â
-Ä¿Ç°Ö§³ÖÇé¿ö£º
+å›¾æ¼¾æ·±åº¦ç›¸æœºå¤šè¯­è¨€æ¥å£å°è£…åº“
+ç›®å‰æ”¯æŒæƒ…å†µï¼š
 
 platform |   language      | status   
 -------- | --------------- | --------
 windows |python          | ok
 windows |C# .net fx4.0   | ok
 liunx   |python          | ok
-linux   |C# mono         | Î´²âÊÔ
+linux   |C# mono         | æœªæµ‹è¯•
 linux   | java           | TODO
 
-²ÉÓÃSWIG¶ÔÔ­³§sdkµÄCÓïÑÔ¿â·â×°£¬Éú³É¸÷ÓïÑÔ¶ÔÓ¦½Ó¿Ú
-½Ó¿Ú²Ù×÷¾¡Á¿±£³ÖÓëÔ­APIÒ»ÖÂ¡£
+é‡‡ç”¨SWIGå¯¹åŸå‚sdkçš„Cè¯­è¨€åº“å°è£…ï¼Œç”Ÿæˆå„è¯­è¨€å¯¹åº”æ¥å£
+æ¥å£æ“ä½œå°½é‡ä¿æŒä¸åŸAPIä¸€è‡´ã€‚
 
-ÒÑ²âÊÔ»·¾³£º
+å·²æµ‹è¯•ç¯å¢ƒï¼š
 1. win10 + python3.6 + vs2019
 2. win10 + c# .net4.0 + vs2019
 3. ubuntu16 + python2.7
  
-Ä¿Ç°°æ±¾¶ÔÓ¦Ô­Camport3 v3.3.1°æ±¾
-## Ô¤±àÒë°æ±¾ÏÂÔØ
-Ô¤±àÒë°æ±¾°üº¬¿â£º 
+ç›®å‰ç‰ˆæœ¬å¯¹åº”åŸCamport3 v3.3.1ç‰ˆæœ¬
+## é¢„ç¼–è¯‘ç‰ˆæœ¬ä¸‹è½½
+é¢„ç¼–è¯‘ç‰ˆæœ¬åŒ…å«åº“ï¼š 
 windows python3 +  c# .net4.0
 linux x64 python2
 https://github.com/alphaliang/pcammls/releases
 
-## ÊÖ¹¤±àÒë
-ÒÀÀµ¿â&¹¤¾ß£º 
+## æ‰‹å·¥ç¼–è¯‘
+
+ä¾èµ–åº“&å·¥å…·ï¼š
+
 http://www.swig.org/  swig
+
 https://cmake.org/   cmake3.10+
+
 https://github.com/percipioxyz/camport3  camport3
 
-ĞèÏÈÅäÖÃ cmake ±äÁ¿ CAMPORT_DIR Ö¸Ïò camport3 sdkËùÔÚÎ»ÖÃ
-ÅäÖÃCAMPORT_ARCH£¨»òÁô¿Õ£©ÒÔÉèÖÃ¶ÔÓ¦lib½øĞĞ¿çÆ½Ì¨±àÒë
 
-## PYTHONÊ¹ÓÃ·½·¨
-´úÂëÆ¬¶Î£º
+éœ€å…ˆé…ç½® cmake å˜é‡ CAMPORT_DIR æŒ‡å‘ camport3 sdkæ‰€åœ¨ä½ç½®
+
+é…ç½®CAMPORT_ARCHï¼ˆæˆ–ç•™ç©ºï¼‰ä»¥è®¾ç½®å¯¹åº”libè¿›è¡Œè·¨å¹³å°ç¼–è¯‘
+
+## PYTHONä½¿ç”¨æ–¹æ³•
+ä»£ç ç‰‡æ®µï¼š
 ```python
 
 def main():
@@ -74,15 +80,15 @@ def fetch_frame_loop(handle):
             print (err)
     TYStopCapture(handle)
 ```
-ÆäËû³£¼ûµ÷ÓÃ²Î¿¼ test.py ºÍ fetch_frame.py ÎÄ¼ş
+å…¶ä»–å¸¸è§è°ƒç”¨å‚è€ƒ test.py å’Œ fetch_frame.py æ–‡ä»¶
 
-### pythonÓëÔ­sdkÇø±ğ 
-* Ô­·µ»Ø×´Ì¬Öµ·â×°ÎªpythonÒì³£
-* TYGetXX ÀàĞÍapi¸ÄÓÃ·µ»ØÖµ»ñÈ¡Öµ
-* Í¼Ïñ¿ÉÊä³öÎªnumpy array
+### pythonä¸åŸsdkåŒºåˆ« 
+* åŸè¿”å›çŠ¶æ€å€¼å°è£…ä¸ºpythonå¼‚å¸¸
+* TYGetXX ç±»å‹apiæ”¹ç”¨è¿”å›å€¼è·å–å€¼
+* å›¾åƒå¯è¾“å‡ºä¸ºnumpy array
 
-## C#Ê¹ÓÃ·½·¨
-´úÂëÆ¬¶Î£º
+## C#ä½¿ç”¨æ–¹æ³•
+ä»£ç ç‰‡æ®µï¼š
 ```CSharp
 static void Main(string[] args)
 {
@@ -109,11 +115,11 @@ static void Main(string[] args)
 }
 ```
 
-ÆäËû³£¼ûµ÷ÓÃ²Î¿¼test.cs ºÍframe_fetch.csÎÄ¼ş
+å…¶ä»–å¸¸è§è°ƒç”¨å‚è€ƒtest.cs å’Œframe_fetch.csæ–‡ä»¶
 
-### csharp°æ±¾ÓëÔ­sdkÇø±ğ
- * Ô­·µ»Ø×´Ì¬Öµ·â×°ÎªÒì³£
- * Ô­Ö¸Õë²Ù×÷×ª»»Îª c# Êä³ö²ÎÊı 
+### csharpç‰ˆæœ¬ä¸åŸsdkåŒºåˆ«
+ * åŸè¿”å›çŠ¶æ€å€¼å°è£…ä¸ºå¼‚å¸¸
+ * åŸæŒ‡é’ˆæ“ä½œè½¬æ¢ä¸º c# è¾“å‡ºå‚æ•° 
 
 
 
