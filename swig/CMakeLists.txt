@@ -5,19 +5,33 @@
 ##################################################
 cmake_minimum_required(VERSION 3.10.0)
 
+if(NOT EXISTS "${CAMPORT_DIR}/include/TYApi.h")
+    message(FATAL_ERROR "not found TYApi.h")
+endif()
+
+
 set(PCAM_LIBNAME pcammls)
 if (${TARGET_LANGUAGE} STREQUAL "PYTHON") #python
     include_directories(BEFORE ${SWIG_DIR}/Lib/python )
     set(PYTHON_DIR "" CACHE PATH "python dir")
 	option(WITH_NUMPY ON)
-    find_package(PythonLibs REQUIRED)
+	if(NOT ${PYTHON_VERSION}  STREQUAL "")
+		find_package(PythonLibs ${PYTHON_VERSION} EXACT REQUIRED)
+	else()
+		find_package(PythonLibs ${PYTHON_VERSION} REQUIRED)
+	endif()
     include_directories(${PYTHON_INCLUDE_PATH})
-	set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS "-doxygen" )
+    if (SWIG_VERSION VERSION_LESS "4.0.0")
+        set(swig_src_flag "")
+    else()
+        set(swig_src_flag "-doxygen")
+    endif()
 	if (WITH_NUMPY)
 		find_package(NumPy REQUIRED)
-		set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS "-DWITH_NUMPY=1;-doxygen" )
+        set(swig_src_flag "${swig_src_flag};-DWITH_NUMPY=1")
 		list(APPEND SWIG_INTERFACE_INCLUDE_DIR "${PYTHON_NUMPY_INCLUDE_DIR}" )
 	endif()
+	set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS  "${swig_src_flag}")
 endif()
 
 if (${TARGET_LANGUAGE} STREQUAL "CSHARP") # csharp
@@ -51,6 +65,7 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E echo run swig dir clean ...
 		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${CMAKE_CURRENT_BINARY_DIR}/swig/_outfile
 		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${CMAKE_CURRENT_BINARY_DIR}/swig/_output
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/swig/
 		COMMAND ${CMAKE_COMMAND} -E touch ${SWIG_CLEAN_STAMP_FILE}
 		DEPENDS ${swig_dep_files}
 		COMMENT "clean files..."

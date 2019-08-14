@@ -6,11 +6,55 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 set(CAMPORT_DIR  CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
+set(PYTHON_VERSION "" CACHE STRING "python version")
+
 option(WITH_OPENCV OFF)
 #set(SWIG_DIR  CACHE PATH "SWIG tool path")
 
 message("target language is ${TARGET_LANGUAGE}")
 
+macro(configure_msvc_runtime)
+  if(MSVC)
+
+    # Default to statically-linked runtime.
+    if("${MSVC_RUNTIME}" STREQUAL "")
+      set(MSVC_RUNTIME "static")
+    endif()
+
+    # Set compiler options.
+    set(variables
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    )
+    if(${MSVC_RUNTIME} STREQUAL "static")
+      message(STATUS
+        "MSVC -> forcing use of statically-linked runtime."
+      )
+      foreach(variable ${variables})
+        if(${variable} MATCHES "/MD")
+          string(REGEX REPLACE "/MD" "/MT" ${variable} "${${variable}}")
+        endif()
+      endforeach()
+    else()
+      message(STATUS
+        "MSVC -> forcing use of dynamically-linked runtime."
+      )
+      foreach(variable ${variables})
+        if(${variable} MATCHES "/MT")
+          string(REGEX REPLACE "/MT" "/MD" ${variable} "${${variable}}")
+        endif()
+      endforeach()
+    endif()
+  endif()
+endmacro()
+
+configure_msvc_runtime()
 ##################################################
 # OpenCV
 if(WITH_OPENCV)
@@ -44,12 +88,11 @@ if (MSVC)#for windows
     endif()
 else(MSVC)
     if(CAMPORT_ARCH)
-		if (NOT EXISTS "${CAMPORT_LIB_ROOT}/lib/linux/lib_${CAMPORT_ARCH}/libtycam.so")
+		if (NOT EXISTS "${CAMPORT_DIR}/lib/linux/lib_${CAMPORT_ARCH}/libtycam.so")
 			message(FATAL_ERROR "not supported arch :${CAMPORT_ARCH} ")
 		endif()
-        set_property(TARGET tycam PROPERTY IMPORTED_LOCATION "${CAMPORT_LIB_ROOT}/lib/linux/lib_${CAMPORT_ARCH}/libtycam.so")
+        set_property(TARGET tycam PROPERTY IMPORTED_LOCATION "${CAMPORT_DIR}/lib/linux/lib_${CAMPORT_ARCH}/libtycam.so")
     else()
-        #set(CAMPORT_LIB -ltycam)#let compiler to find lib
 		find_library(CAM_LIB_FILEPATH NAMES tycam) 
 		if (NOT EXISTS ${CAM_LIB_FILEPATH})
 			message(FATAL_ERROR "not found tycam library in system path")
@@ -57,6 +100,10 @@ else(MSVC)
 		set_target_properties( tycam PROPERTIES IMPORTED_LOCATION ${CAM_LIB_FILEPATH})
     endif()
 endif(MSVC)
+
+get_property(tylib_file TARGET tycam PROPERTY IMPORTED_LOCATION)
+install(FILES ${tylib_file} DESTINATION "${TARGET_LANGUAGE}")
+
 
 ##################################################
 #SWIG

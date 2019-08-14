@@ -16,7 +16,6 @@
 
 
 #define TY_STATIC_LIB 1
-#define TY_EXTC 
 
 #ifdef SWIGPYTHON                      
 %include "py_extend.i"

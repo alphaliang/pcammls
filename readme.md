@@ -1,6 +1,9 @@
 Percipio depth CAMera  MultiLanguage Sdk
 =======================================
 图漾深度相机多语言接口封装库
+
+[![Build status](https://ci.appveyor.com/api/projects/status/yibibephnf1wwu6r/branch/master?svg=true)](https://ci.appveyor.com/project/alphaliang/pcammls/branch/master)
+
 目前支持情况：
 
 platform |   language      | status   

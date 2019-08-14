@@ -1,0 +1,68 @@
+image: 
+  - Visual Studio 2017
+  - Ubuntu
+
+before_build:
+  - git clone https://github.com/percipioxyz/camport3.git
+
+on_success:
+  - echo success
+on_failure:
+  - echo failed
+
+
+for:
+  - 
+    matrix:
+      only:
+        - image: Ubuntu
+    install:
+      - echo start install
+      - sudo apt-get -y install libpcre3-dev
+      - wget http://prdownloads.sourceforge.net/swig/swig-4.0.0.tar.gz
+      - tar -zxf swig-4.0.0.tar.gz
+      - cd swig-4.0.0
+      - ./configure
+      - make -j4
+      - sudo make install
+      - cd ..
+
+    build_script:
+      - mkdir build
+      - cd build
+      - cmake .. -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=./install/ -DCAMPORT_ARCH=x64
+      - make install -j4
+
+    artifacts:
+      - path: build/install/
+        name: linux_x64_bin
+
+    
+  - 
+    matrix:
+      only:
+        - image: Visual Studio 2017
+    init:
+      - git config --global core.autocrlf input
+    install:
+      - echo start install
+      - cinst swig
+    
+    build_script:
+      - mkdir build
+      - cd build
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=./install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe -DPYTHON_LIBRARY=C:/Python37-x64/libs/python37.lib -DPYTHON_INCLUDE_DIR=C:/Python37-x64/include
+      - cmake --build . --config Release --target install
+      - move install/PYTHON install/PYTHON37
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=./install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe  -DPYTHON_LIBRARY=C:/Python36-x64/libs/python36.lib -DPYTHON_INCLUDE_DIR=C:/Python36-x64/include 
+      - cmake --build . --config Release --target install
+      - move install/PYTHON install/PYTHON36
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=./install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe -DPYTHON_LIBRARY=C:/Python27-x64/libs/python27.lib -DPYTHON_INCLUDE_DIR=C:/Python27-x64/include 
+      - cmake --build . --config Release --target install
+      - move install/PYTHON install/PYTHON27
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DTARGET_LANGUAGE=CSHARP -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=./install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe
+      - cmake --build . --config Release --target install
+    
+    artifacts:
+      - path: build/install/
+        name: win_x64_bin
