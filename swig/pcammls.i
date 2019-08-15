@@ -25,6 +25,10 @@
 %include "csharp_extend.i"
 #endif
 
+#ifdef SWIGJAVA
+%include "java_extend.i"
+#endif
+
 %define %C_ARRAY_BUFFER_DEF(element_type)
 %array_class(element_type, element_type##_ARRAY);
 %extend element_type##_ARRAY{

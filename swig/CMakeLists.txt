@@ -41,6 +41,11 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP") # csharp
 	#set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS  )
 endif()
 
+if (${TARGET_LANGUAGE} STREQUAL "JAVA") # java
+    include_directories(BEFORE ${SWIG_DIR}/Lib/java )
+	find_package(JNI REQUIRED)
+endif()
+
 #source files#################################################
 set_source_files_properties(pcammls.i PROPERTIES CPLUSPLUS ON)
 #set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS "-includeall")
@@ -97,6 +102,11 @@ endif()
 
 if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
 	set_property(TARGET ${PCAM_LIBNAME} PROPERTY SWIG_COMPILE_OPTIONS -namespace pcammls )
+endif()
+
+if (${TARGET_LANGUAGE} STREQUAL "JAVA") # java
+	target_include_directories(${PCAM_LIBNAME} PUBLIC ${JNI_INCLUDE_DIRS})
+	target_link_libraries(${PCAM_LIBNAME} ${JNI_LIBRARIES} )
 endif()
 
 if(OpenCV_FOUND)
