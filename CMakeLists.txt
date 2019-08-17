@@ -156,16 +156,29 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
     	-DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}
 		-DPCAM_LIB_SUPPORT_FILE_DIR=${PCAM_LIB_SUPPORT_FILE_DIR}
     	)
-		message("111")
 endif()
 
 
 if (${TARGET_LANGUAGE} STREQUAL "JAVA")
+
+     add_custom_target(copy_java_files )
+     add_custom_command( TARGET copy_java_files
+                        COMMAND ${CMAKE_COMMAND} -E echo
+						${PCAM_LIB_SUPPORT_FILE_DIR}/
+						${CMAKE_CURRENT_BINARY_DIR}/java_build/
+                        COMMAND ${CMAKE_COMMAND} -E copy_directory
+						${PCAM_LIB_SUPPORT_FILE_DIR}/
+						${CMAKE_CURRENT_BINARY_DIR}/java_build/
+					    COMMENT "try to copy java source files..."
+     				   )
+	add_dependencies(copy_java_files pcam_build_stamp)
+
     ExternalProject_Add(java_libs
         SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/java"
         BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/java_build"
         DEPENDS 
             pcam_build_stamp
+			copy_java_files
         CMAKE_ARGS 
         -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_LANGUAGE}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}

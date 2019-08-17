@@ -10,6 +10,9 @@ if(NOT EXISTS "${CAMPORT_DIR}/include/TYApi.h")
 endif()
 
 
+set(PCAM_OUTFILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig_outfile)
+set(PCAM_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig_output)
+
 set(PCAM_LIBNAME pcammls)
 if (${TARGET_LANGUAGE} STREQUAL "PYTHON") #python
     include_directories(BEFORE ${SWIG_DIR}/Lib/python )
@@ -42,8 +45,13 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP") # csharp
 endif()
 
 if (${TARGET_LANGUAGE} STREQUAL "JAVA") # java
+    #set(swig_src_flag "")
     include_directories(BEFORE ${SWIG_DIR}/Lib/java )
 	find_package(JNI REQUIRED)
+    #set(swig_src_flag "${swig_src_flag};-package com.percipio.pcammls")
+	#:wset (CMAKE_SWIG_FLAGS "${CMAKE_SWIG_FLAGS};-package com.percipio.pcammls")
+	set(PCAM_OUTPUT_DIR "${PCAM_OUTPUT_DIR}/com/percipio/pcammls")
+	#set_source_files_properties(pcammls.i PROPERTIES SWIG_FLAGS  "${swig_src_flag}")
 endif()
 
 #source files#################################################
@@ -58,8 +66,8 @@ file(GLOB c_headers ${CAMPORT_DIR}/include/*.h)
 swig_add_library(${PCAM_LIBNAME}
         LANGUAGE ${TARGET_LANGUAGE}
         SOURCES pcammls.i ${c_headers}
-        OUTFILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig/_outfile
-        OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig/_output
+        OUTFILE_DIR ${PCAM_OUTFILE_DIR}
+        OUTPUT_DIR ${PCAM_OUTPUT_DIR}
 )
 
 file(GLOB swig_dep_files ${CMAKE_CURRENT_SOURCE_DIR}/*.i)
@@ -68,8 +76,8 @@ set (SWIG_CLEAN_STAMP_FILE  ${CMAKE_CURRENT_BINARY_DIR}/swig/swig_clean.stamp)
 add_custom_command(
 		OUTPUT  ${SWIG_CLEAN_STAMP_FILE}
 		COMMAND ${CMAKE_COMMAND} -E echo run swig dir clean ...
-		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${CMAKE_CURRENT_BINARY_DIR}/swig/_outfile
-		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${CMAKE_CURRENT_BINARY_DIR}/swig/_output
+		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${PCAM_OUTFILE_DIR}
+		COMMAND ${CMAKE_COMMAND} -E remove_directory  ${PCAM_OUTPUT_DIR}
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/swig/
 		COMMAND ${CMAKE_COMMAND} -E touch ${SWIG_CLEAN_STAMP_FILE}
 		DEPENDS ${swig_dep_files}
@@ -90,7 +98,7 @@ endif ()
 
 get_property(support_files TARGET ${PCAM_LIBNAME} PROPERTY SWIG_SUPPORT_FILES)
 target_link_libraries(${PCAM_LIBNAME} tycam )
-set(PCAM_LIB_SUPPORT_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig/_output PARENT_SCOPE)
+set(PCAM_LIB_SUPPORT_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig_output PARENT_SCOPE)
 set(PCAM_LIB_BINARY_NAME $<TARGET_FILE:${PCAM_LIBNAME}> PARENT_SCOPE)
 
 if (${TARGET_LANGUAGE} STREQUAL "PYTHON")

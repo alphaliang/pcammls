@@ -1,4 +1,5 @@
 
+//%pragma(java) jniclasspackage = "com.percipio.pcammls.jni" 
 //array extend ///////////////////////////
 
 %define %CARRAY_ITEM_ASSIGN(type_name)
