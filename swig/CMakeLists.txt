@@ -98,8 +98,6 @@ endif ()
 
 get_property(support_files TARGET ${PCAM_LIBNAME} PROPERTY SWIG_SUPPORT_FILES)
 target_link_libraries(${PCAM_LIBNAME} tycam )
-set(PCAM_LIB_SUPPORT_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig_output PARENT_SCOPE)
-set(PCAM_LIB_BINARY_NAME $<TARGET_FILE:${PCAM_LIBNAME}> PARENT_SCOPE)
 
 if (${TARGET_LANGUAGE} STREQUAL "PYTHON")
 	set_target_properties(${PCAM_LIBNAME} PROPERTIES PREFIX "_")
@@ -121,7 +119,6 @@ if(OpenCV_FOUND)
 	target_link_libraries(${PCAM_LIBNAME} ${OpenCV_LIBS})
 endif()
 
-##################################################
 install( TARGETS ${PCAM_LIBNAME} DESTINATION "${TARGET_LANGUAGE}")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -129,4 +126,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     add_definitions(-fpermissive)
 endif()
 
-
+##################################################
+#output variables
+set(PCAM_LIB_SUPPORT_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig_output PARENT_SCOPE)
+set(PCAM_LIB_BINARY_NAME $<TARGET_FILE:${PCAM_LIBNAME}> PARENT_SCOPE)
