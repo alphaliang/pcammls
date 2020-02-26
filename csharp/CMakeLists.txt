@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.10.0)
 project(pcammls_cs)
 
 enable_language(CSharp)
-set(CMAKE_CSharp_FLAGS "/langversion:6")
+set(CMAKE_CSharp_FLAGS "/langversion:default")
+
+if(CMAKE_CL_64)
+    set(CMAKE_CSharp_FLAGS "/platform:x64")
+else()
+    set(CMAKE_CSharp_FLAGS "/platform:x86")
+endif()
 
 file(GLOB CS_SUPPORT_FILES ${PCAM_LIB_SUPPORT_FILE_DIR}/*.cs)
 
