@@ -46,7 +46,7 @@ for:
       - git config --global core.autocrlf input
     install:
       - echo start install
-      - cinst swig
+      - cinst swig --version 4.0.0
     
     build_script:
       - mkdir build

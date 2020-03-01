@@ -19,9 +19,9 @@ linux   | java           | TODO
 接口操作尽量保持与原API一致。
 
 已测试环境：
-1. win10 + python3.6 + vs2019
-2. win10 + c# .net4.0 + vs2019
-3. ubuntu16 + python2.7
+1. win10 + python3.6 + vs2019 + swig4.0.0
+2. win10 + c# .net4.0 + vs2019 + swig4.0.0
+3. ubuntu16 + python2.7 + swig4.0.0
  
 目前版本对应原Camport3 v3.3.1版本
 ## 预编译版本下载
