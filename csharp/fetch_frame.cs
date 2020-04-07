@@ -112,7 +112,7 @@ namespace pcammls_fetch_frame
             IntPtr color_isp_handle = new IntPtr();
             SDK.TYISPCreate(ref color_isp_handle);
 
-            SDK.ColorIspInitSetting(color_isp_handle, handle);
+//            SDK.ColorIspInitSetting(color_isp_handle, handle);
 
             SDK.TYEnableComponents(handle,SDK.TY_COMPONENT_DEPTH_CAM);
             SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_RGB_CAM);
