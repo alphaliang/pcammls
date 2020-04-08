@@ -16,6 +16,9 @@ namespace pcammls_fetch_frame
         static uint8_t_ARRAY[] buffer = new uint8_t_ARRAY[2];
         static uint8_t_ARRAY color_data;
 
+        static TY_CAMERA_CALIB_INFO calib_inf = new TY_CAMERA_CALIB_INFO();
+
+
         static double[,] YUV2RGB_CONVERT_MATRIX = new double[3, 3] { { 1, 0, 1.4022 }, { 1, -0.3456, -0.7145 }, { 1, 1.771, 0 } };
         static void ConvertYUYV2RGB(uint8_t_ARRAY yuvFrame, uint8_t_ARRAY rgbFrame, int width, int height)
         {
@@ -111,7 +114,15 @@ namespace pcammls_fetch_frame
         {
             IntPtr color_isp_handle = new IntPtr();
             SDK.TYISPCreate(ref color_isp_handle);
-
+            
+            uint cal_size = calib_inf.CSize();
+            //IntPtr calib = Marshal.AllocHGlobal(sizeof(calib_inf));
+            SDK.TYGetStruct(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_STRUCT_CAM_CALIB_DATA, calib_inf.getCPtr(), cal_size);
+            Console.WriteLine(string.Format("Depth calib inf width:{0} height:{1}", calib_inf.intrinsicWidth, calib_inf.intrinsicHeight));
+            Console.WriteLine(string.Format("Depth intrinsic:{0} {1} {2} {3} {4} {5} {6} {7} {8}",
+                calib_inf.intrinsic.data[0], calib_inf.intrinsic.data[1], calib_inf.intrinsic.data[2],
+                calib_inf.intrinsic.data[3], calib_inf.intrinsic.data[4], calib_inf.intrinsic.data[5],
+                calib_inf.intrinsic.data[6], calib_inf.intrinsic.data[7], calib_inf.intrinsic.data[8]));
 //            SDK.ColorIspInitSetting(color_isp_handle, handle);
 
             SDK.TYEnableComponents(handle,SDK.TY_COMPONENT_DEPTH_CAM);
@@ -154,7 +165,17 @@ namespace pcammls_fetch_frame
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer);
                             int offset = img.width * img.height / 2 + img.width / 2;
                             ushort distance =  pixel_arr[offset];
+
+                            TY_PIXEL_DESC pix = new TY_PIXEL_DESC();
+                            TY_VECT_3F p3d = new TY_VECT_3F();
+
+                            pix.x = (short)(img.width / 2);
+                            pix.y = (short)(img.height / 2);
+                            pix.depth = distance;
+
+                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
                             Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", distance));
+                            Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d.x, p3d.y, p3d.z));
                         }
                         else if (img.componentID == SDK.TY_COMPONENT_RGB_CAM)
                         {
