@@ -36,7 +36,7 @@ https://github.com/alphaliang/pcammls/releases
 
 http://www.swig.org/  swig
 
-https://cmake.org/   cmake3.10+
+https://cmake.org/   cmake3.15+
 
 https://github.com/percipioxyz/camport3  camport3
 
