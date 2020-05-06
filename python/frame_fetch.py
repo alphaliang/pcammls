@@ -54,6 +54,15 @@ def fetch_frame_loop(handle):
     buffs=[char_ARRAY(sz),char_ARRAY(sz)]
     TYEnqueueBuffer(handle,buffs[0],sz)
     TYEnqueueBuffer(handle,buffs[1],sz)
+
+    depth_calib = TY_CAMERA_CALIB_INFO()
+    ret = TYGetStruct(handle, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_CALIB_DATA, depth_calib, depth_calib.CSize());
+    print("Depth cam calib data:")
+    print("                 {} {}".format(depth_calib.intrinsicWidth, depth_calib.intrinsicHeight))
+    print("                 {}".format(depth_calib.intrinsic.data))
+    print("                 {}".format(depth_calib.extrinsic.data))
+    print("                 {}".format(depth_calib.distortion.data))
+ 
     print('start cap')
     TYStartCapture(handle)
     img_index =0 
@@ -67,6 +76,7 @@ def fetch_frame_loop(handle):
                     continue
                 arr = img.as_nparray()
                 if img.componentID == TY_COMPONENT_DEPTH_CAM:
+                    print('Center depth value:{}'.format(arr[240][320]))
                     depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
                     cv2.imshow('depth',depthu8)
                 if img.componentID == TY_COMPONENT_RGB_CAM:
