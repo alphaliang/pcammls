@@ -195,14 +195,15 @@ namespace std
 
 //return code to exception  //////////////////////////////////////////////////
 
-%typemap(cstype) TY_STATUS "void"
+%typemap(cstype) TY_STATUS "int"
 %typemap(csout) TY_STATUS {
 	int ret;
 	ret = $imcall;$excode
-	if (ret!=pcammls.TY_STATUS_OK){
-		var ex = new System.ComponentModel.Win32Exception(ret,string.Format("Failed with return code:{0}",ret));
-		throw ex;
-	}
+//	if (ret!=pcammls.TY_STATUS_OK){
+//		var ex = new System.ComponentModel.Win32Exception(ret,string.Format("Failed with return code:{0}",ret));
+//		throw ex;
+//	}
+    return ret;
 }
 
 %typemap(cstype) TY_STATUS errorID "int"

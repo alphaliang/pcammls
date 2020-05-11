@@ -116,7 +116,6 @@ namespace pcammls_fetch_frame
             SDK.TYISPCreate(ref color_isp_handle);
             
             uint cal_size = calib_inf.CSize();
-            //IntPtr calib = Marshal.AllocHGlobal(sizeof(calib_inf));
             SDK.TYGetStruct(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_STRUCT_CAM_CALIB_DATA, calib_inf.getCPtr(), cal_size);
             Console.WriteLine(string.Format("Depth calib inf width:{0} height:{1}", calib_inf.intrinsicWidth, calib_inf.intrinsicHeight));
             Console.WriteLine(string.Format("Depth intrinsic:{0} {1} {2} {3} {4} {5} {6} {7} {8}",
@@ -183,7 +182,6 @@ namespace pcammls_fetch_frame
                             {
                                 var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
 
-                            //    color_data = new uint8_t_ARRAY(color_size);
                                 ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
@@ -196,7 +194,6 @@ namespace pcammls_fetch_frame
                             {
                                 var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
 
-                            //    color_data = new uint8_t_ARRAY(color_size);
                                 ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
@@ -209,7 +206,6 @@ namespace pcammls_fetch_frame
                             {
                                 var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
 
-                           //     color_data = new uint8_t_ARRAY(color_size);
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
                                 out_buff.pixelFormat = (int)SDK.TY_PIXEL_FORMAT_BGR;
