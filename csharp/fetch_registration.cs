@@ -393,7 +393,7 @@ namespace pcammls_fetch_frame
 
                     if ((depth_enable) && (color_enable))
                     {
-                        SDK.TYUndistortImage2(color_calib, src, dst);
+                        SDK.TYUndistortImage(color_calib, src, color_calib.intrinsic, dst);
                         int offset = color_width * color_height / 2 + color_width / 2;
                         byte b = undistort_color_data[3 * offset];
                         byte g = undistort_color_data[3 * offset + 1];
