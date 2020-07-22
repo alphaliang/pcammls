@@ -132,7 +132,9 @@ namespace pcammls_fetch_frame
             Marshal.FreeHGlobal(structPtr);
 
             uint8_t_ARRAY shading = new uint8_t_ARRAY(size);
+            for (int i = 0; i < size; i++) shading[i] = bytes[i];
             SWIGTYPE_p_unsigned_char pointer = shading.cast();
+
             return pointer;
         }
 
@@ -147,8 +149,9 @@ namespace pcammls_fetch_frame
             Marshal.Copy(structPtr, bytes, 0, size);
             Marshal.FreeHGlobal(structPtr);
 
-            uint8_t_ARRAY shading = new uint8_t_ARRAY(size);
-            SWIGTYPE_p_unsigned_char pointer = shading.cast();
+            uint8_t_ARRAY _arr = new uint8_t_ARRAY(size);
+            for (int i = 0; i < size; i++) _arr[i] = bytes[i];
+            SWIGTYPE_p_unsigned_char pointer = _arr.cast();
             return pointer;
         }
 
@@ -166,11 +169,12 @@ namespace pcammls_fetch_frame
             Marshal.FreeHGlobal(structPtr);
 
             uint8_t_ARRAY _handle = new uint8_t_ARRAY(size);
+            for (int i = 0; i < size; i++) _handle[i] = bytes[i];
             SWIGTYPE_p_unsigned_char pointer = _handle.cast();
             return pointer;
         }
 
-        static void ColorIspInitSetting(IntPtr handle, IntPtr isp_handle)
+        static void ColorIspInitSetting(IntPtr isp_handle, IntPtr handle)
         {
             int is_v21_color_device = __TYDetectOldVer21ColorCam(handle);
             if (is_v21_color_device < 0) {
@@ -203,7 +207,7 @@ namespace pcammls_fetch_frame
             pointer = FloatArrayToSWIGTYPE(fShading, 9);
             SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_SHADING, pointer, 9 * sizeof(float));
 
-            int[] m_shading_center = new int[2];// = { 640, 480 };
+            int[] m_shading_center = new int[2];
             m_shading_center[0] = 640;
             m_shading_center[1] = 480;
             pointer = IntArrayToSWIGTYPE(m_shading_center, 2);
@@ -273,8 +277,7 @@ namespace pcammls_fetch_frame
         static void FetchFrameLoop(IntPtr handle)
         {
             IntPtr color_isp_handle = new IntPtr();
-            SDK.TYISPCreate(ref color_isp_handle);
-            
+
             uint cal_size = calib_inf.CSize();
             SDK.TYGetStruct(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_STRUCT_CAM_CALIB_DATA, calib_inf.getCPtr(), cal_size);
             Console.WriteLine(string.Format("Depth calib inf width:{0} height:{1}", calib_inf.intrinsicWidth, calib_inf.intrinsicHeight));
@@ -283,10 +286,12 @@ namespace pcammls_fetch_frame
                 calib_inf.intrinsic.data[3], calib_inf.intrinsic.data[4], calib_inf.intrinsic.data[5],
                 calib_inf.intrinsic.data[6], calib_inf.intrinsic.data[7], calib_inf.intrinsic.data[8]));
 
-            ColorIspInitSetting(color_isp_handle, handle);
-
+            
             SDK.TYEnableComponents(handle,SDK.TY_COMPONENT_DEPTH_CAM);
             SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_RGB_CAM);
+
+            SDK.TYISPCreate(ref color_isp_handle);
+            ColorIspInitSetting(color_isp_handle, handle);
 
             uint buff_sz;
             SDK.TYGetFrameBufferSize(handle, out buff_sz);
@@ -349,7 +354,7 @@ namespace pcammls_fetch_frame
                                 byte b = color_data[offset];
                                 byte g = color_data[offset + 1];
                                 byte r = color_data[offset + 2];
-                                Console.WriteLine(string.Format("Color Image Center Pixel value:{0} {1} {2}", r, g, b));
+                                Console.WriteLine(string.Format("Color Image Center Pixel value(YVYU):{0} {1} {2}", r, g, b));
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
@@ -361,7 +366,7 @@ namespace pcammls_fetch_frame
                                 byte b = color_data[offset];
                                 byte g = color_data[offset + 1];
                                 byte r = color_data[offset + 2];
-                                Console.WriteLine(string.Format("Color Image Center Pixel value:{0} {1} {2}", r, g, b));
+                                Console.WriteLine(string.Format("Color Image Center Pixel value(YUYV):{0} {1} {2}", r, g, b));
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
                             {
@@ -380,7 +385,7 @@ namespace pcammls_fetch_frame
                                 byte b = color_pixel_arr[offset];
                                 byte g = color_pixel_arr[offset + 1];
                                 byte r = color_pixel_arr[offset + 2];
-                                Console.WriteLine(string.Format("Color Image Center Pixel value:{0} {1} {2}", r, g, b));
+                                Console.WriteLine(string.Format("Color Image Center Pixel value(Bayer):{0} {1} {2}", r, g, b));
                             }
                             else {
                                 Console.WriteLine(string.Format("Color Image Type:{0}", img.pixelFormat));
