@@ -158,8 +158,13 @@ namespace pcammls_fetch_frame
         static SWIGTYPE_p_unsigned_char IntPtrToSWIGTYPE(IntPtr p)
         {
             int size = sizeof(int);
+
             int[] m_handle = new int[1];
-            m_handle[0] = (int)p;
+            bool version = Environment.Is64BitProcess ? true : false;
+            if(version)
+                m_handle[0] = (int)p.ToInt64();
+            else
+                m_handle[0] = (int)p.ToInt32();
 
             IntPtr structPtr = Marshal.AllocHGlobal(size);
             Marshal.Copy(m_handle, 0, structPtr, 1);
@@ -289,6 +294,8 @@ namespace pcammls_fetch_frame
             
             SDK.TYEnableComponents(handle,SDK.TY_COMPONENT_DEPTH_CAM);
             SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_RGB_CAM);
+            //set depth cam resolution
+            SDK.TYSetEnum(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_ENUM_IMAGE_MODE, (int)(SDK.TY_RESOLUTION_MODE_640x480 | SDK.TY_PIXEL_FORMAT_DEPTH16));
 
             SDK.TYISPCreate(ref color_isp_handle);
             ColorIspInitSetting(color_isp_handle, handle);

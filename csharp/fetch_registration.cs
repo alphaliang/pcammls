@@ -167,7 +167,11 @@ namespace pcammls_fetch_frame
         {
             int size = sizeof(int);
             int[] m_handle = new int[1];
-            m_handle[0] = (int)p;
+            bool version = Environment.Is64BitProcess ? true : false;
+            if(version)
+                m_handle[0] = (int)p.ToInt64();
+            else
+                m_handle[0] = (int)p.ToInt32();
 
             IntPtr structPtr = Marshal.AllocHGlobal(size);
             Marshal.Copy(m_handle, 0, structPtr, 1);
