@@ -160,8 +160,7 @@ namespace pcammls_fetch_frame
             int size = sizeof(int);
 
             int[] m_handle = new int[1];
-            bool version = Environment.Is64BitProcess ? true : false;
-            if(version)
+            if(Environment.Is64BitProcess)
                 m_handle[0] = (int)p.ToInt64();
             else
                 m_handle[0] = (int)p.ToInt32();
