@@ -31,11 +31,11 @@ add_executable(test_cs ${CMAKE_CURRENT_SOURCE_DIR}/test.cs )
 set_property(TARGET test_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0")
 set_property(TARGET test_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs )
+add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0")
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_executable(fetch_registration_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs )
+add_executable(fetch_registration_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0")
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
@@ -50,7 +50,7 @@ install (TARGETS pcammls_cs DESTINATION  "./")
 install (TARGETS test_cs DESTINATION  "./")
 install (TARGETS fetch_frame_cs DESTINATION  "./")
 install (TARGETS fetch_registration_cs DESTINATION  "./")
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs  DESTINATION  "./")
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs  DESTINATION  "./")
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs  DESTINATION  "./")
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs  DESTINATION  "./")
 install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/test.cs  DESTINATION  "./")
 
