@@ -89,16 +89,17 @@ namespace pcammls_fetch_point3d
                         if (img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
                         {
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer);
-                            for (short i = 0; i < img.height; i++) {
-                                for (short j = 0; j < img.width; j++) {
-                                    temp.x = j;
-                                    temp.y = i;
-                                    temp.depth = pixel_arr[i * img.width + j];
-                                    pixArray.setitem(i * img.width + j, temp);
-                                }
-                            }
+                            SDK.TYMapDepthImageToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pixel_arr.cast(), p3dArray.cast());
 
-                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pixArray.cast(), (uint)(img.width * img.height), p3dArray.cast());
+                            //for (short i = 0; i < img.height; i++) {
+                            //    for (short j = 0; j < img.width; j++) {
+                            //        temp.x = j;
+                            //        temp.y = i;
+                            //        temp.depth = pixel_arr[i * img.width + j];
+                            //        pixArray.setitem(i * img.width + j, temp);
+                            //    }
+                            //}
+                            //SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pixArray.cast(), (uint)(img.width * img.height), p3dArray.cast());
 
                             int offset = img.width * img.height / 2 + img.width / 2;
                             float p3d_fx = p3dArray.getitem(offset).x;
