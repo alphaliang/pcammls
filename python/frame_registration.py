@@ -57,22 +57,30 @@ def fetch_frame_loop(handle):
     buffs=[char_ARRAY(sz),char_ARRAY(sz)]
     TYEnqueueBuffer(handle,buffs[0],sz)
     TYEnqueueBuffer(handle,buffs[1],sz)
+    
+    depth_image_width  = TYGetInt(handle, TY_COMPONENT_DEPTH_CAM, TY_INT_WIDTH)
+    depth_image_height = TYGetInt(handle, TY_COMPONENT_DEPTH_CAM, TY_INT_HEIGHT)
+    color_image_width  = TYGetInt(handle, TY_COMPONENT_RGB_CAM, TY_INT_WIDTH)
+    color_image_height = TYGetInt(handle, TY_COMPONENT_RGB_CAM, TY_INT_HEIGHT)
 
-    src_buffer = uint8_t_ARRAY(1280 * 960 * 3)
-    dst_buffer = uint8_t_ARRAY(1280 * 960 * 3)
+    src_buffer = uint8_t_ARRAY(color_image_width * color_image_height * 3)
+    dst_buffer = uint8_t_ARRAY(color_image_width * color_image_height * 3)
 
-    src_depth_buffer = uint16_t_ARRAY(640 * 480)
-    dst_depth_buffer = uint16_t_ARRAY(1280 * 960)
+    src_depth_buffer = uint16_t_ARRAY(depth_image_width * depth_image_height)
+    dst_depth_buffer = uint16_t_ARRAY(color_image_width * color_image_height)
 
     depth_calib = TY_CAMERA_CALIB_INFO()
     color_calib = TY_CAMERA_CALIB_INFO()
     ret = TYGetStruct(handle, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_CALIB_DATA, depth_calib, depth_calib.CSize());
     ret = TYGetStruct(handle, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_CALIB_DATA, color_calib, color_calib.CSize());
     print("Depth cam calib data:")
-    print("                 {} {}".format(depth_calib.intrinsicWidth, depth_calib.intrinsicHeight))
-    print("                 {}".format(depth_calib.intrinsic.data))
-    print("                 {}".format(depth_calib.extrinsic.data))
-    print("                 {}".format(depth_calib.distortion.data))
+    print("size:                 {} {}".format(depth_calib.intrinsicWidth, depth_calib.intrinsicHeight))
+    print("intrinsic             {}".format(depth_calib.intrinsic.data))
+    print("Color cam calib data:")
+    print("size:                 {} {}".format(color_calib.intrinsicWidth, color_calib.intrinsicHeight))
+    print("intrinsic             {}".format(color_calib.intrinsic.data))
+    print("extrinsic             {}".format(color_calib.extrinsic.data))
+    print("distortion            {}".format(color_calib.distortion.data))
  
     print('start cap')
     TYStartCapture(handle)
@@ -112,8 +120,8 @@ def fetch_frame_loop(handle):
                 for j in range(0, sp[1], 1):
                     src_depth_buffer.__setitem__(i*sp[1] + j, int(arr_depth[i, j]))
                      
-            TYMapDepthImageToColorCoordinate(depth_calib, 640, 480, src_depth_buffer.cast(), color_calib, 1280, 960, dst_depth_buffer.cast())
-            dst_depth16 = TYInitImageData(1280 * 960 * 2, dst_depth_buffer, 1280, 960)
+            TYMapDepthImageToColorCoordinate(depth_calib, depth_image_width, depth_image_height, src_depth_buffer.cast(), color_calib, color_image_width, color_image_height, dst_depth_buffer.cast())
+            dst_depth16 = TYInitImageData(color_image_width * color_image_height * 2, dst_depth_buffer, color_image_width, color_image_height)
             dst_depth16.pixelFormat = TY_PIXEL_FORMAT_DEPTH16;
             dst_depth16_arr = dst_depth16.as_nparray()
             dst_depthu8 =  cv2.convertScaleAbs(dst_depth16_arr, alpha=(255.0/4000.0))
