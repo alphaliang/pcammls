@@ -62,12 +62,29 @@ def fetch_frame_loop(handle):
     print("                 {}".format(depth_calib.intrinsic.data))
     print("                 {}".format(depth_calib.extrinsic.data))
     print("                 {}".format(depth_calib.distortion.data))
- 
+
+    hasTriggerParam = TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM)
+    if hasTriggerParam == True:
+        trigger = TY_TRIGGER_PARAM()
+        trigger.mode = TY_TRIGGER_MODE_OFF #TY_TRIGGER_MODE_SLAVE:
+        print("Set trigger mode {}".format(trigger.mode))
+        TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, trigger, trigger.CSize())
+        if trigger.mode == TY_TRIGGER_MODE_SLAVE:
+            #for network only
+            hasResend = TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND)
+            if hasResend == True:
+                print('=== Open resend')
+                TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, True)
+            else:
+                print('=== Not support feature TY_BOOL_GVSP_RESEND')
+                
     print('start cap')
     TYStartCapture(handle)
     img_index =0 
     while True:
         frame = TY_FRAME_DATA()
+		#if use the software trigger mode, need to call this API:TYSendSoftTrigger to trigger the cam device
+        #TYSendSoftTrigger(handle)
         try:
             TYFetchFrame(handle,frame.this,2000)
             images = frame.image
