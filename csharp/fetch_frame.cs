@@ -95,6 +95,8 @@ namespace pcammls_fetch_frame
                         if(img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
                         {
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer);
+                            IntPtr pt = pixel_arr.VoidPtr2();
+
                             int offset = img.width * img.height / 2 + img.width / 2;
                             ushort distance =  pixel_arr[offset];
 

@@ -72,6 +72,10 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 			setitem(idx,value);
 		}
 	}
+
+	public global::System.IntPtr VoidPtr2(){
+		return (global::System.IntPtr)swigCPtr;
+	}
 %}
 
 %extend class type_name##_ARRAY {
@@ -79,8 +83,8 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 		return (void*)self;
 	}
 }
-%enddef
 
+%enddef
 
 %CARRAY_ITEM_ASSIGN(float, float);
 %CARRAY_ITEM_ASSIGN(uint8_t, byte);
@@ -138,6 +142,7 @@ namespace std
 	 return typename##_ARRAY.frompointer(ptr);
 	}
 %}
+
 %enddef 
 
 %CARRAY_ACCESS(float)
