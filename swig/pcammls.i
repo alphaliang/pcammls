@@ -101,26 +101,26 @@
 %feature("director") EventCallback;
 %inline %{
 
-	class EventCallback{
-	public:
-		virtual ~EventCallback() {}
-		virtual void run(TY_EVENT_INFO* info) {};
+    class EventCallback{
+    public:
+        virtual ~EventCallback() {}
+        virtual void run(TY_EVENT_INFO* info) {};
 
-		TY_STATUS set_to(TY_DEV_HANDLE handle) {
-			return TYRegisterEventCallback(handle, __ty_event_callback, this);
-		}
+        TY_STATUS set_to(TY_DEV_HANDLE handle) {
+            return TYRegisterEventCallback(handle, __ty_event_callback, this);
+        }
 
-	private:
+    private:
 
-		static void __ty_event_callback (TY_EVENT_INFO* info, void* userdata) {
-			EventCallback* ptr = (EventCallback*)(userdata);
-			if (ptr == nullptr) {
-				return;
-			}
-			ptr->run(info);
-		}
+        static void __ty_event_callback (TY_EVENT_INFO* info, void* userdata) {
+            EventCallback* ptr = (EventCallback*)(userdata);
+            if (ptr == nullptr) {
+                return;
+            }
+            ptr->run(info);
+        }
 
-	};
+    };
 
 %}
 
