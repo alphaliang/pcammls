@@ -17,13 +17,6 @@
 
 #define TY_STATIC_LIB 1
 
-#ifdef SWIGPYTHON                      
-%include "py_extend.i"
-#endif
-
-#ifdef SWIGCSHARP
-%include "csharp_extend.i"
-#endif
 
 %define %C_ARRAY_BUFFER_DEF(element_type)
 %array_class(element_type, element_type##_ARRAY);
@@ -134,6 +127,14 @@
     };
 
 %}
+
+#ifdef SWIGPYTHON                      
+%include "py_extend.i"
+#endif
+
+#ifdef SWIGCSHARP
+%include "csharp_extend.i"
+#endif
 
 
 %include "TYApi.h"

@@ -72,6 +72,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_DISTORTION);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO);
 
+
 //PVOID HANDLE /////////////////////////////////////////////////////////////////////////////
 %{
     typedef void* _HANDLE;
@@ -279,7 +280,14 @@ def as_nparray(self):
 %}
 }//endof  %extend TY_IMAGE_DATA 
 
-#endif
+#endif //WITH_NUMPY
+
+
+//ISP////////////////////////////////////////////////
+
+
+%C_ARRAY_BUFFER_DEF(TY_ISP_FEATURE_INFO);
+%CARRAY_ITEM_ASSIGN(TY_ISP_FEATURE_INFO);
 
 
 
