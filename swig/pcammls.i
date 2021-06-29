@@ -35,7 +35,9 @@
 %enddef
 
 %C_ARRAY_BUFFER_DEF(float);
+%C_ARRAY_BUFFER_DEF(int8_t);
 %C_ARRAY_BUFFER_DEF(uint8_t);
+%C_ARRAY_BUFFER_DEF(int16_t);
 %C_ARRAY_BUFFER_DEF(uint16_t);
 %C_ARRAY_BUFFER_DEF(uint32_t);
 %C_ARRAY_BUFFER_DEF(int32_t);

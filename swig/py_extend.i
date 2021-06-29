@@ -131,7 +131,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %}
 
 
-%define MAKE_NPARRAY_CONVERT(data_type)
+%define MAKE_IMGDATA_NPARRAY_CONVERT(data_type)
 %apply (data_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) {
     (data_type **NP_ARRAY_PTR , int *ROW,int *COL)
 }
@@ -157,30 +157,98 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
         *PSZ = 3;
     }
 }
-%enddef // %define MAKE_NPARRAY_CONVERT(data_type)
+%enddef // %define MAKE_IMGDATA_NPARRAY_CONVERT(data_type)
 
-MAKE_NPARRAY_CONVERT(float)
-MAKE_NPARRAY_CONVERT(uint16_t)
-MAKE_NPARRAY_CONVERT(uint8_t)
+MAKE_IMGDATA_NPARRAY_CONVERT(float)
+MAKE_IMGDATA_NPARRAY_CONVERT(uint16_t)
+MAKE_IMGDATA_NPARRAY_CONVERT(uint8_t)
 
 //extend for carray to convert numpy array to carray
 %define %NUMPY_TO_C_ARRAY(element_type)
-%apply ( element_type* IN_ARRAY2, int DIM1, int DIM2 ) { (element_type* NP_ARRAY_PTR, int ROW,  int COL)}
-%extend element_type##_ARRAY{
-    static element_type##_ARRAY* FromNumpyArray(element_type* NP_ARRAY_PTR, int ROW,  int COL) {
-        int sz= ROW*COL;
-        element_type* out = new element_type(sz);
-        for(int idx=0;idx<sz;idx++){
-            out[idx] = NP_ARRAY_PTR[idx];
+    //input 
+    %apply ( element_type* IN_ARRAY1, int DIM1) { (element_type* NP_ARRAY_PTR, int ROW)}
+    %apply ( element_type* IN_ARRAY2, int DIM1, int DIM2 ) { (element_type* NP_ARRAY_PTR, int ROW,  int COL )}
+    %apply ( element_type* IN_ARRAY3, int DIM1, int DIM2 , int DIM3) { (element_type* NP_ARRAY_PTR, int ROW,  int COL , int PSZ)}
+    //output 
+    %apply (data_type** ARGOUTVIEW_ARRAY1, int* DIM1) { (data_type **NP_ARRAY_PTR , int *ROW) }
+    %apply (data_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) { (data_type **NP_ARRAY_PTR , int *ROW,int *COL) }
+    %apply (data_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) { (data_type **NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ) }
+    //extend convert method
+    %extend element_type##_ARRAY{
+        static element_type##_ARRAY* from_nparray1d(element_type* NP_ARRAY_PTR, int ROW) {
+            int sz= ROW;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
         }
-        return (element_type##_ARRAY*)out;
-    }
-}
+
+        static element_type##_ARRAY* from_nparray2d(element_type* NP_ARRAY_PTR, int ROW,  int COL) {
+            int sz= ROW*COL;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
+        }
+
+        static element_type##_ARRAY* from_nparray3d(element_type* NP_ARRAY_PTR, int ROW,  int COL, int PSZ) {
+            int sz= ROW*COL*PSZ;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
+        }
+
+        void as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW, int row) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+        }
+
+        void as_nparray2d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,
+                                   int row, int col) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+            *COL = col;
+        }
+    
+        void as_nparray3d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,  int *PSZ,
+                                   int row, int col,int psz) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+            *COL = col;
+            *PSZ = psz;
+        }
+
+%pythoncode %{
+        
+            @staticmethod
+            def from_nparray(np_array):
+                dim = np_array.ndim
+                if dim==3:
+                    return element_type##_ARRAY.from_nparray3d(np_array)
+                elif dim==2: 
+                    return element_type##_ARRAY.from_nparray2d(np_array)
+                elif dim==1: 
+                    return element_type##_ARRAY.from_nparray1d(np_array)
+                else:
+                    raise Exception('not support format')
+
+        %}// %pythoncode %{
+    } //extend array
+
+
 %enddef
 
 %NUMPY_TO_C_ARRAY(float)
-%NUMPY_TO_C_ARRAY(uint16_t)
 %NUMPY_TO_C_ARRAY(uint8_t)
+%NUMPY_TO_C_ARRAY(uint16_t)
+%NUMPY_TO_C_ARRAY(uint32_t)
+%NUMPY_TO_C_ARRAY(int8_t)
+%NUMPY_TO_C_ARRAY(int16_t)
+%NUMPY_TO_C_ARRAY(int32_t)
 
 
 %extend TY_IMAGE_DATA {
@@ -200,13 +268,17 @@ def as_nparray(self):
         return None
     pformat = self.pixelFormat
     if pformat in self.__U8C1:
-        return self.__as_nparray_uint8_t_ch1()
+        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
+        return cbuf.as_nparray2d(self.height,self.width)
     elif pformat  in self.__U8C2:
-        return self.__as_nparray_uint8_t_ch2()
+        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
+        return cbuf.as_nparray3d(self.height,self.width,2)
     elif pformat  in self.__U8C3:
-        return self.__as_nparray_uint8_t_ch3()
+        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
+        return cbuf.as_nparray3d(self.height,self.width,3)
     elif pformat  in self.__U16C1:
-        return self.__as_nparray_uint16_t_ch1()
+        cbuf = uint16_t_ARRAY.FromVoidPtr(self.buffer)
+        return cbuf.as_nparray3d(self.height,self.width,1)
     else:
         raise Exception('not supported format {}'.format(pformat))
     return None    
