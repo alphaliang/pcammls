@@ -130,39 +130,6 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
   import_array();
 %}
 
-
-%define MAKE_IMGDATA_NPARRAY_CONVERT(data_type)
-%apply (data_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) {
-    (data_type **NP_ARRAY_PTR , int *ROW,int *COL)
-}
-%apply (data_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) {
-    (data_type **NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ)
-}
-%extend struct TY_IMAGE_DATA {
-    void __as_nparray_##data_type##_ch1(data_type** NP_ARRAY_PTR, int* ROW, int* COL) {
-        *NP_ARRAY_PTR = (data_type*)self->buffer;
-        *ROW = self->height;
-        *COL = self->width;
-    }
-    void __as_nparray_##data_type##_ch2(data_type** NP_ARRAY_PTR, int* ROW, int* COL,int*PSZ) {
-        *NP_ARRAY_PTR = (data_type*)self->buffer;
-        *ROW = self->height;
-        *COL = self->width;
-        *PSZ = 2;
-    }
-    void __as_nparray_##data_type##_ch3(data_type** NP_ARRAY_PTR, int* ROW, int* COL,int*PSZ) {
-        *NP_ARRAY_PTR = (data_type*)self->buffer;
-        *ROW = self->height;
-        *COL = self->width;
-        *PSZ = 3;
-    }
-}
-%enddef // %define MAKE_IMGDATA_NPARRAY_CONVERT(data_type)
-
-MAKE_IMGDATA_NPARRAY_CONVERT(float)
-MAKE_IMGDATA_NPARRAY_CONVERT(uint16_t)
-MAKE_IMGDATA_NPARRAY_CONVERT(uint8_t)
-
 //extend for carray to convert numpy array to carray
 %define %NUMPY_TO_C_ARRAY(element_type)
     //input 
@@ -170,9 +137,10 @@ MAKE_IMGDATA_NPARRAY_CONVERT(uint8_t)
     %apply ( element_type* IN_ARRAY2, int DIM1, int DIM2 ) { (element_type* NP_ARRAY_PTR, int ROW,  int COL )}
     %apply ( element_type* IN_ARRAY3, int DIM1, int DIM2 , int DIM3) { (element_type* NP_ARRAY_PTR, int ROW,  int COL , int PSZ)}
     //output 
-    %apply (data_type** ARGOUTVIEW_ARRAY1, int* DIM1) { (data_type **NP_ARRAY_PTR , int *ROW) }
-    %apply (data_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) { (data_type **NP_ARRAY_PTR , int *ROW,int *COL) }
-    %apply (data_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) { (data_type **NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ) }
+
+    %apply (element_type** ARGOUTVIEW_ARRAY1, int* DIM1) { (element_type**NP_ARRAY_PTR , int *ROW) }
+    %apply (element_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) { (element_type**NP_ARRAY_PTR , int* ROW,int* COL) }
+    %apply (element_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) { (element_type**NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ) }
     //extend convert method
     %extend element_type##_ARRAY{
         static element_type##_ARRAY* from_nparray1d(element_type* NP_ARRAY_PTR, int ROW) {
