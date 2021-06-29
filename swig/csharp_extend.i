@@ -78,12 +78,6 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 	}
 %}
 
-%extend class type_name##_ARRAY {
-	void* VoidPtr(){
-		return (void*)self;
-	}
-}
-
 %enddef
 
 %CARRAY_ITEM_ASSIGN(float, float);

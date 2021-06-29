@@ -218,6 +218,32 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %NUMPY_TO_C_ARRAY(int16_t)
 %NUMPY_TO_C_ARRAY(int32_t)
 
+//TY_VECT_3F_ARRAY////////////
+%apply ( double* IN_ARRAY2, int DIM1, int DIM2 ) { (double* NP_ARRAY_PTR, int ROW,  int COL )}
+%extend TY_VECT_3F_ARRAY{
+%pythoncode %{
+    def as_nparray(self,arr_size):
+        cbuf = float_ARRAY.FromVoidPtr(self.VoidPtr())
+        return cbuf.as_nparray2d(arr_size,3)
+%}
+
+static TY_VECT_3F_ARRAY* from_nparray(double* NP_ARRAY_PTR, int ROW,  int COL) {
+    if (COL!=3){
+        printf( "from_nparray:invalid numpy format , column should be 3");
+        return NULL;
+    }
+    TY_VECT_3F* out = new TY_VECT_3F[ROW]();
+    int src_idx =0 ;
+    for(int idx=0; idx<ROW; idx++,src_idx+=3){
+        out[idx].x = NP_ARRAY_PTR[src_idx  ];
+        out[idx].y = NP_ARRAY_PTR[src_idx+1];
+        out[idx].z = NP_ARRAY_PTR[src_idx+2];
+    }
+    return (TY_VECT_3F_ARRAY*)out;
+}
+
+}// %extend TY_VECT_3F_ARRAY{
+
 
 %extend TY_IMAGE_DATA {
 %pythoncode %{

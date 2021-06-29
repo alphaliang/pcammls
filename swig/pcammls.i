@@ -31,6 +31,10 @@
     static element_type##_ARRAY * FromVoidPtr(void* t) {
         return (element_type##_ARRAY*)(t);
     }
+
+     void * VoidPtr() {
+        return (void*)self;
+    }
 }
 %enddef
 
