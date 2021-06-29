@@ -72,6 +72,10 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 			setitem(idx,value);
 		}
 	}
+
+	public global::System.IntPtr VoidPtr2(){
+		return (global::System.IntPtr)swigCPtr;
+	}
 %}
 
 %extend class type_name##_ARRAY {
@@ -79,8 +83,8 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 		return (void*)self;
 	}
 }
-%enddef
 
+%enddef
 
 %CARRAY_ITEM_ASSIGN(float, float);
 %CARRAY_ITEM_ASSIGN(uint8_t, byte);
@@ -89,13 +93,17 @@ ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
 %CARRAY_ITEM_ASSIGN(int32_t, int);
 %CARRAY_ITEM_ASSIGN(char, char);
 %CARRAY_ITEM_ASSIGN(TY_VECT_3F, TY_VECT_3F);
+%CARRAY_ITEM_ASSIGN(TY_PIXEL_DESC, TY_PIXEL_DESC);
 %CARRAY_ITEM_ASSIGN(TY_INTERFACE_INFO, TY_INTERFACE_INFO);
 %CARRAY_ITEM_ASSIGN(TY_DEVICE_BASE_INFO, TY_DEVICE_BASE_INFO);
 %CARRAY_ITEM_ASSIGN(TY_FEATURE_INFO, TY_FEATURE_INFO);
 %CARRAY_ITEM_ASSIGN(TY_ENUM_ENTRY, TY_ENUM_ENTRY);
 %CARRAY_ITEM_ASSIGN(TY_FRAME_DATA, TY_FRAME_DATA);
 %CARRAY_ITEM_ASSIGN(TY_IMAGE_DATA, TY_IMAGE_DATA);
-
+%CARRAY_ITEM_ASSIGN(TY_CAMERA_INTRINSIC, TY_CAMERA_INTRINSIC);
+%CARRAY_ITEM_ASSIGN(TY_CAMERA_EXTRINSIC, TY_CAMERA_EXTRINSIC);
+%CARRAY_ITEM_ASSIGN(TY_CAMERA_DISTORTION, TY_CAMERA_DISTORTION);
+%CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO, TY_CAMERA_CALIB_INFO);
 //ARRAY BUFFER ARGOUT ////////////////////////////////////////
 
 %include <std_vector.i>
@@ -117,8 +125,6 @@ namespace std
 %ARRAY_BUFFER_INPUT(TY_ENUM_ENTRY,entries);
 %ARRAY_BUFFER_INPUT(TY_IMAGE_DATA,depthImages);
 
-
-
 // ARRAYS  ////////////////////////////////////////////////////////////
 
 %define %CARRAY_ACCESS(typename)
@@ -136,6 +142,7 @@ namespace std
 	 return typename##_ARRAY.frompointer(ptr);
 	}
 %}
+
 %enddef 
 
 %CARRAY_ACCESS(float)
@@ -175,13 +182,15 @@ namespace std
 %CS_STRUCT_EXTEND(TY_DEVICE_BASE_INFO);
 %CS_STRUCT_EXTEND(TY_IMAGE_DATA);
 %CS_STRUCT_EXTEND(TY_INT_RANGE);
+%CS_STRUCT_EXTEND(TY_VECT_3F);
+%CS_STRUCT_EXTEND(TY_PIXEL_DESC);
+%CS_STRUCT_EXTEND(TY_TRIGGER_PARAM);
+%CS_STRUCT_EXTEND(TY_TRIGGER_PARAM_EX);
+%CS_STRUCT_EXTEND(TY_CAMERA_STATISTICS);
 %CS_STRUCT_EXTEND(TY_CAMERA_INTRINSIC);
 %CS_STRUCT_EXTEND(TY_CAMERA_EXTRINSIC);
 %CS_STRUCT_EXTEND(TY_CAMERA_DISTORTION);
 %CS_STRUCT_EXTEND(TY_CAMERA_CALIB_INFO);
-%CS_STRUCT_EXTEND(TY_TRIGGER_PARAM);
-%CS_STRUCT_EXTEND(TY_TRIGGER_PARAM_EX);
-%CS_STRUCT_EXTEND(TY_CAMERA_STATISTICS);
 
 
 %typemap(cstype) void* pStruct "System.IntPtr"
@@ -191,14 +200,15 @@ namespace std
 
 //return code to exception  //////////////////////////////////////////////////
 
-%typemap(cstype) TY_STATUS "void"
+%typemap(cstype) TY_STATUS "int"
 %typemap(csout) TY_STATUS {
 	int ret;
 	ret = $imcall;$excode
-	if (ret!=pcammls.TY_STATUS_OK){
-		var ex = new System.ComponentModel.Win32Exception(ret,string.Format("Failed with return code:{0}",ret));
-		throw ex;
-	}
+//	if (ret!=pcammls.TY_STATUS_OK){
+//		var ex = new System.ComponentModel.Win32Exception(ret,string.Format("Failed with return code:{0}",ret));
+//		throw ex;
+//	}
+    return ret;
 }
 
 %typemap(cstype) TY_STATUS errorID "int"

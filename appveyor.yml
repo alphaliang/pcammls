@@ -4,6 +4,7 @@ image:
 
 before_build:
   - git clone https://github.com/percipioxyz/camport3.git
+  - pip install numpy
 
 on_success:
   - echo success

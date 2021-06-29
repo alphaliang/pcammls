@@ -28,21 +28,10 @@ def select_device():
     dev = dev_list[selected_idx]
     return dev.iface.id, dev.id
 
-def decode_rgb(pixelFormat,image):
-    if pixelFormat == TY_PIXEL_FORMAT_YUYV:
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YUYV)
-    if pixelFormat == TY_PIXEL_FORMAT_YVYU: 
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YVYU)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GB:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGB2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(image, CV_LOAD_IMAGE_COLOR)
-    return image
-
 def fetch_frame_loop(handle):
     comps = TYGetComponentIDs(handle)
     TYEnableComponents(handle,TY_COMPONENT_DEPTH_CAM & comps)
-    TYEnableComponents(handle,TY_COMPONENT_RGB_CAM_LEFT & comps)
+    #TYEnableComponents(handle,TY_COMPONENT_RGB_CAM_LEFT & comps)
     #TYEnableComponents(handle,TY_COMPONENT_IR_CAM_LEFT)
     #TYEnableComponents(handle,TY_COMPONENT_IR_CAM_RIGHT)
     TYSetEnum(handle,TY_COMPONENT_DEPTH_CAM,TY_ENUM_IMAGE_MODE,TY_IMAGE_MODE_DEPTH16_640x480)
@@ -62,29 +51,18 @@ def fetch_frame_loop(handle):
     print("                 {}".format(depth_calib.intrinsic.data))
     print("                 {}".format(depth_calib.extrinsic.data))
     print("                 {}".format(depth_calib.distortion.data))
-
-    hasTriggerParam = TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM)
-    if hasTriggerParam == True:
-        trigger = TY_TRIGGER_PARAM()
-        trigger.mode = TY_TRIGGER_MODE_OFF #TY_TRIGGER_MODE_SLAVE:
-        print("Set trigger mode {}".format(trigger.mode))
-        TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, trigger, trigger.CSize())
-        if trigger.mode == TY_TRIGGER_MODE_SLAVE:
-            #for network only
-            hasResend = TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND)
-            if hasResend == True:
-                print('=== Open resend')
-                TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, True)
-            else:
-                print('=== Not support feature TY_BOOL_GVSP_RESEND')
-                
+    
+    depth_image_width  = TYGetInt(handle, TY_COMPONENT_DEPTH_CAM, TY_INT_WIDTH)
+    depth_image_height = TYGetInt(handle, TY_COMPONENT_DEPTH_CAM, TY_INT_HEIGHT)
+    print("Depth cam image size:{} - {}".format(depth_image_width, depth_image_height))
+    
+    p3d = TY_VECT_3F_ARRAY(depth_image_width*depth_image_height)
+    
     print('start cap')
     TYStartCapture(handle)
     img_index =0 
     while True:
         frame = TY_FRAME_DATA()
-		#if use the software trigger mode, need to call this API:TYSendSoftTrigger to trigger the cam device
-        #TYSendSoftTrigger(handle)
         try:
             TYFetchFrame(handle,frame.this,2000)
             images = frame.image
@@ -93,12 +71,12 @@ def fetch_frame_loop(handle):
                     continue
                 arr = img.as_nparray()
                 if img.componentID == TY_COMPONENT_DEPTH_CAM:
-                    print('Center depth value:{}'.format(arr[240][320]))
-                    depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
-                    cv2.imshow('depth',depthu8)
-                if img.componentID == TY_COMPONENT_RGB_CAM:
-                    arr = decode_rgb(img.pixelFormat,arr)
-                    cv2.imshow('color',arr)
+                    print('Center depth value:{}'.format(arr[depth_image_height/2][depth_image_width/2]))
+                    #Map depth image to point 3d
+                    TYMapDepthImageToPoint3d(depth_calib, depth_image_width, depth_image_height, uint16_t_ARRAY_FromVoidPtr(img.buffer).cast(), p3d)
+                    depth_center_offset=(depth_image_height+1)*depth_image_width/2
+                    print('Center p3d value:{} | {} | {}'.format(p3d[depth_center_offset].x, p3d[depth_center_offset].y, p3d[depth_center_offset].z))
+                    cv2.imshow('depth', arr)
             k = cv2.waitKey(10)
             if k==ord('q'): 
                 break
