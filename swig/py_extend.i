@@ -20,6 +20,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %}
 
 
+
 %typemap(check) uint32_t _POSITIVE_VALUE{
     if ($1 <= 0) {
         SWIG_exception_fail(SWIG_ValueError, "Expection: positive count value");
@@ -91,6 +92,17 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
 %apply _HANDLE* OUTPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE*}
+
+
+//http://swig.org/Doc4.0/Typemaps.html#Typemaps_pattern_matching
+//change TYISPRelease  calling conventions  to pass handle input
+%rename(TYISPRelease) TYISPRelease_org;
+%inline %{
+    void TYISPRelease_org(TY_ISP_HANDLE handle){
+        TYISPRelease(&handle);
+    }
+%}
+
 
 // Utils.h selectDevice  //////////////////////////////////////////////////
 %{

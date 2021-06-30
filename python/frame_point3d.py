@@ -3,6 +3,24 @@ import cv2
 import numpy
 import sys
 import os
+import open3d
+
+def depth2Point(depth_img, intrinsic):
+    fx = intrinsic[0]/2
+    fy = intrinsic[4]/2
+    cx = intrinsic[2]/2
+    cy = intrinsic[5]/2
+    points = []
+    for v in range(depth_img.shape[1]):
+        for u in range(depth_img.shape[0]):
+            z = depth_img[u, v]
+            if z == 0:
+                continue
+            x = (u - cx) * z / fx
+            y = (v - cy) * z / fy
+            points.append((x, y, numpy.float32(z)))
+    print(len(points))
+    return points
 
 def select_device():
     ''' a simple way to get device like original sdk  '''
@@ -56,11 +74,13 @@ def fetch_frame_loop(handle):
     depth_image_height = TYGetInt(handle, TY_COMPONENT_DEPTH_CAM, TY_INT_HEIGHT)
     print("Depth cam image size:{} - {}".format(depth_image_width, depth_image_height))
     
-    p3d = TY_VECT_3F_ARRAY(depth_image_width*depth_image_height)
+    # p3d = TY_VECT_3F_ARRAY(depth_image_width*depth_image_height)
     
     print('start cap')
     TYStartCapture(handle)
-    img_index =0 
+    img_index =0
+    vis = open3d.visualization.Visualizer()
+    vis.create_window()
     while True:
         frame = TY_FRAME_DATA()
         try:
@@ -71,12 +91,19 @@ def fetch_frame_loop(handle):
                     continue
                 arr = img.as_nparray()
                 if img.componentID == TY_COMPONENT_DEPTH_CAM:
-                    print('Center depth value:{}'.format(arr[depth_image_height/2][depth_image_width/2]))
+                    # print('Center depth value:{}'.format(arr[depth_image_height/2][depth_image_width/2]))
                     #Map depth image to point 3d
-                    TYMapDepthImageToPoint3d(depth_calib, depth_image_width, depth_image_height, uint16_t_ARRAY_FromVoidPtr(img.buffer).cast(), p3d)
+                    points = depth2Point(arr, depth_calib.intrinsic.data)
+                    p = open3d.geometry.PointCloud()
+                    p.points = open3d.utility.Vector3dVector(points)
+                    vis.add_geometry(p)
+                    vis.poll_events()
+                    vis.update_renderer()
+                    vis.remove_geometry(p)
+                    # TYMapDepthImageToPoint3d(depth_calib, depth_image_width, depth_image_height, uint16_t_ARRAY_FromVoidPtr(img.buffer).cast(), p3d)
                     depth_center_offset=(depth_image_height+1)*depth_image_width/2
-                    print('Center p3d value:{} | {} | {}'.format(p3d[depth_center_offset].x, p3d[depth_center_offset].y, p3d[depth_center_offset].z))
-                    cv2.imshow('depth', arr)
+                    # print('Center p3d value:{} | {} | {}'.format(p3d[depth_center_offset].x, p3d[depth_center_offset].y, p3d[depth_center_offset].z))
+                    # cv2.imshow('depth', arr)
             k = cv2.waitKey(10)
             if k==ord('q'): 
                 break
