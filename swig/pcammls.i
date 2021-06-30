@@ -22,8 +22,13 @@
 %define %C_ARRAY_BUFFER_DEF(element_type)
 %array_class(element_type, element_type##_ARRAY);
 %extend element_type##_ARRAY{
-    static element_type##_ARRAY * FromVoidPtr(void* t) {
-        return (element_type##_ARRAY*)(t);
+    static element_type##_ARRAY * FromVoidPtr(void* t,int size) {
+        element_type *p = new element_type[size];
+        element_type *src = (element_type *) t;
+        for(int idx=0;idx<size;idx++){
+            p[idx]=src[idx];
+        }
+        return (element_type##_ARRAY*)(p);
     }
 
      void * VoidPtr() {
@@ -145,5 +150,10 @@
 %include "TyIsp.h"
 %include "../sample/common/Utils.hpp"
 
+
+//for new version later
+#ifdef SWIGPYTHON                      
+//%include "../sample/common/BayerISP.hpp"
+#endif
 
 

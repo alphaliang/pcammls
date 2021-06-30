@@ -183,6 +183,26 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
             return (element_type##_ARRAY*)out;
         }
 
+        static void ptr_as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW,void * ptr, int row) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+        }
+
+        static void ptr_as_nparray2d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL ,
+                                      void *ptr,int row, int col) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+            *COL = col;
+        }
+    
+        static void ptr_as_nparray3d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,  int *PSZ,
+                                   void * ptr, int row, int col,int psz) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+            *COL = col;
+            *PSZ = psz;
+        }
+
         void as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW, int row) {
             *NP_ARRAY_PTR = self;
             *ROW = row;
@@ -202,6 +222,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
             *COL = col;
             *PSZ = psz;
         }
+
 
 %pythoncode %{
         
@@ -236,8 +257,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %extend TY_VECT_3F_ARRAY{
 %pythoncode %{
     def as_nparray(self,arr_size):
-        cbuf = float_ARRAY.FromVoidPtr(self.VoidPtr())
-        return cbuf.as_nparray2d(arr_size,3)
+        return float_ARRAY.ptr_as_nparray2d(self.VoidPtr(),arr_size,3)
 %}
 
 static TY_VECT_3F_ARRAY* from_nparray(double* NP_ARRAY_PTR, int ROW,  int COL) {
@@ -275,17 +295,16 @@ def as_nparray(self):
         return None
     pformat = self.pixelFormat
     if pformat in self.__U8C1:
-        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
-        return cbuf.as_nparray2d(self.height,self.width)
+        sz = self.height*self.width
+        return uint8_t_ARRAY.ptr_as_nparray2d(self.buffer,self.height,self.width)
     elif pformat  in self.__U8C2:
-        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
-        return cbuf.as_nparray3d(self.height,self.width,2)
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,2)
     elif pformat  in self.__U8C3:
-        cbuf = uint8_t_ARRAY.FromVoidPtr(self.buffer)
-        return cbuf.as_nparray3d(self.height,self.width,3)
+        sz = self.height*self.width*3
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,3)
     elif pformat  in self.__U16C1:
-        cbuf = uint16_t_ARRAY.FromVoidPtr(self.buffer)
-        return cbuf.as_nparray3d(self.height,self.width,1)
+        sz = self.height*self.width
+        return uint16_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,1)
     else:
         raise Exception('not supported format {}'.format(pformat))
     return None    
@@ -300,7 +319,5 @@ def as_nparray(self):
 
 %C_ARRAY_BUFFER_DEF(TY_ISP_FEATURE_INFO);
 %CARRAY_ITEM_ASSIGN(TY_ISP_FEATURE_INFO);
-
-
 
 
