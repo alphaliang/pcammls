@@ -17,15 +17,8 @@
 
 #define TY_STATIC_LIB 1
 
-#ifdef SWIGCSHARP
-%include "csharp_extend.i"
-#endif
-#ifdef SWIGPYTHON                      
-%include "py_extend.i"
-#endif
 
-
-
+//this macro may used in language extends include file 
 %define %C_ARRAY_BUFFER_DEF(element_type)
 %array_class(element_type, element_type##_ARRAY);
 %extend element_type##_ARRAY{
@@ -38,6 +31,15 @@
     }
 }
 %enddef
+
+
+#ifdef SWIGCSHARP
+%include "csharp_extend.i"
+#endif
+#ifdef SWIGPYTHON                      
+%include "py_extend.i"
+#endif
+
 
 %C_ARRAY_BUFFER_DEF(float);
 %C_ARRAY_BUFFER_DEF(int8_t);
