@@ -120,28 +120,28 @@ namespace pcammls_fetch_frame
                         var img = images[idx];
                         if(img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
                         {
-                            depth_pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer);
+                            depth_pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer, img.width*img.height);
                             depth_enable = true;
                         }
                         else if (img.componentID == SDK.TY_COMPONENT_RGB_CAM)
                         {
                             if(img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
                                 color_enable = true;
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
                                 color_enable = true;
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
@@ -150,7 +150,7 @@ namespace pcammls_fetch_frame
                                 SDK.TYISPProcessImage(color_isp_handle, img, out_buff);
                                 SDK.TYISPUpdateDevice(color_isp_handle);
 
-                                var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer);
+                                var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.width*img.height*3);
                                 color_enable = true;
                             }
                             else {
