@@ -1,6 +1,6 @@
 #------------
-#some device output is bayer format rgb .
-#we can use  softISP to convert image to rgb888 format for display.
+# some device output is bayer format rgb .
+# we can use  softISP to convert image to rgb888 format for display.
 #------------
 
 from pcammls import * 
@@ -17,7 +17,8 @@ def select_device():
         if argv[idx]=='-sn' and idx<len(argv)-1:
             sn = argv[idx+1]
             break
-    dev_list = selectDevice(TY_INTERFACE_ALL,sn,'',10)
+    dev_list = selectDevice(TY_INTERFACE_ALL,sn,'',20)
+    #TODO remove follow line
     print ('device found:')
     for idx in range(len(dev_list)):
         dev = dev_list[idx]
@@ -33,50 +34,84 @@ def select_device():
     dev = dev_list[selected_idx]
     return dev.iface.id, dev.id
 
-def int_list_2_buffer(lst):
+def isp_write_int_list_feature(handle , feat, lst):
     sz = len(lst)
     int_buf = int32_t_ARRAY(sz)
     for k in range(sz):
         int_buf[k] = lst[k]
     arr_size = 4*sz
     int8_buf = uint8_t_ARRAY.FromVoidPtr(int_buf.VoidPtr(),arr_size)
-    return int8_buf,arr_size
+    TYISPSetFeature(handle, feat, int8_buf.cast(), arr_size) 
 
-def float_list_2_buffer(lst):
+def isp_write_float_list_feature(handle , feat, lst):
     sz = len(lst)
     float_buf = float_ARRAY(sz)
     for k in range(sz):
         float_buf[k] = lst[k]
     arr_size = 4*sz
     int8_buf = uint8_t_ARRAY.FromVoidPtr(float_buf.VoidPtr(),arr_size)
-    return int8_buf,arr_size
+    TYISPSetFeature(handle, feat, int8_buf.cast(), arr_size) 
 
-def init_softisp(isp_handle):
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_DEBUG_LOG, 00); 
+def isp_read_int_list_feature(handle,feat,sz):
+    arr_sz = sz*4
+    cbuf = uint8_t_ARRAY(arr_sz)
+    TYISPGetFeature(handle,feat,cbuf.cast(),arr_sz)
+    int_buf = int32_t_ARRAY.FromVoidPtr(cbuf.VoidPtr(),sz)
+    res = []
+    for k in range(sz):
+        res.append(int_buf[k])
+    return res    
+
+def show_isp_supported_feat(handle):
+    cbuf=int32_t_ARRAY(1)
+    TYISPGetFeatureInfoListSize(handle,cbuf.cast())
+    sz = cbuf[0]
+    if sz<=0:
+        print('got 0 size')
+        return 
+    item_buf = TY_ISP_FEATURE_INFO_ARRAY(sz)
+    TYISPGetFeatureInfoList(handle, item_buf.cast(),sz)
+    for k in range(sz):
+        item = item_buf[k]
+        print('name:{} \t\ttype:{}'.format(item.name,item.value_type))
+
+def init_softisp(isp_handle,dev_handle):
+    #TYISPSetFeature(isp_handle, TY_ISP_FEATURE_DEBUG_LOG, 00); 
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_BLACK_LEVEL, 11);
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_BLACK_LEVEL_GAIN, 1.);
-    shading_buf = float_ARRAY(9)
-    uint8_arr,arr_size = float_list_2_buffer( [ 0.30890417098999026, 10.63355541229248, -6.433426856994629,
-                                                0.24413758516311646, 11.739893913269043, -8.148622512817383,
-                                                0.1255662441253662, 11.88359546661377, -7.865192413330078 ])
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_SHADING, uint8_arr.cast(), arr_size)
+    shading =  [0]*9 #default no shading correction.. 
+    isp_write_float_list_feature(isp_handle,TY_ISP_FEATURE_SHADING,shading)
     #shading center
-    uint8_arr,arr_size = int_list_2_buffer([640 , 480])
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_SHADING_CENTER, uint8_arr.cast(), arr_size)
+    isp_write_int_list_feature(isp_handle , TY_ISP_FEATURE_SHADING_CENTER, [640 , 480])
+    print('read center {}'.format(isp_read_int_list_feature(isp_handle , TY_ISP_FEATURE_SHADING_CENTER,2)))
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CCM_ENABLE, 0);#we are not using ccm by default
-    #TODO: #TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CAM_DEV_HANDLE, (uint8_t*)&dev_handle, sizeof(dev_handle))
+    #set TY_ISP_FEATURE_CAM_DEV_HANDLE by helper function  TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CAM_DEV_HANDLE, (uint8_t*)&dev_handle, sizeof(dev_handle));
+    PY_TYISPSetDeviceHandle(isp_handle,dev_handle)
     #set compoent
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CAM_DEV_COMPONENT, TY_COMPONENT_RGB_CAM)
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_GAMMA, 1.);
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_AUTOBRIGHT, 1)#enable auto bright control
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_ENABLE_AUTO_EXPOSURE_GAIN, 0) #disable by default
-    uint8_arr,arr_size = int_list_2_buffer([1280 , 960])
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_IMAGE_SIZE, uint8_arr.cast(), arr_size);
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_INPUT_RESAMPLE_SCALE, 1.);
+    isp_write_int_list_feature(isp_handle , TY_ISP_FEATURE_IMAGE_SIZE , [1280 , 960])
+    #print('read iamge size {}'.format(isp_read_int_list_feature(isp_handle , TY_ISP_FEATURE_IMAGE_SIZE,2)))
+    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_INPUT_RESAMPLE_SCALE, 1);
     TYISPSetFeature(isp_handle, TY_ISP_FEATURE_ENABLE_AUTO_WHITEBALANCE, 1); #eanble auto white balance
     #gain range
-    uint8_arr,arr_size = int_list_2_buffer([15 , 255])
-    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_AUTO_GAIN_RANGE, uint8_arr.cast(), arr_size);
+    int_range = TY_INT_RANGE()
+    TYGetIntRange(dev_handle, TY_COMPONENT_RGB_CAM, TY_INT_R_GAIN,  int_range.this );
+    print('cam gain range {} {}'.format( int_range.min , int_range.max))
+    isp_write_int_list_feature(isp_handle , TY_ISP_FEATURE_AUTO_GAIN_RANGE, [int_range.min , int_range.max])
+    TYSetInt(dev_handle, TY_COMPONENT_RGB_CAM , TY_INT_R_GAIN,int_range.min);
+    TYSetInt(dev_handle, TY_COMPONENT_RGB_CAM , TY_INT_G_GAIN,int_range.min);
+    TYSetInt(dev_handle, TY_COMPONENT_RGB_CAM , TY_INT_B_GAIN,int_range.min);
+    TYGetIntRange(dev_handle, TY_COMPONENT_RGB_CAM, TY_INT_EXPOSURE_TIME,  int_range.this );
+    print('cam exposure range {} {}'.format( int_range.min , int_range.max))
+    int_range.max = int((int_range.max - int_range.min) * 0.7 + int_range.min) #limit range
+    #exposure range (actual supported range should read from device)
+    TYISPSetFeature(isp_handle, TY_ISP_FEATURE_ENABLE_AUTO_EXPOSURE_GAIN, 1) 
+    isp_write_int_list_feature(isp_handle , TY_ISP_FEATURE_AUTO_EXPOSURE_RANGE, [ int_range.min, int_range.max])
+    #TYSetInt(dev_handle, TY_COMPONENT_RGB_CAM_LEFT , TY_INT_EXPOSURE_TIME,int_range.max);
+
 
 def decode_rgb(isp_handle,image):
     pixelFormat = image.pixelFormat
@@ -93,13 +128,10 @@ def decode_rgb(isp_handle,image):
     if not isp_handle:
         print('invalid isp handle')
         return cv2.cvtColor(arr,cv2.COLOR_BayerGB2BGR)
-    print('w , h: {} {}'.format(image.width,image.height))
     img_out = TY_IMAGE_DATA() 
-    cbuf = uint8_t_ARRAY(image.width*image.height*3)#be care this buffer will be recycle when exiting this method
-    img_out.buffer =cbuf;
-    img_out.size = image.width*image.height*3
-    img_out.bufferSize = image.width*image.height*3
-    img_out.pixelFormat = TY_PIXEL_FORMAT_BGR;
+    buf_sz = image.width*image.height*3
+    cbuf = uint8_t_ARRAY(buf_sz)#be care this buffer will be recycle when exiting this method
+    img_out = TYInitImageData(buf_sz,cbuf.VoidPtr(),image.width,image.height) #create output image 
     TYISPProcessImage(isp_handle,image,img_out)
     arr = numpy.copy(img_out.as_nparray()) # need copy for buffer . otherwise you need keep cbuf handle 
     return arr
@@ -107,7 +139,8 @@ def decode_rgb(isp_handle,image):
 
 def fetch_frame_loop(handle):
     isp_handle = TYISPCreate()
-    init_softisp(isp_handle)
+    show_isp_supported_feat(isp_handle)
+    init_softisp(isp_handle,handle)
     comps = TYGetComponentIDs(handle)
     TYEnableComponents(handle,TY_COMPONENT_RGB_CAM_LEFT & comps)
     sz = TYGetFrameBufferSize(handle)
@@ -155,8 +188,10 @@ def fetch_frame_loop(handle):
             k = cv2.waitKey(10)
             if k==ord('q'): 
                 break
+            TYISPUpdateDevice(isp_handle);
             TYEnqueueBuffer(handle,frame.userBuffer,frame.bufferSize)
-            print('{} cap ok'.format(img_index))
+            if img_index%10 == 0:
+                print('frame {} cap ok'.format(img_index))
             img_index+=1
         except Exception as err:
             print (err)

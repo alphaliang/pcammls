@@ -321,3 +321,11 @@ def as_nparray(self):
 %CARRAY_ITEM_ASSIGN(TY_ISP_FEATURE_INFO);
 
 
+//isp helper functions
+%inline %{
+    TY_STATUS PY_TYISPSetDeviceHandle(TY_ISP_HANDLE isp_handle, TY_DEV_HANDLE dev_handle){
+        return TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CAM_DEV_HANDLE, (uint8_t*)&dev_handle, sizeof(dev_handle));
+    }
+%}
+
+

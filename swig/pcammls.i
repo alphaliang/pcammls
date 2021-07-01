@@ -143,6 +143,15 @@
 
 %}
 
+//help functions
+%inline %{
+    int CPointerSize(){
+        void* x = NULL;
+        return sizeof(x);
+    }
+
+%}
+
 
 %include "TYApi.h"
 %include "TYImageProc.h"
