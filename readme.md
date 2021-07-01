@@ -12,8 +12,6 @@ platform |   language      | status
 windows |python          | ok
 windows |C# .net fx4.0   | ok
 liunx   |python          | ok
-linux   |C# mono         | 未测试
-linux   | java           | TODO
 
 采用SWIG对原厂sdk的C语言库封装，生成各语言对应接口
 接口操作尽量保持与原API一致。
@@ -26,8 +24,9 @@ linux   | java           | TODO
 目前版本对应原Camport3 v3.3.1版本
 ## 预编译版本下载
 预编译版本包含库： 
-windows python3 +  c# .net4.0
-linux x64 python2
+- windows：python3 +  c# .net4.0
+- linux：x64 python2
+
 https://github.com/alphaliang/pcammls/releases
 
 ## 手工编译
@@ -41,9 +40,10 @@ https://cmake.org/   cmake3.15+
 https://github.com/percipioxyz/camport3  camport3
 
 
-需先配置 cmake 变量 CAMPORT_DIR 指向 camport3 sdk所在位置
+需先配置 cmake 变量 CAMPORT\_DIR 指向 camport3 sdk所在位置
 
-配置CAMPORT_ARCH（或留空）以设置对应lib进行跨平台编译
+配置CAMPORT\_ARCH（留空为平台默认值）以设置对应lib进行跨平台编译。
+ARCH名称参考camport3库/lib/路径中对应名称（无lib前缀）
 
 ## PYTHON使用方法
 代码片段：
@@ -84,12 +84,13 @@ def fetch_frame_loop(handle):
             print (err)
     TYStopCapture(handle)
 ```
-其他常见调用参考 test.py 和 fetch_frame.py 文件
+其他常见调用参考 python 路径下示例文件。
+扩展功能或者修改调用可修改swig路径下py\_extend.i文件
 
 ### python与原sdk区别 
 * 原返回状态值封装为python异常
 * TYGetXX 类型api改用返回值获取值
-* 图像可输出为numpy array
+* 图像buffer可输出为numpy array , numpy array也可转回c buffer
 
 ## C#使用方法
 代码片段：
@@ -119,7 +120,8 @@ static void Main(string[] args)
 }
 ```
 
-其他常见调用参考test.cs 和frame_fetch.cs文件
+其他常见调用参考csharp 路径下文件.
+扩展功能或者修改调用可修改swig路径下csharp\_extend.i文件
 
 ### csharp版本与原sdk区别
  * 原返回状态值封装为异常
