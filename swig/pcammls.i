@@ -17,25 +17,39 @@
 
 #define TY_STATIC_LIB 1
 
-#ifdef SWIGPYTHON                      
-%include "py_extend.i"
-#endif
 
-#ifdef SWIGCSHARP
-%include "csharp_extend.i"
-#endif
-
+//this macro may used in language extends include file 
 %define %C_ARRAY_BUFFER_DEF(element_type)
 %array_class(element_type, element_type##_ARRAY);
 %extend element_type##_ARRAY{
-    static element_type##_ARRAY * FromVoidPtr(void* t) {
-        return (element_type##_ARRAY*)(t);
+    static element_type##_ARRAY * FromVoidPtr(void* t,int size) {
+        element_type *p = new element_type[size];
+        element_type *src = (element_type *) t;
+        for(int idx=0;idx<size;idx++){
+            p[idx]=src[idx];
+        }
+        return (element_type##_ARRAY*)(p);
+    }
+
+     void * VoidPtr() {
+        return (void*)self;
     }
 }
 %enddef
 
+
+#ifdef SWIGCSHARP
+%include "csharp_extend.i"
+#endif
+#ifdef SWIGPYTHON                      
+%include "py_extend.i"
+#endif
+
+
 %C_ARRAY_BUFFER_DEF(float);
+%C_ARRAY_BUFFER_DEF(int8_t);
 %C_ARRAY_BUFFER_DEF(uint8_t);
+%C_ARRAY_BUFFER_DEF(int16_t);
 %C_ARRAY_BUFFER_DEF(uint16_t);
 %C_ARRAY_BUFFER_DEF(uint32_t);
 %C_ARRAY_BUFFER_DEF(int32_t);
@@ -106,26 +120,35 @@
 %feature("director") EventCallback;
 %inline %{
 
-	class EventCallback{
-	public:
-		virtual ~EventCallback() {}
-		virtual void run(TY_EVENT_INFO* info) {};
+    class EventCallback{
+    public:
+        virtual ~EventCallback() {}
+        virtual void run(TY_EVENT_INFO* info) {};
 
-		TY_STATUS set_to(TY_DEV_HANDLE handle) {
-			return TYRegisterEventCallback(handle, __ty_event_callback, this);
-		}
+        TY_STATUS set_to(TY_DEV_HANDLE handle) {
+            return TYRegisterEventCallback(handle, __ty_event_callback, this);
+        }
 
-	private:
+    private:
 
-		static void __ty_event_callback (TY_EVENT_INFO* info, void* userdata) {
-			EventCallback* ptr = (EventCallback*)(userdata);
-			if (ptr == nullptr) {
-				return;
-			}
-			ptr->run(info);
-		}
+        static void __ty_event_callback (TY_EVENT_INFO* info, void* userdata) {
+            EventCallback* ptr = (EventCallback*)(userdata);
+            if (ptr == nullptr) {
+                return;
+            }
+            ptr->run(info);
+        }
 
-	};
+    };
+
+%}
+
+//help functions
+%inline %{
+    int CPointerSize(){
+        void* x = NULL;
+        return sizeof(x);
+    }
 
 %}
 
@@ -136,5 +159,10 @@
 %include "TyIsp.h"
 %include "../sample/common/Utils.hpp"
 
+
+//for new version later
+#ifdef SWIGPYTHON                      
+//%include "../sample/common/BayerISP.hpp"
+#endif
 
 

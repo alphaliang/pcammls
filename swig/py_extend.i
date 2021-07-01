@@ -14,10 +14,11 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
         PyList_Append(out_list, temp);
         Py_DECREF(temp);
     }
-	return out_list;
+    return out_list;
 }
 
 %}
+
 
 
 %typemap(check) uint32_t _POSITIVE_VALUE{
@@ -30,22 +31,22 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 //for carray & buffer///////////////////////////////////////////////
 
 %typemap(check) int index{
-	if ($1 < 0) {
-		SWIG_exception_fail(SWIG_IndexError, "Expection: negative index");
+    if ($1 < 0) {
+        SWIG_exception_fail(SWIG_IndexError, "Expection: negative index");
    }
 }
 
 %typemap(out) float [ANY] {
-	int i;
-	$result = PyList_New($1_dim0);
-	for (i = 0; i < $1_dim0; i++) {
-		PyObject* o = SWIG_From_double((double)$1[i]);
-		PyList_SetItem($result, i, o);
-	}
+    int i;
+    $result = PyList_New($1_dim0);
+    for (i = 0; i < $1_dim0; i++) {
+        PyObject* o = SWIG_From_double((double)$1[i]);
+        PyList_SetItem($result, i, o);
+    }
 }
 
 %typemap(out) TY_IMAGE_DATA [ANY] {
-	$result = _CreatePyList($1, $1_dim0,$1_descriptor);
+    $result = _CreatePyList($1, $1_dim0,$1_descriptor);
 }
 
 %define %CARRAY_ITEM_ASSIGN(type_name)
@@ -72,9 +73,10 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_DISTORTION);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO);
 
+
 //PVOID HANDLE /////////////////////////////////////////////////////////////////////////////
 %{
-	typedef void* _HANDLE;
+    typedef void* _HANDLE;
 %}
 
 
@@ -91,9 +93,20 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
 %apply _HANDLE* OUTPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE*}
 
+
+//http://swig.org/Doc4.0/Typemaps.html#Typemaps_pattern_matching
+//change TYISPRelease  calling conventions  to pass handle input
+%rename(TYISPRelease) TYISPRelease_org;
+%inline %{
+    void TYISPRelease_org(TY_ISP_HANDLE handle){
+        TYISPRelease(&handle);
+    }
+%}
+
+
 // Utils.h selectDevice  //////////////////////////////////////////////////
 %{
-	#include <vector>
+    #include <vector>
 %}
 
 %typemap(in, numinputs = 0) std::vector<TY_DEVICE_BASE_INFO>& out (std::vector<TY_DEVICE_BASE_INFO> buff) {
@@ -102,19 +115,19 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 
 %typemap(argout) std::vector<TY_DEVICE_BASE_INFO>& out{//return a list of  TY_DEVICE_BASE_INFO
     std::vector< TY_DEVICE_BASE_INFO > &vec =*$1; 
-	PyObject* out_list = _CreatePyList(&vec[0], vec.size(),SWIGTYPE_p_TY_DEVICE_BASE_INFO);
+    PyObject* out_list = _CreatePyList(&vec[0], vec.size(),SWIGTYPE_p_TY_DEVICE_BASE_INFO);
     $result = SWIG_Python_AppendOutput($result, out_list);
 }
 
 //return code to exception//////////////////////////////////////////////////////////
 
 %typemap(out) TY_STATUS {
-	if ($1!=TY_STATUS_OK){
-		char msg_buff[1024];
-		sprintf(msg_buff,"method $symname result got error code :%d",$1);
-		SWIG_exception_fail(SWIG_ArgError(SWIG_RuntimeError), msg_buff); 
-	}
-	$result = SWIG_Py_Void();	
+    if ($1!=TY_STATUS_OK){
+        char msg_buff[1024];
+        sprintf(msg_buff,"method $symname result got error code :%d",$1);
+        SWIG_exception_fail(SWIG_ArgError(SWIG_RuntimeError), msg_buff); 
+    }
+    $result = SWIG_Py_Void();    
 }
 
 //numpy////////////////////////////////////////////////
@@ -130,38 +143,140 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
   import_array();
 %}
 
+//extend for carray to convert numpy array to carray
+%define %NUMPY_TO_C_ARRAY(element_type)
+    //input 
+    %apply ( element_type* IN_ARRAY1, int DIM1) { (element_type* NP_ARRAY_PTR, int ROW)}
+    %apply ( element_type* IN_ARRAY2, int DIM1, int DIM2 ) { (element_type* NP_ARRAY_PTR, int ROW,  int COL )}
+    %apply ( element_type* IN_ARRAY3, int DIM1, int DIM2 , int DIM3) { (element_type* NP_ARRAY_PTR, int ROW,  int COL , int PSZ)}
+    //output 
 
-%define MAKE_NPARRAY_CONVERT(data_type)
-%apply (data_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) {
-	(data_type **NP_ARRAY_PTR , int *ROW,int *COL)
-}
-%apply (data_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) {
-	(data_type **NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ)
-}
-%extend struct TY_IMAGE_DATA {
-	void __as_nparray_##data_type##_ch1(data_type** NP_ARRAY_PTR, int* ROW, int* COL) {
-		*NP_ARRAY_PTR = (data_type*)self->buffer;
-		*ROW = self->height;
-		*COL = self->width;
-	}
-	void __as_nparray_##data_type##_ch2(data_type** NP_ARRAY_PTR, int* ROW, int* COL,int*PSZ) {
-		*NP_ARRAY_PTR = (data_type*)self->buffer;
-		*ROW = self->height;
-		*COL = self->width;
-		*PSZ = 2;
-	}
-	void __as_nparray_##data_type##_ch3(data_type** NP_ARRAY_PTR, int* ROW, int* COL,int*PSZ) {
-		*NP_ARRAY_PTR = (data_type*)self->buffer;
-		*ROW = self->height;
-		*COL = self->width;
-		*PSZ = 3;
-	}
-}
-%enddef // %define MAKE_NPARRAY_CONVERT(data_type)
+    %apply (element_type** ARGOUTVIEW_ARRAY1, int* DIM1) { (element_type**NP_ARRAY_PTR , int *ROW) }
+    %apply (element_type** ARGOUTVIEW_ARRAY2, int* DIM1, int* DIM2) { (element_type**NP_ARRAY_PTR , int* ROW,int* COL) }
+    %apply (element_type** ARGOUTVIEW_ARRAY3, int* DIM1, int* DIM2,int* DIM3) { (element_type**NP_ARRAY_PTR , int *ROW,int *COL,int *PSZ) }
+    //extend convert method
+    %extend element_type##_ARRAY{
+        static element_type##_ARRAY* from_nparray1d(element_type* NP_ARRAY_PTR, int ROW) {
+            int sz= ROW;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
+        }
 
-MAKE_NPARRAY_CONVERT(float)
-MAKE_NPARRAY_CONVERT(uint16_t)
-MAKE_NPARRAY_CONVERT(uint8_t)
+        static element_type##_ARRAY* from_nparray2d(element_type* NP_ARRAY_PTR, int ROW,  int COL) {
+            int sz= ROW*COL;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
+        }
+
+        static element_type##_ARRAY* from_nparray3d(element_type* NP_ARRAY_PTR, int ROW,  int COL, int PSZ) {
+            int sz= ROW*COL*PSZ;
+            element_type* out = new element_type[sz]();
+            for(int idx=0;idx<sz;idx++){
+                out[idx] = NP_ARRAY_PTR[idx];
+            }
+            return (element_type##_ARRAY*)out;
+        }
+
+        static void ptr_as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW,void * ptr, int row) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+        }
+
+        static void ptr_as_nparray2d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL ,
+                                      void *ptr,int row, int col) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+            *COL = col;
+        }
+    
+        static void ptr_as_nparray3d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,  int *PSZ,
+                                   void * ptr, int row, int col,int psz) {
+            *NP_ARRAY_PTR = (element_type*)ptr;
+            *ROW = row;
+            *COL = col;
+            *PSZ = psz;
+        }
+
+        void as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW, int row) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+        }
+
+        void as_nparray2d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,
+                                   int row, int col) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+            *COL = col;
+        }
+    
+        void as_nparray3d (element_type** NP_ARRAY_PTR, int* ROW,  int* COL,  int *PSZ,
+                                   int row, int col,int psz) {
+            *NP_ARRAY_PTR = self;
+            *ROW = row;
+            *COL = col;
+            *PSZ = psz;
+        }
+
+
+%pythoncode %{
+        
+            @staticmethod
+            def from_nparray(np_array):
+                dim = np_array.ndim
+                if dim==3:
+                    return element_type##_ARRAY.from_nparray3d(np_array)
+                elif dim==2: 
+                    return element_type##_ARRAY.from_nparray2d(np_array)
+                elif dim==1: 
+                    return element_type##_ARRAY.from_nparray1d(np_array)
+                else:
+                    raise Exception('not support format')
+
+        %}// %pythoncode %{
+    } //extend array
+
+
+%enddef
+
+%NUMPY_TO_C_ARRAY(float)
+%NUMPY_TO_C_ARRAY(uint8_t)
+%NUMPY_TO_C_ARRAY(uint16_t)
+%NUMPY_TO_C_ARRAY(uint32_t)
+%NUMPY_TO_C_ARRAY(int8_t)
+%NUMPY_TO_C_ARRAY(int16_t)
+%NUMPY_TO_C_ARRAY(int32_t)
+
+//TY_VECT_3F_ARRAY////////////
+%apply ( double* IN_ARRAY2, int DIM1, int DIM2 ) { (double* NP_ARRAY_PTR, int ROW,  int COL )}
+%extend TY_VECT_3F_ARRAY{
+%pythoncode %{
+    def as_nparray(self,arr_size):
+        return float_ARRAY.ptr_as_nparray2d(self.VoidPtr(),arr_size,3)
+%}
+
+static TY_VECT_3F_ARRAY* from_nparray(double* NP_ARRAY_PTR, int ROW,  int COL) {
+    if (COL!=3){
+        printf( "from_nparray:invalid numpy format , column should be 3");
+        return NULL;
+    }
+    TY_VECT_3F* out = new TY_VECT_3F[ROW]();
+    int src_idx =0 ;
+    for(int idx=0; idx<ROW; idx++,src_idx+=3){
+        out[idx].x = NP_ARRAY_PTR[src_idx  ];
+        out[idx].y = NP_ARRAY_PTR[src_idx+1];
+        out[idx].z = NP_ARRAY_PTR[src_idx+2];
+    }
+    return (TY_VECT_3F_ARRAY*)out;
+}
+
+}// %extend TY_VECT_3F_ARRAY{
+
 
 %extend TY_IMAGE_DATA {
 %pythoncode %{
@@ -172,29 +287,45 @@ __U8C3 = [TY_PIXEL_FORMAT_RGB,TY_PIXEL_FORMAT_BGR]
 __U16C1 = [TY_PIXEL_FORMAT_DEPTH16]
 
 def as_nparray(self):
-	'''
-	convert image to numpy array
-	*** YOU SHOULD COPY DATA TO YOUR OWN ARRAY BEFORE invoking Enqueuebuffer  ***
-	'''
-	if self.buffer==None or self.width<=0 or self.height<=0:
-		return None
-	pformat = self.pixelFormat
-	if pformat in self.__U8C1:
-		return self.__as_nparray_uint8_t_ch1()
-	elif pformat  in self.__U8C2:
-		return self.__as_nparray_uint8_t_ch2()
-	elif pformat  in self.__U8C3:
-		return self.__as_nparray_uint8_t_ch3()
-	elif pformat  in self.__U16C1:
-		return self.__as_nparray_uint16_t_ch1()
-	else:
-		raise Exception('not supported format {}'.format(pformat))
-	return None	
+    '''
+    convert image to numpy array
+    *** YOU SHOULD COPY DATA TO YOUR OWN ARRAY BEFORE invoking Enqueuebuffer  ***
+    '''
+    if self.buffer==None or self.width<=0 or self.height<=0:
+        return None
+    pformat = self.pixelFormat
+    if pformat in self.__U8C1:
+        sz = self.height*self.width
+        return uint8_t_ARRAY.ptr_as_nparray2d(self.buffer,self.height,self.width)
+    elif pformat  in self.__U8C2:
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,2)
+    elif pformat  in self.__U8C3:
+        sz = self.height*self.width*3
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,3)
+    elif pformat  in self.__U16C1:
+        sz = self.height*self.width
+        return uint16_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,1)
+    else:
+        raise Exception('not supported format {}'.format(pformat))
+    return None    
 %}
 }//endof  %extend TY_IMAGE_DATA 
 
-#endif
+#endif //WITH_NUMPY
 
 
+//ISP////////////////////////////////////////////////
+
+
+%C_ARRAY_BUFFER_DEF(TY_ISP_FEATURE_INFO);
+%CARRAY_ITEM_ASSIGN(TY_ISP_FEATURE_INFO);
+
+
+//isp helper functions
+%inline %{
+    TY_STATUS PY_TYISPSetDeviceHandle(TY_ISP_HANDLE isp_handle, TY_DEV_HANDLE dev_handle){
+        return TYISPSetFeature(isp_handle, TY_ISP_FEATURE_CAM_DEV_HANDLE, (uint8_t*)&dev_handle, sizeof(dev_handle));
+    }
+%}
 
 

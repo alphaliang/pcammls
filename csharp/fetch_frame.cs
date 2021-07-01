@@ -94,7 +94,7 @@ namespace pcammls_fetch_frame
                         var img = images[idx];
                         if(img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
                         {
-                            var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer);
+                            var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer, img.size / 2);
                             IntPtr pt = pixel_arr.VoidPtr2();
 
                             int offset = img.width * img.height / 2 + img.width / 2;
@@ -107,7 +107,7 @@ namespace pcammls_fetch_frame
                             pix.y = (short)(img.height / 2);
                             pix.depth = distance;
 
-                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
+                            //SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
                             Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", distance));
                             Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d.x, p3d.y, p3d.z));
                         }
@@ -115,7 +115,7 @@ namespace pcammls_fetch_frame
                         {
                             if(img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
 
@@ -127,7 +127,7 @@ namespace pcammls_fetch_frame
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
 
@@ -139,7 +139,7 @@ namespace pcammls_fetch_frame
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer);
+                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
@@ -148,7 +148,7 @@ namespace pcammls_fetch_frame
                                 SDK.TYISPProcessImage(color_isp_handle, img, out_buff);
                                 SDK.TYISPUpdateDevice(color_isp_handle);
 
-                                var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer);
+                                var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.size * 3);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
                                 byte b = color_pixel_arr[offset];
