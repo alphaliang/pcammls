@@ -96,7 +96,7 @@ namespace pcammls_test
                 {SDK.TY_ENUM_IMAGE_MODE,"TY_ENUM_IMAGE_MODE" },
                 {SDK.TY_STRUCT_CAM_INTRINSIC,"TY_STRUCT_CAM_INTRINSIC" },
                 {SDK.TY_STRUCT_CAM_DISTORTION,"TY_STRUCT_CAM_DISTORTION" },
-                {SDK.TY_STRUCT_EXTRINSIC_TO_LEFT_IR,"TY_STRUCT_EXTRINSIC_TO_LEFT_IR" },
+                {SDK.TY_STRUCT_EXTRINSIC_TO_IR_LEFT,"TY_STRUCT_EXTRINSIC_TO_IR_LEFT" },
             };
             foreach (var comp in comp_list)
             {
@@ -143,7 +143,7 @@ namespace pcammls_test
                             var arr = intri.data;
                             DisplayArray(arr, 9);
                         }
-                        if (SDK.TY_STRUCT_EXTRINSIC_TO_LEFT_IR == feat.Key)
+                        if (SDK.TY_STRUCT_EXTRINSIC_TO_IR_LEFT == feat.Key)
                         {
                             TY_CAMERA_EXTRINSIC intri = new TY_CAMERA_EXTRINSIC();
                             SDK.TYGetStruct(handle, comp.Key, feat.Key, intri.getCPtr(), intri.CSize());
