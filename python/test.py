@@ -87,7 +87,7 @@ def show_features(dev_handle):
     #try to show some feature
     features = {}
     features[TY_STRUCT_CAM_INTRINSIC       ] = 'TY_STRUCT_CAM_INTRINSIC'  
-    features[TY_STRUCT_EXTRINSIC_TO_LEFT_IR] = 'TY_STRUCT_EXTRINSIC_TO_LEFT_IR'
+    features[TY_STRUCT_EXTRINSIC_TO_IR_LEFT] = 'TY_STRUCT_EXTRINSIC_TO_IR_LEFT'
     features[TY_STRUCT_CAM_DISTORTION      ] = 'TY_STRUCT_CAM_DISTORTION'
     features[TY_STRUCT_CAM_CALIB_DATA      ] = 'TY_STRUCT_CAM_CALIB_DATA'
     features[TY_INT_PERSISTENT_IP          ] = 'TY_INT_PERSISTENT_IP'
