@@ -21,7 +21,7 @@ liunx   |python          | ok
 2. win10 + c# .net4.0 + vs2019 + swig4.0.0
 3. ubuntu16 + python2.7 + swig4.0.0
  
-目前版本对应原Camport3 v3.3.1版本
+目前版本对应原Camport3 v3.5.11版本
 ## 预编译版本下载
 预编译版本包含库： 
 - windows：python3 +  c# .net4.0
@@ -33,7 +33,7 @@ https://github.com/alphaliang/pcammls/releases
 
 依赖库&工具：
 
-http://www.swig.org/  swig
+http://www.swig.org/  swig4.0.0
 
 https://cmake.org/   cmake3.15+
 
