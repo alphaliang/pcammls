@@ -102,7 +102,18 @@ else(MSVC)
 endif(MSVC)
 
 get_property(tylib_file TARGET tycam PROPERTY IMPORTED_LOCATION)
-install(FILES ${tylib_file} DESTINATION "${TARGET_LANGUAGE}")
+if (UNIX)
+    install(FILES ${all_so_ext} DESTINATION "${TARGET_LANGUAGE}")
+    get_filename_component(tylib_path ${tylib_file} DIRECTORY) 
+    #copy all so file to install path
+    file (GLOB all_so_ext ${tylib_path}/*.so )
+    file (GLOB all_so_with_ver ${tylib_path}/*.so.* )
+    install(FILES ${all_so_ext} DESTINATION "${TARGET_LANGUAGE}")
+    install(FILES ${all_so_with_ver} DESTINATION "${TARGET_LANGUAGE}")
+else(UNIX)
+    install(FILES ${tylib_file} DESTINATION "${TARGET_LANGUAGE}")
+endif(UNIX)
+
 
 
 ##################################################
