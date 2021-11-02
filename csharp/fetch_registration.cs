@@ -201,10 +201,12 @@ namespace pcammls_fetch_frame
                 IntPtr dev_handle = new IntPtr();
                 IntPtr iface_handle = new IntPtr();
                 SDK.TYOpenInterface(dev_info.iface.id, ref iface_handle);
-                SDK.TYOpenDevice(iface_handle, dev_info.id, ref dev_handle);
+
+                IntPtr errCode = IntPtr.Zero;
+                SDK.TYOpenDevice(iface_handle, dev_info.id, ref dev_handle,  ref errCode);
 
                 FetchFrameLoop(dev_handle);
-                SDK.TYCloseDevice(dev_handle);
+                SDK.TYCloseDevice(dev_handle, false);
                 SDK.TYCloseInterface(iface_handle);
             }
             catch (System.ComponentModel.Win32Exception ex)

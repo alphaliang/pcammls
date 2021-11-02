@@ -158,8 +158,8 @@ namespace std
 
 
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
-%apply void** INPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE*}
-%apply void* INPUT{TY_INTERFACE_HANDLE , TY_DEV_HANDLE  , TY_ISP_HANDLE}
+%apply void** INPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE* , TY_FW_ERRORCODE*}
+%apply void* INPUT{TY_INTERFACE_HANDLE , TY_DEV_HANDLE  , TY_ISP_HANDLE , TY_FW_ERRORCODE}
 
 
 //STRUCT //////////////////////////////////////////////////
@@ -187,10 +187,15 @@ namespace std
 %CS_STRUCT_EXTEND(TY_CAMERA_CALIB_INFO);
 
 
+%typemap(cstype) int32_t* outFwErrorcode "System.IntPtr"
+%typemap(imtype) int32_t* outFwErrorcode "System.IntPtr"
+%typemap(ctype) void* outFwErrorcode "void *"
+%typemap(csin) void* outFwErrorcode %{  $csinput %}
 %typemap(cstype) void* pStruct "System.IntPtr"
 %typemap(imtype) void* pStruct "System.IntPtr"
 %typemap(ctype) void* pStruct "void *"
 %typemap(csin) void* pStruct %{  $csinput %}
+
 
 //return code to exception  //////////////////////////////////////////////////
 
