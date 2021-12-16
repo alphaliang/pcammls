@@ -106,8 +106,9 @@ namespace pcammls_fetch_frame
                             pix.x = (short)(img.width / 2);
                             pix.y = (short)(img.height / 2);
                             pix.depth = distance;
-                            
-                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
+
+                            float f_depth_unit = 1.0f;
+                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d, f_depth_unit);
                             Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", distance));
                             Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d.x, p3d.y, p3d.z));
                             

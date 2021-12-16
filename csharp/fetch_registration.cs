@@ -169,7 +169,11 @@ namespace pcammls_fetch_frame
                         byte b = undistort_color_data[3 * offset];
                         byte g = undistort_color_data[3 * offset + 1];
                         byte r = undistort_color_data[3 * offset + 2];
-                        
+
+                        //float f_depth_unit = 1.0f;
+                        //SDK.TYMapDepthImageToColorCoordinate(depth_calib, (uint)depth_width, (uint)depth_height, depth_pixel_arr.cast(), color_calib,
+                        //    (uint)color_width, (uint)color_height, registration_depth_data.cast(), f_depth_unit);
+                        //default depth unit = 1.0f;
                         SDK.TYMapDepthImageToColorCoordinate(depth_calib, (uint)depth_width, (uint)depth_height, depth_pixel_arr.cast(), color_calib,
                             (uint)color_width, (uint)color_height, registration_depth_data.cast());
                         ushort distance = registration_depth_data[offset];
