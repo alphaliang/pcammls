@@ -114,6 +114,8 @@ namespace pcammls_fetch_frame
                     bool color_enable = false;
 
                     uint16_t_ARRAY depth_pixel_arr = null;
+                    uint8_t_ARRAY pixel_arr = null;
+                    uint8_t_ARRAY color_pixel_arr = null;
                     var images = frame.image;
                     for(int idx = 0; idx < frame.validCount; idx++)
                     {
@@ -127,21 +129,21 @@ namespace pcammls_fetch_frame
                         {
                             if(img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
+                                pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
                                 color_enable = true;
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
+                                pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
                                 color_enable = true;
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
+                                pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
@@ -150,7 +152,8 @@ namespace pcammls_fetch_frame
                                 SDK.TYISPProcessImage(color_isp_handle, img, out_buff);
                                 SDK.TYISPUpdateDevice(color_isp_handle);
 
-                                var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.width*img.height*3);
+                                //get rgb image data
+                                color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.width*img.height*3);
                                 color_enable = true;
                             }
                             else {
@@ -173,7 +176,16 @@ namespace pcammls_fetch_frame
 
                         Console.WriteLine(string.Format("The rgbd value of the center position of the image :R.{0} G.{1} B.{2} D.{3}", r, g, b, distance));
                     }
-					
+
+                    if(depth_pixel_arr != null)
+                        uint16_t_ARRAY.ReleasePtr(depth_pixel_arr);
+
+                    if (pixel_arr != null)
+                        uint8_t_ARRAY.ReleasePtr(pixel_arr);
+
+                    if(color_pixel_arr != null)
+                        uint8_t_ARRAY.ReleasePtr(color_pixel_arr);
+
                     SDK.TYEnqueueBuffer(handle,frame.userBuffer, (uint)frame.bufferSize);
                     img_index++;
                 }

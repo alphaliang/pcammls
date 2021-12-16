@@ -90,6 +90,7 @@ namespace pcammls_fetch_point3d
                         {
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer,img.width*img.height);
                             SDK.TYMapDepthImageToPoint3d(calib_inf, img.width, img.height, pixel_arr.cast(), p3dArray.cast(), 1);
+                            uint16_t_ARRAY.ReleasePtr(pixel_arr);
 
                             IntPtr ptP3D = p3dArray.VoidPtr2();
 

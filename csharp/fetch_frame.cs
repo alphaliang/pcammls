@@ -80,6 +80,9 @@ namespace pcammls_fetch_frame
             SDK.TYStartCapture(handle);
             int img_index = 0;
 
+            TY_PIXEL_DESC pix = new TY_PIXEL_DESC();
+            TY_VECT_3F p3d = new TY_VECT_3F();
+            
             while (true)
             {
                 TY_FRAME_DATA frame = new TY_FRAME_DATA();
@@ -100,23 +103,21 @@ namespace pcammls_fetch_frame
                             int offset = img.width * img.height / 2 + img.width / 2;
                             ushort distance =  pixel_arr[offset];
 
-                            TY_PIXEL_DESC pix = new TY_PIXEL_DESC();
-                            TY_VECT_3F p3d = new TY_VECT_3F();
-
                             pix.x = (short)(img.width / 2);
                             pix.y = (short)(img.height / 2);
                             pix.depth = distance;
-
-                            //SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
+                            
+                            SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d);
                             Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", distance));
                             Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d.x, p3d.y, p3d.z));
+                            
+                            uint16_t_ARRAY.ReleasePtr(pixel_arr);
                         }
                         else if (img.componentID == SDK.TY_COMPONENT_RGB_CAM)
                         {
-                            if(img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
+                            var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer, img.size);
+                            if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
-
                                 SDK_ISP.ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
@@ -127,8 +128,6 @@ namespace pcammls_fetch_frame
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
-
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
@@ -139,9 +138,8 @@ namespace pcammls_fetch_frame
                             }
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
                             {
-                                var pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
-
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
+
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
                                 out_buff.pixelFormat = (int)SDK.TY_PIXEL_FORMAT_BGR;
 
@@ -155,13 +153,16 @@ namespace pcammls_fetch_frame
                                 byte g = color_pixel_arr[offset + 1];
                                 byte r = color_pixel_arr[offset + 2];
                                 Console.WriteLine(string.Format("Color Image Center Pixel value(Bayer):{0} {1} {2}", r, g, b));
+
+                                uint8_t_ARRAY.ReleasePtr(color_pixel_arr);
                             }
                             else {
                                 Console.WriteLine(string.Format("Color Image Type:{0}", img.pixelFormat));
                             }
+
+                            uint8_t_ARRAY.ReleasePtr(pixel_arr);
                         }
                     }
-
                     SDK.TYEnqueueBuffer(handle,frame.userBuffer, (uint)frame.bufferSize);
                     img_index++;
                 }

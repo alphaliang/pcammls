@@ -31,8 +31,12 @@
         return (element_type##_ARRAY*)(p);
     }
 
-     void * VoidPtr() {
+    void * VoidPtr() {
         return (void*)self;
+    }
+	
+    static void ReleasePtr(element_type##_ARRAY * p) {
+        delete []p;
     }
 }
 %enddef
