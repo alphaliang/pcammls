@@ -12,9 +12,9 @@ using SDK = pcammls.pcammls;
 
 namespace pcammls_isp
 {
-	class pcammls_isp_api{
-		static double[,] YUV2RGB_CONVERT_MATRIX = new double[3, 3] { { 1, 0, 1.4022 }, { 1, -0.3456, -0.7145 }, { 1, 1.771, 0 } };
-		public static void ConvertYUYV2RGB(uint8_t_ARRAY yuvFrame, uint8_t_ARRAY rgbFrame, int width, int height)
+    class pcammls_isp_api{
+        static double[,] YUV2RGB_CONVERT_MATRIX = new double[3, 3] { { 1, 0, 1.4022 }, { 1, -0.3456, -0.7145 }, { 1, 1.771, 0 } };
+        public static void ConvertYUYV2RGB(uint8_t_ARRAY yuvFrame, uint8_t_ARRAY rgbFrame, int width, int height)
         {
             int temp = 0;
             int widthstep = width * 2;
@@ -83,8 +83,8 @@ namespace pcammls_isp
                 }
             }
         }
-		
-		static int __TYCompareFirmwareVersion(TY_DEVICE_BASE_INFO info, int major, int minor)
+
+        static int __TYCompareFirmwareVersion(TY_DEVICE_BASE_INFO info, int major, int minor)
         {
             if (info.firmwareVersion.major < major)
                 return -1;
@@ -115,6 +115,15 @@ namespace pcammls_isp
                 return 1;
 
             return 0;
+        }
+        
+        static void __TYParseSizeFromImageMode(int mode, int[] image_size)
+        {
+            const int mask = ((0x01 << 12) - 1);
+            int height = mode & mask;
+            int width = (mode >> 12) & mask;
+            image_size[0] = width;
+            image_size[1] = height;
         }
 
         static SWIGTYPE_p_unsigned_char FloatArrayToSWIGTYPE(float[] array, int len)
@@ -196,7 +205,9 @@ namespace pcammls_isp
                     SDK.TYSetInt(handle, SDK.TY_COMPONENT_RGB_CAM, SDK.TY_INT_ANALOG_GAIN, 1);
                 }
             }
-            
+
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_BAYER_PATTERN, SDK.TY_ISP_BAYER_AUTO);
+
             SWIGTYPE_p_unsigned_char pointer;
 
             float []fShading = new float[9];
@@ -205,32 +216,39 @@ namespace pcammls_isp
             fShading[6] = 0.1255662441253662f;   fShading[7] = 11.88359546661377f; fShading[8] = -7.865192413330078f;
             pointer = FloatArrayToSWIGTYPE(fShading, 9);
             SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_SHADING, pointer, 9 * sizeof(float));
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CCM_ENABLE, 0);//we are not using ccm by default
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CAM_DEV_HANDLE, (int)handle);
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CAM_DEV_COMPONENT, SDK.TY_COMPONENT_RGB_CAM);
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_GAMMA, 1.0f);
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_AUTOBRIGHT, 1);//enable auto bright control
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_ENABLE_AUTO_EXPOSURE_GAIN, 0);//disable ae by default
 
-            int[] m_shading_center = new int[2];
-            m_shading_center[0] = 640;
-            m_shading_center[1] = 480;
-            pointer = IntArrayToSWIGTYPE(m_shading_center, 2);
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_SHADING_CENTER, pointer, 2 * sizeof(int));
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CCM_ENABLE, 0);
+            int[] default_image_size = new int[2];// = { 1280, 960 };// image size 
+            default_image_size[0] = 1280;
+            default_image_size[1] = 960;
+            int[] current_image_size = new int[2];// = { 1280, 960 };// image size for current parameters
+            current_image_size[0] = 1280;
+            current_image_size[1] = 960;
 
-            pointer = IntPtrToSWIGTYPE(handle);
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CAM_DEV_HANDLE, pointer, sizeof(int));
+            int img_mode;
+            int res = SDK.TYGetEnum(handle, SDK.TY_COMPONENT_RGB_CAM, SDK.TY_ENUM_IMAGE_MODE, out img_mode);
+            if (res == SDK.TY_STATUS_OK)
+            {
+                __TYParseSizeFromImageMode(img_mode, current_image_size);
+            }
 
-            Int32 t = (int)SDK.TY_COMPONENT_RGB_CAM;
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_CAM_DEV_COMPONENT, t);
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_GAMMA, 1.0f);       //float
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_AUTOBRIGHT, 1);
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_ENABLE_AUTO_EXPOSURE_GAIN, 0);
+            TY_ENUM_ENTRY_ARRAY mode_entry = new TY_ENUM_ENTRY_ARRAY(10);
+            uint num;
+            res = SDK.TYGetEnumEntryInfo(handle, SDK.TY_COMPONENT_RGB_CAM, SDK.TY_ENUM_IMAGE_MODE, mode_entry, 10, out num);
+            if (res == SDK.TY_STATUS_OK)
+            {
+                __TYParseSizeFromImageMode(mode_entry[0].value, default_image_size);
+            }
 
-            int current_image_width = 1280;
-            SDK.TYGetInt(handle, SDK.TY_COMPONENT_RGB_CAM, SDK.TY_INT_WIDTH, out current_image_width);
+            pointer = IntArrayToSWIGTYPE(default_image_size, 2);
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_IMAGE_SIZE, pointer, 2 * sizeof(int));//the orignal raw image size
+            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_INPUT_RESAMPLE_SCALE, default_image_size[0] / current_image_size[0]);//resampled input 
 
-            int []image_size = new int[2];
-            image_size[0] = 1280;
-            image_size[1] = 960;// image size for current parameters
-            pointer = IntArrayToSWIGTYPE(image_size, 2);
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_IMAGE_SIZE, pointer, 2 * sizeof(int));
-            SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_INPUT_RESAMPLE_SCALE, image_size[0] / current_image_width);
             SDK.TYISPSetFeature(isp_handle, SDK.TY_ISP_FEATURE_ENABLE_AUTO_WHITEBALANCE, 1); //eanble auto white balance
 
             uint comp_all;
@@ -252,5 +270,5 @@ namespace pcammls_isp
             SDK.TYGetByteArray(handle, SDK.TY_COMPONENT_STORAGE, SDK.TY_BYTEARRAY_ISP_BLOCK, buff.cast(), sz);
             SDK.TYISPLoadConfig(isp_handle, buff.cast(), sz);
         }
-	}
+    }
 };

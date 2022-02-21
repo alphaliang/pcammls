@@ -63,6 +63,10 @@ namespace pcammls_fetch_point3d
             TY_PIXEL_DESC_ARRAY pixArray = new TY_PIXEL_DESC_ARRAY(640*480);
             TY_VECT_3F_ARRAY p3dArray = new TY_VECT_3F_ARRAY(640 * 480);
             TY_PIXEL_DESC temp = new TY_PIXEL_DESC();
+            
+            float f_depth_unit = 1.0f;
+            SDK.TYGetFloat(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_FLOAT_SCALE_UNIT, out f_depth_unit);
+            Console.WriteLine(string.Format("##########f_depth_unit =  {0}", f_depth_unit));
 
             //trigger mode
             TY_TRIGGER_PARAM param = new TY_TRIGGER_PARAM();
@@ -89,7 +93,7 @@ namespace pcammls_fetch_point3d
                         if (img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
                         {
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer,img.width*img.height);
-                            float f_depth_unit = 1.0f;
+                            
                             SDK.TYMapDepthImageToPoint3d(calib_inf, img.width, img.height, pixel_arr.cast(), p3dArray.cast(), f_depth_unit);
                             uint16_t_ARRAY.ReleasePtr(pixel_arr);
 

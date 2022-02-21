@@ -54,7 +54,7 @@ namespace pcammls_fetch_frame
             uint cal_size2 = color_calib.CSize();
             SDK.TYGetStruct(handle, SDK.TY_COMPONENT_RGB_CAM, SDK.TY_STRUCT_CAM_CALIB_DATA, color_calib.getCPtr(), cal_size2);
             
-			IntPtr color_isp_handle = new IntPtr();
+            IntPtr color_isp_handle = new IntPtr();
 
             SDK.TYEnableComponents(handle,SDK.TY_COMPONENT_DEPTH_CAM);
             SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_RGB_CAM);
@@ -99,6 +99,10 @@ namespace pcammls_fetch_frame
             SDK.TYEnqueueBuffer(handle, buffer[0].VoidPtr(), buff_sz);
             SDK.TYEnqueueBuffer(handle, buffer[1].VoidPtr(), buff_sz);
 
+            float f_depth_unit = 1.0f;
+            SDK.TYGetFloat(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_FLOAT_SCALE_UNIT, out f_depth_unit);
+            Console.WriteLine(string.Format("##########f_depth_unit =  {0}", f_depth_unit));
+
             SDK.TYStartCapture(handle);
             int img_index = 0;
 
@@ -141,7 +145,10 @@ namespace pcammls_fetch_frame
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
                                 color_enable = true;
                             }
-                            else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
+                            else if ((img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8BG) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GR) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8RG))
                             {
                                 pixel_arr = uint8_t_ARRAY.FromVoidPtr(img.buffer,img.size);
 
@@ -175,7 +182,7 @@ namespace pcammls_fetch_frame
                         //    (uint)color_width, (uint)color_height, registration_depth_data.cast(), f_depth_unit);
                         //default depth unit = 1.0f;
                         SDK.TYMapDepthImageToColorCoordinate(depth_calib, (uint)depth_width, (uint)depth_height, depth_pixel_arr.cast(), color_calib,
-                            (uint)color_width, (uint)color_height, registration_depth_data.cast());
+                            (uint)color_width, (uint)color_height, registration_depth_data.cast(), f_depth_unit);
                         ushort distance = registration_depth_data[offset];
 
                         Console.WriteLine(string.Format("The rgbd value of the center position of the image :R.{0} G.{1} B.{2} D.{3}", r, g, b, distance));

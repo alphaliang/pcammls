@@ -77,6 +77,10 @@ namespace pcammls_fetch_frame
             SDK.TYEnqueueBuffer(handle, buffer[0].VoidPtr(), buff_sz);
             SDK.TYEnqueueBuffer(handle, buffer[1].VoidPtr(), buff_sz);
 
+            float f_depth_unit = 1.0f;
+            SDK.TYGetFloat(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_FLOAT_SCALE_UNIT, out f_depth_unit);
+            Console.WriteLine(string.Format("##########f_depth_unit =  {0}", f_depth_unit));
+                         
             SDK.TYStartCapture(handle);
             int img_index = 0;
 
@@ -107,9 +111,10 @@ namespace pcammls_fetch_frame
                             pix.y = (short)(img.height / 2);
                             pix.depth = distance;
 
-                            float f_depth_unit = 1.0f;
                             SDK.TYMapDepthToPoint3d(calib_inf, (uint)img.width, (uint)img.height, pix, 1, p3d, f_depth_unit);
-                            Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", distance));
+
+                            float f_distance = distance * f_depth_unit;
+                            Console.WriteLine(string.Format("Depth Image Center Pixel Distance:{0}", f_distance));
                             Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d.x, p3d.y, p3d.z));
                             
                             uint16_t_ARRAY.ReleasePtr(pixel_arr);
@@ -137,14 +142,20 @@ namespace pcammls_fetch_frame
                                 byte r = color_data[offset + 2];
                                 Console.WriteLine(string.Format("Color Image Center Pixel value(YUYV):{0} {1} {2}", r, g, b));
                             }
-                            else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB)
+                            else if ((img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GB) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8BG) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8GR) ||
+                                    (img.pixelFormat == SDK.TY_PIXEL_FORMAT_BAYER8RG))
                             {
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
+
+                                int offset_2 = (img.width * img.height / 2 + img.width / 2);
+                                byte y = pixel_arr[offset_2];
 
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
                                 out_buff.pixelFormat = (int)SDK.TY_PIXEL_FORMAT_BGR;
 
-                                SDK.TYISPProcessImage(color_isp_handle, img, out_buff);
+                                int ret = SDK.TYISPProcessImage(color_isp_handle, img, out_buff);
                                 SDK.TYISPUpdateDevice(color_isp_handle);
 
                                 var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.size * 3);

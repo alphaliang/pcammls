@@ -35,6 +35,12 @@ def decode_rgb(pixelFormat,image):
         return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YVYU)
     if pixelFormat == TY_PIXEL_FORMAT_BAYER8GB:
         return cv2.cvtColor(image,cv2.COLOR_BayerGB2BGR)
+    if pixelFormat == TY_PIXEL_FORMAT_BAYER8BG:
+        return cv2.cvtColor(image,cv2.COLOR_BayerBG2BGR)
+    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GR:
+        return cv2.cvtColor(image,cv2.COLOR_BayerGR2BGR)
+    if pixelFormat == TY_PIXEL_FORMAT_BAYER8RG:
+        return cv2.cvtColor(image,cv2.COLOR_BayerRG2BGR)
     if pixelFormat == TY_PIXEL_FORMAT_JPEG:
         return cv2.imdecode(image, CV_LOAD_IMAGE_COLOR)
     return image
@@ -83,7 +89,7 @@ def fetch_frame_loop(handle):
     img_index =0 
     while True:
         frame = TY_FRAME_DATA()
-		#if use the software trigger mode, need to call this API:TYSendSoftTrigger to trigger the cam device
+        #if use the software trigger mode, need to call this API:TYSendSoftTrigger to trigger the cam device
         #TYSendSoftTrigger(handle)
         try:
             TYFetchFrame(handle,frame.this,2000)
