@@ -149,9 +149,6 @@ namespace pcammls_fetch_frame
                             {
                                 SWIGTYPE_p_void pointer = (SWIGTYPE_p_void)color_data.VoidPtr();
 
-                                int offset_2 = (img.width * img.height / 2 + img.width / 2);
-                                byte y = pixel_arr[offset_2];
-
                                 TY_IMAGE_DATA out_buff = SDK.TYInitImageData((uint)color_size, pointer, (uint)(img.width), (uint)(img.height));
                                 out_buff.pixelFormat = (int)SDK.TY_PIXEL_FORMAT_BGR;
 
