@@ -183,6 +183,10 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
             return (element_type##_ARRAY*)out;
         }
 
+        static void Release(element_type##_ARRAY* ptr) {
+            free(ptr);
+        }
+
         static void ptr_as_nparray1d (element_type** NP_ARRAY_PTR, int* ROW,void * ptr, int row) {
             *NP_ARRAY_PTR = (element_type*)ptr;
             *ROW = row;
