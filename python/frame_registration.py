@@ -70,16 +70,13 @@ def fetch_frame_loop(handle):
     color_image_height = TYGetInt(handle, TY_COMPONENT_RGB_CAM, TY_INT_HEIGHT)
     print("color image size:                 {} {}".format(color_image_width, color_image_height))
 
-    src_buffer = uint8_t_ARRAY(color_image_width * color_image_height * 3)
-    dst_buffer = uint8_t_ARRAY(color_image_width * color_image_height * 3)
-
-    src_depth_buffer = uint16_t_ARRAY(depth_image_width * depth_image_height)
+    dst_color_buffer = uint8_t_ARRAY(color_image_width * color_image_height * 3)
     dst_depth_buffer = uint16_t_ARRAY(color_image_width * color_image_height)
 
     depth_calib = TY_CAMERA_CALIB_INFO()
     color_calib = TY_CAMERA_CALIB_INFO()
-    ret = TYGetStruct(handle, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_CALIB_DATA, depth_calib, depth_calib.CSize());
-    ret = TYGetStruct(handle, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_CALIB_DATA, color_calib, color_calib.CSize());
+    ret = TYGetStruct(handle, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_CALIB_DATA, depth_calib, depth_calib.CSize())
+    ret = TYGetStruct(handle, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_CALIB_DATA, color_calib, color_calib.CSize())
     print("Depth cam calib data:")
     print("size:                 {} {}".format(depth_calib.intrinsicWidth, depth_calib.intrinsicHeight))
     print("intrinsic             {}".format(depth_calib.intrinsic.data))
@@ -89,7 +86,7 @@ def fetch_frame_loop(handle):
     print("extrinsic             {}".format(color_calib.extrinsic.data))
     print("distortion            {}".format(color_calib.distortion.data))
 
-    scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT);
+    scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT)
     print("Depth cam image scale uint:{}".format(scale_unit))
  
     print('start cap')
@@ -105,34 +102,31 @@ def fetch_frame_loop(handle):
                     continue
                 arr = img.as_nparray()
                 if img.componentID == TY_COMPONENT_DEPTH_CAM:
-                     arr_depth = arr;
+                     arr_depth = arr
                 if img.componentID == TY_COMPONENT_RGB_CAM:
                     arr_rgb = decode_rgb(img.pixelFormat,arr)
             
             sp = arr_rgb.shape
-            src_rgb = TYInitImageData(sp[0] * sp[1] * 3, src_buffer, sp[1], sp[0])
-            dst_rgb = TYInitImageData(sp[0] * sp[1] * 3, dst_buffer, sp[1], sp[0])
-            src_rgb.pixelFormat = TY_PIXEL_FORMAT_RGB;
-            dst_rgb.pixelFormat = TY_PIXEL_FORMAT_RGB;
-            
-            for i in range(0, sp[0], 1):
-                for j in range(0, sp[1], 1):
-                     src_buffer.__setitem__(3*i*sp[1] + 3*j + 0, int(arr_rgb[i, j, 0]))
-                     src_buffer.__setitem__(3*i*sp[1] + 3*j + 1, int(arr_rgb[i, j, 1]))
-                     src_buffer.__setitem__(3*i*sp[1] + 3*j + 2, int(arr_rgb[i, j, 2]))
+            src_color_buffer = uint8_t_ARRAY.from_nparray(arr_rgb)
+            src_rgb = TYInitImageData(sp[0] * sp[1] * 3, src_color_buffer, sp[1], sp[0])
+            src_rgb.pixelFormat = TY_PIXEL_FORMAT_RGB
+            src_test_rgb = src_rgb.as_nparray()
+            cv2.imshow('rgb',src_test_rgb)
 
-            TYUndistortImage(color_calib, src_rgb, color_calib.intrinsic, dst_rgb)
-            undistort_rgb = dst_rgb.as_nparray();
+            dst_rgb = TYInitImageData(sp[0] * sp[1] * 3, dst_color_buffer, sp[1], sp[0])
+            dst_rgb.pixelFormat = TY_PIXEL_FORMAT_RGB
+            
+            dst_intr = TY_CAMERA_INTRINSIC()
+            dst_intr.resize(color_calib.intrinsic, 1.0 * color_image_width / color_calib.intrinsicWidth, 1.0 * color_image_height / color_calib.intrinsicHeight)
+            TYUndistortImage(color_calib, src_rgb, dst_intr, dst_rgb) 
+            undistort_rgb = dst_rgb.as_nparray()
             cv2.imshow('undistort_rgb',undistort_rgb)
 
-            sp = arr_depth.shape
-            for i in range(0, sp[0], 1):
-                for j in range(0, sp[1], 1):
-                    src_depth_buffer.__setitem__(i*sp[1] + j, int(arr_depth[i, j]))
+            src_depth_buffer = uint16_t_ARRAY.from_nparray(arr_depth)
                      
             TYMapDepthImageToColorCoordinate(depth_calib, depth_image_width, depth_image_height, src_depth_buffer.cast(), color_calib, color_image_width, color_image_height, dst_depth_buffer.cast(), scale_unit)
             dst_depth16 = TYInitImageData(color_image_width * color_image_height * 2, dst_depth_buffer, color_image_width, color_image_height)
-            dst_depth16.pixelFormat = TY_PIXEL_FORMAT_DEPTH16;
+            dst_depth16.pixelFormat = TY_PIXEL_FORMAT_DEPTH16
             dst_depth16_arr = dst_depth16.as_nparray()
             dst_depthu8 =  cv2.convertScaleAbs(dst_depth16_arr, alpha=(255.0/4000.0))
             cv2.imshow('registration_depth',dst_depthu8)

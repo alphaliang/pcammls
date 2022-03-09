@@ -5,6 +5,7 @@
 #include "TYImageProc.h"
 #include "TyIsp.h"
 #include "../sample/common/Utils.hpp"
+#include "../sample/common/BayerISP.hpp"
 %}
 
 
@@ -78,6 +79,24 @@
 
     TY_DEVICE_USB_INFO get_usbinfo() const {
         return self->usbInfo;
+    }
+}
+
+%extend class TY_CAMERA_INTRINSIC{//set value
+    void set(int idx, float value) {
+        self->data[idx] = value;
+    }
+
+    void resize(TY_CAMERA_INTRINSIC src, float scaleX, float scaleY){
+        self->data[0] = src.data[0] * scaleX;
+        self->data[1] = 0;
+        self->data[2] = src.data[2] * scaleX;
+        self->data[3] = 0;
+        self->data[4] = src.data[4] * scaleY;
+        self->data[5] = src.data[5] * scaleY;
+        self->data[6] = 0;
+        self->data[7] = 0;
+        self->data[8] = 1;
     }
 }
 
@@ -162,6 +181,7 @@
 %include "TYCoordinateMapper.h"
 %include "TyIsp.h"
 %include "../sample/common/Utils.hpp"
+%include "../sample/common/BayerISP.hpp"
 
 
 //for new version later

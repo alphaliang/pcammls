@@ -139,11 +139,11 @@ def decode_rgb(isp_handle,image):
     arr = numpy.copy(img_out.as_nparray()) # need copy for buffer . otherwise you need keep cbuf handle 
     return arr
     
-
 def fetch_frame_loop(handle):
     isp_handle = TYISPCreate()
-    show_isp_supported_feat(isp_handle)
-    init_softisp(isp_handle,handle)
+    ColorIspInitSetting(isp_handle, handle)
+    #show_isp_supported_feat(isp_handle)
+    #init_softisp(isp_handle,handle)
     comps = TYGetComponentIDs(handle)
     TYEnableComponents(handle,TY_COMPONENT_RGB_CAM_LEFT & comps)
     sz = TYGetFrameBufferSize(handle)
