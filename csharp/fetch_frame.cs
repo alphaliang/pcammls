@@ -58,7 +58,8 @@ namespace pcammls_fetch_frame
             SDK.TYSetEnum(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_ENUM_IMAGE_MODE, (int)(SDK.TY_RESOLUTION_MODE_640x480 | SDK.TY_PIXEL_FORMAT_DEPTH16));
 
             SDK.TYISPCreate(ref color_isp_handle);
-            SDK_ISP.ColorIspInitSetting(color_isp_handle, handle);
+            SDK.ColorIspInitSetting(color_isp_handle, handle);
+            //SDK_ISP.ColorIspInitSetting(color_isp_handle, handle);
 
             uint buff_sz;
             SDK.TYGetFrameBufferSize(handle, out buff_sz);

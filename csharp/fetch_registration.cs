@@ -60,7 +60,7 @@ namespace pcammls_fetch_frame
             SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_RGB_CAM);
 
             SDK.TYISPCreate(ref color_isp_handle);
-            SDK_ISP.ColorIspInitSetting(color_isp_handle, handle);
+            SDK.ColorIspInitSetting(color_isp_handle, handle);
 
             uint buff_sz;
             SDK.TYGetFrameBufferSize(handle, out buff_sz);
@@ -171,7 +171,9 @@ namespace pcammls_fetch_frame
 
                     if ((depth_enable) && (color_enable))
                     {
-                        SDK.TYUndistortImage(color_calib, src, color_calib.intrinsic, dst);
+                        TY_CAMERA_INTRINSIC color_intrinsic = new TY_CAMERA_INTRINSIC();
+                        color_intrinsic.resize(color_calib.intrinsic, 1.0f * color_width / color_calib.intrinsicWidth, 1.0f * color_height / color_calib.intrinsicHeight);
+                        SDK.TYUndistortImage(color_calib, src, color_intrinsic, dst);
                         int offset = color_width * color_height / 2 + color_width / 2;
                         byte b = undistort_color_data[3 * offset];
                         byte g = undistort_color_data[3 * offset + 1];

@@ -9,7 +9,6 @@ using pcammls;
 using SDK = pcammls.pcammls;
 namespace pcammls_fetch_point3d
 {
-
     class Program
     {
         static uint8_t_ARRAY[] buffer = new uint8_t_ARRAY[2];

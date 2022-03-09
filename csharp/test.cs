@@ -11,7 +11,6 @@ namespace pcammls_test
 
     class Program
     {
-
         static void ShowDeviceList()
         {
             SDK.TYUpdateInterfaceList();
