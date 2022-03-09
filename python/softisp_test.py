@@ -42,6 +42,7 @@ def isp_write_int_list_feature(handle , feat, lst):
     arr_size = 4*sz
     int8_buf = uint8_t_ARRAY.FromVoidPtr(int_buf.VoidPtr(),arr_size)
     TYISPSetFeature(handle, feat, int8_buf.cast(), arr_size) 
+    uint8_t_ARRAY.ReleasePtr(int8_buf);
 
 def isp_write_float_list_feature(handle , feat, lst):
     sz = len(lst)
@@ -51,6 +52,7 @@ def isp_write_float_list_feature(handle , feat, lst):
     arr_size = 4*sz
     int8_buf = uint8_t_ARRAY.FromVoidPtr(float_buf.VoidPtr(),arr_size)
     TYISPSetFeature(handle, feat, int8_buf.cast(), arr_size) 
+    uint8_t_ARRAY.ReleasePtr(int8_buf);
 
 def isp_read_int_list_feature(handle,feat,sz):
     arr_sz = sz*4
@@ -60,6 +62,7 @@ def isp_read_int_list_feature(handle,feat,sz):
     res = []
     for k in range(sz):
         res.append(int_buf[k])
+    int32_t_ARRAY.ReleasePtr(int_buf);
     return res    
 
 def show_isp_supported_feat(handle):

@@ -76,9 +76,11 @@ def fetch_frame_loop(handle):
                 if img.componentID == TY_COMPONENT_DEPTH_CAM:
                     print('Center depth value:{}'.format(arr[int(depth_image_height/2)][int(depth_image_width/2)] * scale_unit))
                     #Map depth image to point 3d
-                    TYMapDepthImageToPoint3d(depth_calib, depth_image_width, depth_image_height, uint16_t_ARRAY_FromVoidPtr(img.buffer, depth_image_width*depth_image_height).cast(), p3d,scale_unit)
+                    _depth = uint16_t_ARRAY_FromVoidPtr(img.buffer, depth_image_width*depth_image_height)
+                    TYMapDepthImageToPoint3d(depth_calib, depth_image_width, depth_image_height, _depth.cast(), p3d,scale_unit)
                     depth_center_offset=(depth_image_height+1)*depth_image_width/2
                     print('Center p3d value:{} | {} | {}'.format(p3d[int(depth_center_offset)].x, p3d[int(depth_center_offset)].y, p3d[int(depth_center_offset)].z))
+                    uint16_t_ARRAY.ReleasePtr(_depth);
                     cv2.imshow('depth', arr)
             k = cv2.waitKey(10)
             if k==ord('q'): 
