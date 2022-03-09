@@ -46,7 +46,7 @@ def test_vect_3f():
     data = []
     for k in range(10):
         data.append([k,k+1,k+2])
-    arr = np.array(data,np.float)
+    arr = np.array(data,np.float64)
     carr = sdk.TY_VECT_3F_ARRAY.from_nparray(arr)
     arr_out = carr.as_nparray(10)
     for k in range(10):

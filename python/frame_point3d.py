@@ -81,7 +81,8 @@ def fetch_frame_loop(handle):
                     depth_center_offset=(depth_image_height+1)*depth_image_width/2
                     print('Center p3d value:{} | {} | {}'.format(p3d[int(depth_center_offset)].x, p3d[int(depth_center_offset)].y, p3d[int(depth_center_offset)].z))
                     uint16_t_ARRAY.ReleasePtr(_depth);
-                    cv2.imshow('depth', arr)
+                    depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
+                    cv2.imshow('depth', depthu8)
             k = cv2.waitKey(10)
             if k==ord('q'): 
                 break
