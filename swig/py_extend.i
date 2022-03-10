@@ -242,6 +242,10 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
                 else:
                     raise Exception('not support format')
 
+            @staticmethod
+            def release(ptr):
+                element_type##_ARRAY.Release(ptr)
+
         %}// %pythoncode %{
     } //extend array
 

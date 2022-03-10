@@ -135,8 +135,10 @@ def fetch_frame_loop(handle):
             if k==ord('q'): 
                 break
 
-            uint8_t_ARRAY_ReleasePtr(src_color_buffer)
-            uint16_t_ARRAY_ReleasePtr(src_depth_buffer)
+            uint8_t_ARRAY.Release(src_color_buffer)
+            uint16_t_ARRAY.Release(src_depth_buffer)
+            #uint8_t_ARRAY_ReleasePtr(src_color_buffer)
+            #uint16_t_ARRAY_ReleasePtr(src_depth_buffer)
 
             TYEnqueueBuffer(handle,frame.userBuffer,frame.bufferSize)
             print('{} cap ok'.format(img_index))
