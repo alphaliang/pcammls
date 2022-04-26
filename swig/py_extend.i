@@ -288,11 +288,11 @@ static TY_VECT_3F_ARRAY* from_nparray(double* NP_ARRAY_PTR, int ROW,  int COL) {
 
 %extend TY_IMAGE_DATA {
 %pythoncode %{
-
-__U8C1 = [TY_PIXEL_FORMAT_MONO , TY_PIXEL_FORMAT_BAYER8GB , TY_PIXEL_FORMAT_BAYER8BG , TY_PIXEL_FORMAT_MJPG, TY_PIXEL_FORMAT_JPEG]
+__U8CX = [TY_PIXEL_FORMAT_MJPG, TY_PIXEL_FORMAT_JPEG]
+__U8C1 = [TY_PIXEL_FORMAT_MONO , TY_PIXEL_FORMAT_BAYER8GB , TY_PIXEL_FORMAT_BAYER8BG]
 __U8C2 = [TY_PIXEL_FORMAT_YVYU,TY_PIXEL_FORMAT_YUYV]
 __U8C3 = [TY_PIXEL_FORMAT_RGB,TY_PIXEL_FORMAT_BGR]
-__U16C1 = [TY_PIXEL_FORMAT_DEPTH16]
+__U16C1 = [TY_PIXEL_FORMAT_DEPTH16 , TY_PIXEL_FORMAT_MONO16]
 
 def as_nparray(self):
     '''
@@ -302,6 +302,9 @@ def as_nparray(self):
     if self.buffer==None or self.width<=0 or self.height<=0:
         return None
     pformat = self.pixelFormat
+	if pformat in self.__U8CX:
+	    sz = self.size
+        return uint8_t_ARRAY.ptr_as_nparray1d(self.buffer,self.size)
     if pformat in self.__U8C1:
         sz = self.height*self.width
         return uint8_t_ARRAY.ptr_as_nparray2d(self.buffer,self.height,self.width)
