@@ -44,7 +44,7 @@ def decode_rgb(pixelFormat,image):
     if pixelFormat == TY_PIXEL_FORMAT_BAYER8RG:
         return cv2.cvtColor(image,cv2.COLOR_BayerRG2BGR)
     if pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(image, CV_LOAD_IMAGE_COLOR)
+        return cv2.imdecode(image, cv2.IMREAD_COLOR)
     return image
 
 def fetch_frame_loop(handle):

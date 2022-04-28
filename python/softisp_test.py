@@ -124,7 +124,7 @@ def decode_rgb(isp_handle,image):
     elif pixelFormat == TY_PIXEL_FORMAT_YVYU: 
         return cv2.cvtColor(arr,cv2.COLOR_YUV2BGR_YVYU)
     elif pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(arr, CV_LOAD_IMAGE_COLOR)
+        return cv2.imdecode(arr, cv2.IMREAD_COLOR)
     elif pixelFormat != TY_PIXEL_FORMAT_BAYER8GB:
         return arr
     # follow is bayer format case
