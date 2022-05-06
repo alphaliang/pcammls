@@ -58,7 +58,9 @@ def fetch_frame_loop(handle):
     
     p3d = TY_VECT_3F_ARRAY(depth_image_width*depth_image_height)
 
-    scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT);
+    scale_unit = 1.0
+    if TYHasFeature(handle,TY_COMPONENT_DEPTH_CAM,TY_FLOAT_SCALE_UNIT):
+        scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT)
     print("Depth cam image scale uint:{}".format(scale_unit))
     
     print('start cap')

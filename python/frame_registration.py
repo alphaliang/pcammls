@@ -86,7 +86,9 @@ def fetch_frame_loop(handle):
     print("extrinsic             {}".format(color_calib.extrinsic.data))
     print("distortion            {}".format(color_calib.distortion.data))
 
-    scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT)
+    scale_unit = 1.0
+    if TYHasFeature(handle,TY_COMPONENT_DEPTH_CAM,TY_FLOAT_SCALE_UNIT):
+        scale_unit = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT)
     print("Depth cam image scale uint:{}".format(scale_unit))
  
     print('start cap')
