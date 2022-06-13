@@ -302,8 +302,8 @@ def as_nparray(self):
     if self.buffer==None or self.width<=0 or self.height<=0:
         return None
     pformat = self.pixelFormat
-	if pformat in self.__U8CX:
-	    sz = self.size
+    if pformat in self.__U8CX:
+        sz = self.size
         return uint8_t_ARRAY.ptr_as_nparray1d(self.buffer,self.size)
     if pformat in self.__U8C1:
         sz = self.height*self.width
