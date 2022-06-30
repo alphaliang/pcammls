@@ -133,7 +133,7 @@ def fetch_frame_loop(handle):
             depth_center_y = color_image_height / 2
             depth_center_x = color_image_width / 2
             depth_center_offset=(color_image_height+1)*color_image_width/2
-            print('Center color:{} '.format(undistort_rgb[depth_center_y][depth_center_x]))
+            print('Center color:{} '.format(undistort_rgb[int(depth_center_y)][int(depth_center_x)]))
             print('Center p3d value:{} | {} | {}'.format(p3d[int(depth_center_offset)].x, p3d[int(depth_center_offset)].y, p3d[int(depth_center_offset)].z))
             
             #display depth image(after aligning to the color image coordinate)
