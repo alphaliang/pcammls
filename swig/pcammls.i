@@ -5,6 +5,8 @@
 #include "TYImageProc.h"
 #include "TyIsp.h"
 #include "../sample/common/Utils.hpp"
+#include "../sample/common/TYThread.hpp"
+#include "../sample/common/TYThread.cpp"
 #include "../sample/common/BayerISP.hpp"
 %}
 
@@ -181,6 +183,8 @@
 %include "TYCoordinateMapper.h"
 %include "TyIsp.h"
 %include "../sample/common/Utils.hpp"
+%include "../sample/common/TYThread.hpp"
+%include "../sample/common/TYThread.cpp"
 %include "../sample/common/BayerISP.hpp"
 
 
