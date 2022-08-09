@@ -7,6 +7,7 @@ set(CAMPORT_DIR  CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
 set(PYTHON_VERSION "" CACHE STRING "python version")
+set(CSHARP_NET_VERSION "v4.0" CACHE STRING "csharp .NET version")
 
 option(WITH_OPENCV OFF)
 #set(SWIG_DIR  CACHE PATH "SWIG tool path")
