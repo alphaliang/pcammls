@@ -24,27 +24,31 @@ set (REF_LIST
     "System.Drawing"
     "System.Xml"
 )
+
+message("target net version is ${NET_VERSION}")
+
 set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST})
-set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 
 add_executable(test_cs ${CMAKE_CURRENT_SOURCE_DIR}/test.cs )
-set_property(TARGET test_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET test_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET test_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
 add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
+
 add_executable(fetch_registration_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
 add_executable(fetch_color3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_color3d.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
 add_executable(fetch_point3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_point3d.cs)
-set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${CSHARP_NET_VERSION})
+set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
 add_dependencies(fetch_point3d_cs pcammls_cs)
