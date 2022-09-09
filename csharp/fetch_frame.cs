@@ -9,9 +9,9 @@ using pcammls;
 using SDK = pcammls.pcammls;
 using pcammls_isp;
 using SDK_ISP = pcammls_isp.pcammls_isp_api;
+using OpenCvSharp;
 namespace pcammls_fetch_frame
 {
-
     class Program
     {
         static uint8_t_ARRAY[] buffer = new uint8_t_ARRAY[2];
@@ -104,6 +104,9 @@ namespace pcammls_fetch_frame
                         {
                             var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer, img.size / 2);
                             IntPtr pt = pixel_arr.VoidPtr2();
+                                Mat depthimg = new Mat(img.height, img.width, MatType.CV_16U, pt);
+                            OpenCvSharp.Cv2.ImShow("depth", depthimg*15);
+                            Cv2.WaitKey(1);
 
                             int offset = img.width * img.height / 2 + img.width / 2;
                             ushort distance =  pixel_arr[offset];
@@ -126,6 +129,10 @@ namespace pcammls_fetch_frame
                             if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YVYU)
                             {
                                 SDK_ISP.ConvertYVYU2RGB(pixel_arr, color_data, img.width, img.height);
+                                IntPtr ptbgr = color_data.VoidPtr2();
+                                Mat bgr = new Mat(img.height, img.width, MatType.CV_8UC3, ptbgr);
+                                OpenCvSharp.Cv2.ImShow("color", bgr);
+                                Cv2.WaitKey(1);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
                                 byte b = color_data[offset];
@@ -136,6 +143,10 @@ namespace pcammls_fetch_frame
                             else if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_YUYV)
                             {
                                 SDK_ISP.ConvertYUYV2RGB(pixel_arr, color_data, img.width, img.height);
+                                IntPtr ptbgr = color_data.VoidPtr2();
+                                Mat bgr = new Mat(img.height, img.width, MatType.CV_8UC3, ptbgr);
+                                OpenCvSharp.Cv2.ImShow("color", bgr);
+                                Cv2.WaitKey(1);
 
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
                                 byte b = color_data[offset];
@@ -158,6 +169,11 @@ namespace pcammls_fetch_frame
 
                                 var color_pixel_arr = uint8_t_ARRAY.FromVoidPtr(out_buff.buffer, img.size * 3);
 
+                                IntPtr ptbgr = color_pixel_arr.VoidPtr2();
+                                Mat bgr = new Mat(img.height, img.width, MatType.CV_8UC3, ptbgr);
+                                OpenCvSharp.Cv2.ImShow("color", bgr);
+                                Cv2.WaitKey(1);
+
                                 int offset = 3 * (img.width * img.height / 2 + img.width / 2);
                                 byte b = color_pixel_arr[offset];
                                 byte g = color_pixel_arr[offset + 1];
@@ -167,6 +183,15 @@ namespace pcammls_fetch_frame
                                 uint8_t_ARRAY.ReleasePtr(color_pixel_arr);
                             }
                             else {
+                                if (img.pixelFormat == SDK.TY_PIXEL_FORMAT_JPEG)
+                                {
+                                    var pixel_arr_2 = uint8_t_ARRAY.FromVoidPtr(img.buffer, img.size);
+                                    IntPtr pt2 = pixel_arr_2.VoidPtr2();
+                                    Mat jpeg = new Mat(1,img.height*img.width, MatType.CV_8U, pt2);
+                                    Mat bgr = Cv2.ImDecode(jpeg, ImreadModes.Color);
+                                    OpenCvSharp.Cv2.ImShow("color", bgr);
+                                    Cv2.WaitKey(1);
+                                }
                                 Console.WriteLine(string.Format("Color Image Type:{0}", img.pixelFormat));
                             }
 

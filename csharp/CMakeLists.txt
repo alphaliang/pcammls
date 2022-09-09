@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 project(pcammls_cs)
 
 enable_language(CSharp)
-set(CMAKE_CSharp_FLAGS "/langversion:default")
+set(CMAKE_CSharp_FLAGS "/langversion:6")
 
 if(CMAKE_CL_64)
     set(CMAKE_CSharp_FLAGS "/platform:x64")
@@ -25,6 +25,8 @@ set (REF_LIST
     "System.Xml"
 )
 
+SET(CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+
 message("target net version is ${NET_VERSION}")
 
 set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST})
@@ -37,7 +39,7 @@ set_property(TARGET test_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
-
+set_property(TARGET fetch_frame_cs PROPERTY VS_PACKAGE_REFERENCES "OpenCvSharp4_4.6.0.20220608;OpenCvSharp4.runtime.win_4.6.0.20220608")
 
 add_executable(fetch_registration_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
