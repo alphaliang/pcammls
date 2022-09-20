@@ -1,16 +1,15 @@
-cmake_minimum_required(VERSION 3.24.0)
+cmake_minimum_required(VERSION 3.10.0)
 project(pcammls)
 include(ExternalProject)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)   
-set(CAMPORT_DIR "D:\\git\\camport3\\" CACHE  PATH "Percipio SDK Path")
+set(CAMPORT_DIR  "/home/userName/workspace/percipio/camport3" CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
-set(TARGET_LANGUAGE "CSHARP" CACHE STRING "target language")
+set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
 set(PYTHON_VERSION "2.7" CACHE STRING "python version")
-set(CSHARP_NET_VERSION  "v4.8" CACHE STRING ".NET version")
 
 option(WITH_OPENCV OFF)
-set(SWIG_DIR "D:\\swigwin-4.0.2\\" CACHE PATH "SWIG tool path")
+#set(SWIG_DIR  CACHE PATH "SWIG tool path")
 
 message("target language is ${TARGET_LANGUAGE}")
 
@@ -115,12 +114,6 @@ else(UNIX)
     install(FILES ${tylib_file} DESTINATION "${TARGET_LANGUAGE}")
 endif(UNIX)
 
-if(${MSVC_VERSION} LESS 1915)	#VS2017
-	option(OpenCV_USE "Using opencv" OFF)
-else()
-    option(OpenCV_USE "Using opencv" ON)
-endif()
-
 ##################################################
 #SWIG
 CMAKE_POLICY(SET CMP0078 NEW)
@@ -153,7 +146,6 @@ if (${TARGET_LANGUAGE} STREQUAL "PYTHON")
 endif()
 
 if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
     set(PROJECT_TEMP_DIR  Bin)
     ExternalProject_Add(csharp_libs
         SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/csharp"
@@ -175,7 +167,7 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
         -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE} 
         -DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}
         -DPCAM_LIB_SUPPORT_FILE_DIR=${PCAM_LIB_SUPPORT_FILE_DIR}
-		-DPROJECT_LIB_PATH=${PROJECT_TEMP_DIR}
+        -DPROJECT_LIB_PATH=${PROJECT_TEMP_DIR}
         -DNET_VERSION=${CSHARP_NET_VERSION}
         INSTALL_COMMAND cmake -E copy_directory ./${PROJECT_TEMP_DIR} ${FINAL_LOCATION_DIR}
         )
