@@ -3,10 +3,11 @@ project(pcammls)
 include(ExternalProject)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)   
-set(CAMPORT_DIR  "/home/userName/workspace/percipio/camport3" CACHE  PATH "Percipio SDK Path")
+set(CAMPORT_DIR  "/home/user/percipio/camport3" CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
 set(PYTHON_VERSION "2.7" CACHE STRING "python version")
+set(CSHARP_NET_VERSION  "v4.8" CACHE STRING ".NET version")
 
 option(WITH_OPENCV OFF)
 #set(SWIG_DIR  CACHE PATH "SWIG tool path")
