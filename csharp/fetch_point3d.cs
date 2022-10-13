@@ -135,8 +135,12 @@ namespace pcammls_fetch_point3d
                 SDK.TYOpenInterface(dev_info.iface.id, ref iface_handle);
                 
                 IntPtr errCode = IntPtr.Zero;
-                SDK.TYOpenDevice(iface_handle, dev_info.id, ref dev_handle, ref errCode);
-
+                var status = SDK.TYOpenDevice(iface_handle, dev_info.id, ref dev_handle, ref errCode);
+                if (status != SDK.TY_STATUS_OK)
+                {
+                    Console.WriteLine(string.Format(".TYOpenDevice ret :{0}", status));
+                    return;
+                }
                 FetchFrameLoop(dev_handle);
                 SDK.TYCloseDevice(dev_handle, false);
                 SDK.TYCloseInterface(iface_handle);
