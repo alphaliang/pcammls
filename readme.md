@@ -123,9 +123,8 @@ static void Main(string[] args)
 其他常见调用参考csharp 路径下文件.
 扩展功能或者修改调用可修改swig路径下csharp\_extend.i文件
 
-### csharp版本与原sdk区别
- * 原返回状态值封装为异常
- * 原指针操作转换为 c# 输出参数 
+编译安装详细指南参考官网在线文档:
+https://percipiodc.readthedocs.io/en/latest/getstarted/sdk-compile.html#pythoncsharp
 
 
 
