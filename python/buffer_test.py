@@ -53,9 +53,9 @@ def test_vect_3f():
         for s in range(3):
             if (arr[k][s]!=arr_out[k][s])  : print('{} not equal'.format(k))
     for k in range(10):
-        if (arr[k][0]!=carr[k].x)  : kprint('{} not equal'.format(k))
-        if (arr[k][1]!=carr[k].y)  : kprint('{} not equal'.format(k))
-        if (arr[k][2]!=carr[k].z)  : kprint('{} not equal'.format(k))
+        if (arr[k][0]!=carr[k].x)  : print('{} not equal'.format(k))
+        if (arr[k][1]!=carr[k].y)  : print('{} not equal'.format(k))
+        if (arr[k][2]!=carr[k].z)  : print('{} not equal'.format(k))
     print('test done')
     
 
