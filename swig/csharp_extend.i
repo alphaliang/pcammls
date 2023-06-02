@@ -23,14 +23,31 @@
 }
 %enddef
 
+
+%define ENUM_INT_TYPE_DEFINE(type_name)
+%typemap(ctype) enum type_name "signed int"
+%typemap(imtype) enum type_name "int"
+%typemap(csvarout)  enum type_name %{
+    get {
+      int ret = $imcall;
+      return ret;
+    } 
+%}
+%typemap(cstype) enum type_name "int"
+%typemap(csout)  enum type_name {
+      int ret = $imcall;
+      return ret;
+}
+%enddef
+
 ENUM_UINT_TYPE_DEFINE(TY_FEATURE_TYPE_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_PIXEL_BITS_LIST)
 ENUM_UINT_TYPE_DEFINE(TY_DEVICE_COMPONENT_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_IMAGE_MODE_LIST)
 ENUM_UINT_TYPE_DEFINE(TY_FEATURE_ID_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
 ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_ID)
 ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
+ENUM_INT_TYPE_DEFINE(TY_PIXEL_BITS_LIST)
+ENUM_INT_TYPE_DEFINE(TY_IMAGE_MODE_LIST)
+ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
 
 //--------------------------------------------------
 
