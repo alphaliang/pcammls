@@ -93,9 +93,15 @@ ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
 	public global::System.IntPtr VoidPtr2(){
 		return (global::System.IntPtr)swigCPtr;
 	}
+
+	static public type_name##_ARRAY FromIntPtr(global::System.IntPtr t) {
+		type_name##_ARRAY var = new type_name##_ARRAY(t, false);
+		return var ;
+	}
 %}
 
 %enddef
+
 
 %CARRAY_ITEM_ASSIGN(float, float);
 %CARRAY_ITEM_ASSIGN(uint8_t, byte);
@@ -173,7 +179,6 @@ namespace std
 %typemap(cstype) void* INPUT " global::System.IntPtr"
 %typemap(csin) void* INPUT %{  $csinput %}
 
-
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
 %apply void** INPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE* , TY_FW_ERRORCODE*}
 %apply void* INPUT{TY_INTERFACE_HANDLE , TY_DEV_HANDLE  , TY_ISP_HANDLE , TY_FW_ERRORCODE}
@@ -188,6 +193,7 @@ namespace std
   }
 %}
 %enddef
+
 
 %CS_STRUCT_EXTEND(TY_INTERFACE_INFO);
 %CS_STRUCT_EXTEND(TY_DEVICE_BASE_INFO);
