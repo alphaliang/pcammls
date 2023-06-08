@@ -184,7 +184,7 @@ namespace pcammls_fetch_frame
                         SDK.TYMapDepthImageToColorCoordinate(depth_calib, (uint)depth_width, (uint)depth_height, depth_pixel_arr.cast(), color_calib,
                             (uint)color_width, (uint)color_height, registration_depth_data.cast(), f_depth_unit);
 
-                        SDK.TYMapDepthImageToPoint3d(color_calib, color_width, color_height, registration_depth_data.cast(), pcolor3dArray.cast(), 1.0f);
+                        SDK.TYMapDepthImageToPoint3d(color_calib, color_width, color_height, registration_depth_data.cast(), pcolor3dArray.cast(), f_depth_unit);
 
                         float fx = pcolor3dArray.getitem(offset).x;
                         float fy = pcolor3dArray.getitem(offset).y;
