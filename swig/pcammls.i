@@ -44,7 +44,6 @@
 }
 %enddef
 
-
 #ifdef SWIGCSHARP
 %include "csharp_extend.i"
 #endif
@@ -112,7 +111,6 @@
 }
 %enddef
 
-
 %STRUCT_PTR_EXTEND(TY_FEATURE_INFO)
 %STRUCT_PTR_EXTEND(TY_INT_RANGE)
 %STRUCT_PTR_EXTEND(TY_FLOAT_RANGE)
@@ -134,7 +132,7 @@
 %apply uint32_t* OUTPUT {uint32_t* filledDeviceCount}
 %apply uint32_t* OUTPUT {uint32_t* filledEntryCount}
 %apply uint32_t* OUTPUT {uint32_t *deviceNumber }
-%apply uint32_t* OUTPUT {int32_t* componentIDs}
+%apply uint32_t* OUTPUT {uint32_t* componentIDs}
 %apply int32_t* OUTPUT {int32_t* value}
 %apply uint32_t* OUTPUT {uint32_t *bufferSize}
 %apply uint32_t* OUTPUT {uint32_t* entryCount}
@@ -142,11 +140,12 @@
 %apply bool* OUTPUT {bool*value}
 %apply float* OUTPUT {float* value}
 
+%apply int32_t {uint32_t componentID} 
+%apply int32_t {uint32_t featureID} 
 
 //event callback
 %feature("director") EventCallback;
 %inline %{
-
     class EventCallback{
     public:
         virtual ~EventCallback() {}
