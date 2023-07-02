@@ -52,17 +52,14 @@ for:
     build_script:
       - mkdir build
       - cd build
-      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe -DPYTHON_LIBRARY=C:/Python37-x64/libs/python37.lib -DPYTHON_INCLUDE_DIR=C:/Python37-x64/include
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe -DPYTHON_LIBRARY=C:/Python37-x64/libs/python37.lib -DPYTHON_INCLUDE_DIR=C:/Python37-x64/include -DPYTHON_VERSION=3.7
+
       - cmake --build . --config Release --target install
       - move ../install/PYTHON ../install/PYTHON37
       - del /q/s *
-      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe  -DPYTHON_LIBRARY=C:/Python36-x64/libs/python36.lib -DPYTHON_INCLUDE_DIR=C:/Python36-x64/include 
+      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe  -DPYTHON_LIBRARY=C:/Python36-x64/libs/python36.lib -DPYTHON_INCLUDE_DIR=C:/Python36-x64/include -DPYTHON_VERSION=3.6
       - cmake --build . --config Release --target install
       - move ../install/PYTHON ../install/PYTHON36
-      - del /q/s *
-      - cmake .. -G "Visual Studio 15 2017 Win64" -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe -DPYTHON_LIBRARY=C:/Python27-x64/libs/python27.lib -DPYTHON_INCLUDE_DIR=C:/Python27-x64/include 
-      - cmake --build . --config Release --target install
-      - move ../install/PYTHON ../install/PYTHON27
       - del /q/s *
       - cmake .. -G "Visual Studio 15 2017 Win64" -DTARGET_LANGUAGE=CSHARP -DCAMPORT_DIR=../camport3/ -DCMAKE_INSTALL_PREFIX=../install/ -DSWIG_EXECUTABLE=C:/ProgramData/chocolatey/lib/swig/tools/install/swigwin-4.0.0/swig.exe
       - cmake --build . --config Release --target install
