@@ -140,9 +140,6 @@
 %apply bool* OUTPUT {bool*value}
 %apply float* OUTPUT {float* value}
 
-%apply int32_t {uint32_t componentID} 
-%apply int32_t {uint32_t featureID} 
-
 //event callback
 %feature("director") EventCallback;
 %inline %{

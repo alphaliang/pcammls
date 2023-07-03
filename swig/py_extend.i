@@ -28,6 +28,9 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 }
 %apply uint32_t _POSITIVE_VALUE { uint32_t entryCount, uint32_t bufferCount }
 
+%apply int32_t {uint32_t componentID} 
+%apply int32_t {uint32_t featureID} 
+
 //for carray & buffer///////////////////////////////////////////////
 
 %typemap(check) int index{

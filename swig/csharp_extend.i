@@ -75,6 +75,8 @@ ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
 %UINT_TYPE(int,componentIDs);
 
 
+//%apply int32_t {uint32_t componentID} 
+//%apply int32_t {uint32_t featureID} 
 
 //C ARRAY DEFINE //////////////////////////////////////////////////////////
 
