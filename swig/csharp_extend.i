@@ -12,8 +12,8 @@
 %typemap(imtype) enum type_name "uint"
 %typemap(csvarout)  enum type_name %{
     get {
-      uint ret = $imcall;
-      return ret;
+      uint _ret = $imcall;
+      return _ret;
     } 
 %}
 %typemap(cstype) enum type_name "uint"
@@ -39,45 +39,13 @@
       return ret;
 }
 %enddef
-
-ENUM_UINT_TYPE_DEFINE(TY_FEATURE_TYPE_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_DEVICE_COMPONENT_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_FEATURE_ID_LIST)
-ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_ID)
-ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
-ENUM_INT_TYPE_DEFINE(TY_PIXEL_BITS_LIST)
-ENUM_INT_TYPE_DEFINE(TY_IMAGE_MODE_LIST)
-ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
-
-//--------------------------------------------------
-
-%define %UINT_TYPE(type_name ,var_name )
-%typemap(cstype) type_name var_name  "uint"
-%typemap(imtype) type_name var_name  "uint"
-%typemap(ctype) type_name var_name "unsigned int"
-%typemap(csvarout)   type_name  var_name %{
-    get {
-      uint ret = $imcall;
-      return ret;
-    } 
-%}
-%typemap(csout)  type_name  var_name{
-      uint ret = $imcall;
-      return ret;
-}
-%enddef
-
-%UINT_TYPE(TY_FEATURE_TYPE,);
-%UINT_TYPE(TY_FEATURE_ID,);
-%UINT_TYPE(TY_COMPONENT_ID,);
-%UINT_TYPE(TY_IMAGE_MODE,);
-%UINT_TYPE(TY_PIXEL_FORMAT,);
-%UINT_TYPE(int,componentIDs);
-
+//
 
 
 //C ARRAY DEFINE //////////////////////////////////////////////////////////
 
+%typemap(cstype) unsigned int "uint"
+%typemap(cstype) unsigned __int32 "uint"
 
 %define %CARRAY_ITEM_ASSIGN(type_name,cs_typename)
 %typemap(cscode) type_name##_ARRAY  %{
@@ -123,6 +91,67 @@ ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO, TY_CAMERA_CALIB_INFO);
 //ARRAY BUFFER ARGOUT ////////////////////////////////////////
 
+
+
+ENUM_UINT_TYPE_DEFINE(TY_FEATURE_TYPE_LIST)
+ENUM_UINT_TYPE_DEFINE(TY_DEVICE_COMPONENT_LIST)
+ENUM_UINT_TYPE_DEFINE(TY_FEATURE_ID_LIST)
+ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_ID)
+ENUM_UINT_TYPE_DEFINE(TY_ISP_FEATURE_INFO)
+ENUM_INT_TYPE_DEFINE(TY_IMAGE_MODE_LIST)
+ENUM_INT_TYPE_DEFINE(TY_PIXEL_FORMAT_LIST)
+
+%ignore *::TY_PIXEL_8BIT;
+%ignore *::TY_PIXEL_16BIT;
+%ignore *::TY_PIXEL_24BIT;
+%ignore *::TY_PIXEL_32BIT;
+%ignore *::TY_PIXEL_10BIT;
+%ignore *::TY_PIXEL_12BIT;
+%ignore *::TY_PIXEL_14BIT;
+%ignore *::TY_PIXEL_48BIT;
+%ignore *::TY_PIXEL_64BIT;
+
+enum swig_TY_PIXEL_BITS_LIST
+{
+    TY_PIXEL_8BIT   = 0x1 << 28,
+    TY_PIXEL_16BIT  = 0x2 << 28,
+    TY_PIXEL_24BIT  = 0x3 << 28,
+    TY_PIXEL_32BIT  = 0x4 << 28,
+    TY_PIXEL_10BIT  = 0x5 << 28,
+    TY_PIXEL_12BIT  = 0x6 << 28,
+    TY_PIXEL_14BIT  = 0x7 << 28,
+    TY_PIXEL_48BIT = (int)(0x8 << 28),
+    TY_PIXEL_64BIT = (int)(0xa << 28)
+}swig_TY_PIXEL_BITS_LIST;
+
+ENUM_UINT_TYPE_DEFINE(swig_TY_PIXEL_BITS_LIST)
+
+//--------------------------------------------------
+
+%define %UINT_TYPE(type_name ,var_name )
+%typemap(cstype) type_name var_name  "uint"
+%typemap(imtype) type_name var_name  "uint"
+%typemap(ctype) type_name var_name "unsigned int"
+%typemap(csvarout)   type_name  var_name %{
+    get {
+      uint ret = $imcall;
+      return ret;
+    } 
+%}
+%typemap(csout)  type_name  var_name{
+      uint ret = $imcall;
+      return ret;
+}
+%enddef
+
+%UINT_TYPE(TY_FEATURE_TYPE,);
+%UINT_TYPE(TY_FEATURE_ID,);
+%UINT_TYPE(TY_COMPONENT_ID,);
+%UINT_TYPE(TY_IMAGE_MODE,);
+%UINT_TYPE(TY_PIXEL_FORMAT,);
+%UINT_TYPE(int,componentIDs);
+
+
 %include <std_vector.i>
 namespace std
 {
@@ -164,6 +193,7 @@ namespace std
 
 %CARRAY_ACCESS(float)
 %CARRAY_ACCESS(int32_t)
+%CARRAY_ACCESS(uint32_t)
 %CARRAY_ACCESS(TY_IMAGE_DATA)
 
 
@@ -221,7 +251,6 @@ namespace std
 
 
 //return code to exception  //////////////////////////////////////////////////
-
 %typemap(cstype) TY_STATUS "int"
 %typemap(csout) TY_STATUS {
 	int ret;
