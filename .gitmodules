@@ -1,0 +1,3 @@
+[submodule "camport3"]
+	path = camport3
+	url = https://github.com/percipioxyz/camport3.git
