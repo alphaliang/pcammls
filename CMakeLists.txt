@@ -3,7 +3,7 @@ project(pcammls)
 include(ExternalProject)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)   
-set(CAMPORT_DIR  "/home/user/percipio/camport3" CACHE  PATH "Percipio SDK Path")
+set(CAMPORT_DIR  "${CMAKE_SOURCE_DIR}/camport3" CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
 set(PYTHON_VERSION "2.7" CACHE STRING "python version")
