@@ -264,8 +264,8 @@ class PercipioSDK
 
 
     /*read calib data*/
-    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) const;
-    const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) const;
+    PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle);
 
     /*device control*/
     bool                        DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
@@ -283,7 +283,6 @@ class PercipioSDK
         STREMA_FMT_IDX_IR_RIGHT   = 3,
         STREMA_FMT_IDX_MAX        = 4,
       }STREAM_FMT_LIST_IDX;
-
 
     typedef struct device_info {
       TY_DEV_HANDLE       handle;
@@ -465,8 +464,9 @@ TY_DEV_HANDLE PercipioSDK::Open() {
 
 int PercipioSDK::hasDevice(const TY_DEV_HANDLE handle) {
   for(size_t i = 0; i < DevList.size(); i++) {
-    if(handle == DevList[i].handle)
+    if(handle == DevList[i].handle) {
       return i;
+    }
   }
   return -1;
 }
@@ -746,7 +746,7 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   return ;
 }
 
-const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) const
+PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
 {
   static PercipioCalibData  invalid_calib_data;
   int idx = hasDevice(handle);
@@ -763,7 +763,7 @@ const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE ha
   return DevList[idx].calib_data_list[compIDX];
 }
 
-const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) const
+const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle)
 {
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -955,7 +955,7 @@ bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, co
   TYMapDepthImageToPoint3d(&calib_data.data(),
                                      depth.width, depth.height,
                                      (const uint16_t*)depth.buffer,
-                                     p3d.getPtr(), 
+                                     (TY_VECT_3F*)p3d.getPtr(), 
                                      scale);
   return true;
 }

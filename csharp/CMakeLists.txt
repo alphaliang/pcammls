@@ -56,18 +56,22 @@ add_executable(fetch_trigger_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_trigger.cs ${C
 set_property(TARGET fetch_trigger_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_trigger_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
+add_executable(fetch_point3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_point3d.cs)
+set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+
 #add_executable(fetch_color3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_color3d.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
 #set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 #set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-#add_executable(fetch_point3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_point3d.cs)
-#set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
-#set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+
 
 
 target_compile_options(fetch_frame_cs PUBLIC "/unsafe")
 target_compile_options(fetch_trigger_cs PUBLIC "/unsafe")
-#add_dependencies(fetch_point3d_cs pcammls_cs)
+target_compile_options(fetch_point3d_cs PUBLIC "/unsafe")
+
+add_dependencies(fetch_point3d_cs pcammls_cs)
 add_dependencies(fetch_trigger_cs pcammls_cs)
 #add_dependencies(fetch_color3d_cs pcammls_cs)
 add_dependencies(fetch_frame_cs pcammls_cs)
@@ -76,4 +80,4 @@ add_dependencies(fetch_frame_cs pcammls_cs)
 target_link_libraries(fetch_frame_cs pcammls_cs)
 target_link_libraries(fetch_trigger_cs pcammls_cs)
 #target_link_libraries(fetch_color3d_cs pcammls_cs)
-#target_link_libraries(fetch_point3d_cs pcammls_cs)
+target_link_libraries(fetch_point3d_cs pcammls_cs)

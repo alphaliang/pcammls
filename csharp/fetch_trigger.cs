@@ -47,6 +47,9 @@ namespace pcammls_fetch_frame
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
+            float depth_scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle);
+            Console.WriteLine(string.Format("depth image scale unit:{0}", depth_scale_unit));
+
             cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
             
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
@@ -78,8 +81,9 @@ namespace pcammls_fetch_frame
                             ushort* ptr = (ushort*)pt.ToPointer();
                             int width = image.width;
                             int height = image.height;
-                            int center = ptr[width * height / 2 + width / 2];
-                            Console.WriteLine(string.Format("\tdistance :{0}", center));
+                            int dep = ptr[width * height / 2 + width / 2];
+                            float distance = depth_scale_unit * dep;
+                            Console.WriteLine(string.Format("\tdistance :{0}", distance));
                         }
                     }
                 }
