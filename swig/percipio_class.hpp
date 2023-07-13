@@ -96,15 +96,20 @@ typedef struct image_data {
 }image_data;
 
 struct PercipioDeviceEvent {
-  virtual int run(TY_DEV_HANDLE handle, TY_EVENT event_id) = 0;
+  virtual int run(void* handle, TY_EVENT event_id) = 0;
   virtual ~PercipioDeviceEvent() {}
 };
 
-static PercipioDeviceEvent *handler_ptr = NULL;
+typedef PercipioDeviceEvent* PercipioDeviceEventHandle;
+
+static PercipioDeviceEventHandle handler_ptr = NULL;
 static int handler_execute(TY_DEV_HANDLE handle, TY_EVENT event_id) {
   // Make the call up to the target language when handler_ptr
   // is an instance of a target language director class
-  return handler_ptr->run(handle, event_id);
+    if (handler_ptr != NULL)
+        return handler_ptr->run(handle, event_id);
+    else
+        return -1;
 }
 
 void user_device_event_callback(TY_DEV_HANDLE handle, TY_EVENT_INFO evt) {
@@ -137,7 +142,7 @@ class PercipioSDK
     void Close(const TY_DEV_HANDLE handle);
 
     //bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
-    bool PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEvent *handler);
+    bool PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEventHandle handler);
 
     /**/
     bool                                DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -420,7 +425,7 @@ bool PercipioSDK::DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const 
   return true;
 }
 #else
-bool PercipioSDK::PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEvent *handler) {
+bool PercipioSDK::PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEventHandle handler) {
   handler_ptr = handler;
   handler = NULL;
   return true;

@@ -14,6 +14,25 @@ using static OpenCvSharp.Stitcher;
 
 namespace pcammls_fetch_frame
 {
+    class CSharpPercipioDeviceEvent :  PercipioDeviceEvent
+    {
+        bool Offline = false;
+        public override int run(SWIGTYPE_p_void handle, int event_id)
+        {
+            IntPtr dev = handle.getCPtr();
+            if(event_id == SDK.TY_EVENT_DEVICE_OFFLINE)
+            { 
+                Offline = true;
+                Console.WriteLine(string.Format("=== Event Callback: Device Offline"));
+            }
+            return 0;
+        }
+
+        public bool isOffLine()
+        {
+            return Offline;
+        }
+    }
     class Program
     {
         static void Main(string[] args)
@@ -26,7 +45,11 @@ namespace pcammls_fetch_frame
                 Console.WriteLine(string.Format("can not open device!"));
                 return;
             }
-            
+
+            CSharpPercipioDeviceEvent _event = new CSharpPercipioDeviceEvent();
+
+            cl.PercipioDeviceRegiststerCallBackEvent(_event);
+
             cl.DeviceStreamEnable(handle, SDK.PERCIPIO_STREAM_COLOR | SDK.PERCIPIO_STREAM_DEPTH);
             
             EnumEntryVector color_fmt_list = cl.DeviceStreamFormatDump(handle, SDK.PERCIPIO_STREAM_COLOR);
@@ -49,6 +72,9 @@ namespace pcammls_fetch_frame
             cl.DeviceStreamOn(handle);
             
             while(true) {
+                if (_event.isOffLine())
+                    break;
+
                 FrameVector frames = cl.DeviceStreamFetch(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)
                 {
