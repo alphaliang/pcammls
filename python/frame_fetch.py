@@ -1,3 +1,4 @@
+import pcammls
 from pcammls import * 
 import cv2
 import numpy
@@ -21,13 +22,36 @@ def decode_rgb(pixelFormat,image):
         return cv2.imdecode(image, cv2.IMREAD_COLOR)
     return image
 
+class PythonPercipioDeviceEvent(pcammls.PercipioDeviceEvent):
+    Offline = False
+
+    # Define Python class 'constructor'
+    def __init__(self):
+        # Call C++ base class constructor
+        pcammls.PercipioDeviceEvent.__init__(self)
+
+    # Override C++ method: virtual int handle(int a, int b) = 0;
+    def run(self, handle, eventID):
+        # Return the product
+        if eventID==TY_EVENT_DEVICE_OFFLINE:
+          print('=== Event Callback: Device Offline!')
+          self.Offline = True
+        return 0
+
+    def IsOffline(self):
+        return self.Offline
+
 def main():
     cl = PercipioSDK()
     handle = cl.Open()
     if not cl.isValidHandle(handle):
       print('no device found')
+      return
 
-    #cl.DeviceRegisterEventCallBack(handle, devEventCallback)
+
+    #cl.DeviceRegisterEventCallBack(handle, add)
+    event = PythonPercipioDeviceEvent()
+    cl.PercipioDeviceRegiststerCallBackEvent(event)
 
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
 
@@ -70,6 +94,8 @@ def main():
     cl.DeviceStreamOn(handle)
 
     while True:
+      if event.IsOffline():
+        break
       image_list = cl.DeviceStreamFetch(handle, 2000)
       for i in range(len(image_list)):
         frame = image_list[i]

@@ -182,6 +182,8 @@
 
 %}
 
+%feature("director") PercipioDeviceEvent;
+
 //help functions
 %inline %{
     int CPointerSize(){

@@ -95,6 +95,35 @@ typedef struct image_data {
 
 }image_data;
 
+struct PercipioDeviceEvent {
+  virtual int run(TY_DEV_HANDLE handle, TY_EVENT event_id) = 0;
+  virtual ~PercipioDeviceEvent() {}
+};
+
+static PercipioDeviceEvent *handler_ptr = NULL;
+static int handler_execute(TY_DEV_HANDLE handle, TY_EVENT event_id) {
+  // Make the call up to the target language when handler_ptr
+  // is an instance of a target language director class
+  return handler_ptr->run(handle, event_id);
+}
+
+void user_device_event_callback(TY_DEV_HANDLE handle, TY_EVENT_INFO evt) {
+  handler_execute(handle, evt.eventId);
+}
+
+void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
+    if (event_info->eventId == TY_EVENT_DEVICE_OFFLINE) {
+        // Note: 
+        //     Please set TY_BOOL_KEEP_ALIVE_ONOFF feature to false if you need to debug with breakpoint!
+        TY_DEV_HANDLE handle = (TY_DEV_HANDLE)userdata;
+        TY_EVENT_INFO _event = *event_info;
+        user_device_event_callback(handle, _event);
+    }
+    else if (event_info->eventId == TY_EVENT_LICENSE_ERROR) {
+        LOGD("=== Event Callback: License Error!");
+    }
+}
+
 class PercipioSDK
 {
   public:
@@ -107,7 +136,8 @@ class PercipioSDK
         bool isValidHandle(const TY_DEV_HANDLE handle);
     void Close(const TY_DEV_HANDLE handle);
 
-    bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
+    //bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
+    bool PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEvent *handler);
 
     /**/
     bool                                DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -131,8 +161,6 @@ class PercipioSDK
     bool  DeviceStreamOn(const TY_DEV_HANDLE handle);
     const std::vector<image_data>& DeviceStreamFetch(const TY_DEV_HANDLE handle, int timeout);
     bool DeviceStreamOff(const TY_DEV_HANDLE handle);
-
-    
 
   private:
     typedef enum STREAM_FMT_LIST_IDX {
@@ -267,6 +295,8 @@ TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
   AddDevice(hDevice, selectedDev.id);
   LOGD("Device %s is on!", selectedDev.id);
 
+  TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
+
   DumpDeviceInfo(hDevice);
 
   return hDevice;
@@ -375,7 +405,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     }
   }
 }
-
+#if 0
 bool PercipioSDK::DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr) {
   if(hasDevice(handle) < 0) {
     LOGE("DeviceRegisterEventCallBack failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -389,7 +419,13 @@ bool PercipioSDK::DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const 
   }
   return true;
 }
-
+#else
+bool PercipioSDK::PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEvent *handler) {
+  handler_ptr = handler;
+  handler = NULL;
+  return true;
+}
+#endif
 bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
   TY_STATUS status;
   TY_COMPONENT_ID allComps;
