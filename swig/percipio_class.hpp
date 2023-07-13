@@ -187,7 +187,7 @@ class PercipioSDK
     //bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
-    /**/
+    /*stream control*/
     bool                                DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     bool                                DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     const std::vector<TY_ENUM_ENTRY>&   DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -196,13 +196,20 @@ class PercipioSDK
         int  Width(const TY_ENUM_ENTRY fmt);
         int  Height(const TY_ENUM_ENTRY fmt);
 
-
-
-    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-
     bool  DeviceStreamOn(const TY_DEV_HANDLE handle);
     const std::vector<image_data>& DeviceStreamFetch(const TY_DEV_HANDLE handle, int timeout);
     bool DeviceStreamOff(const TY_DEV_HANDLE handle);
+
+
+    /*read calib data*/
+    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+
+    /*device contrl*/
+    bool                        DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
+    bool                        DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle);
+    bool                        DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser);
+
+
 
   private:
     typedef enum STREAM_FMT_LIST_IDX {
@@ -250,6 +257,7 @@ class PercipioSDK
     int stream_idx(const PERCIPIO_STREAM_ID stream);
     
     int hasDevice(const TY_DEV_HANDLE handle);
+    void ConfigDevice(const TY_DEV_HANDLE handle);
     void DumpDeviceInfo(const TY_DEV_HANDLE handle);
     bool FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize);
     void FrameBufferRelease(TY_DEV_HANDLE handle) ;
@@ -339,6 +347,8 @@ TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
 
   TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
 
+  ConfigDevice(hDevice);
+  
   DumpDeviceInfo(hDevice);
 
   return hDevice;
@@ -374,6 +384,10 @@ TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
   DevList.push_back(device_info(hDevice, selectedDev.id));
   LOGD("Device %s is on!", selectedDev.id);
 
+  TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
+
+  ConfigDevice(hDevice);
+
   DumpDeviceInfo(hDevice);
 
   return hDevice;
@@ -396,6 +410,29 @@ bool PercipioSDK::isValidHandle(const TY_DEV_HANDLE handle) {
       return true;
 
   return false;
+}
+
+void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
+  TY_TRIGGER_PARAM trigger;
+  trigger.mode = TY_TRIGGER_MODE_OFF;
+  
+  TY_STATUS status = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
+  if(status != TY_STATUS_OK) {
+    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+  }
+
+  bool hasResend = false;
+  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, &hasResend);
+  if (hasResend) {
+      TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, false);
+  } else {
+    LOGW("=== Not support feature TY_BOOL_GVSP_RESEND");
+  }
+
+  TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, true);
+  TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
+
+  return ;
 }
 
 void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
@@ -733,7 +770,6 @@ bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle)
     return false;
   }
 
-
   TY_STATUS status = TYStopCapture(handle);
   if(status != TY_STATUS_OK) {
     LOGE("TYStopCapture failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
@@ -743,6 +779,83 @@ bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle)
   LOGD("Stream OFF!");
   FrameBufferRelease(handle);
 
+  return true;
+}
+
+bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable)
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return false;
+  }
+
+  printf("====DeviceControlTriggerModeEnable  enable = %d\n", enable);
+
+  TY_TRIGGER_PARAM trigger;
+  if(enable)
+    trigger.mode = TY_TRIGGER_MODE_SLAVE;
+  else
+    trigger.mode = TY_TRIGGER_MODE_OFF;
+  TY_STATUS status = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
+  if(status != TY_STATUS_OK) {
+    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    return false;
+  }
+
+  bool hasResend = false;
+  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, &hasResend);
+  if (hasResend) {
+    LOGD("=== Open resend");
+    if(enable)
+      TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, true);
+    else
+      TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, false);
+  } else {
+    LOGW("=== Not support feature TY_BOOL_GVSP_RESEND");
+  }
+
+  return true;
+}
+
+bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle)
+{
+  printf("====DeviceControlTriggerModeSendTriggerSignal in!\n");
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return false;
+  }
+
+  TY_STATUS status;
+  while(true) {
+    printf("====send soft trigger!");
+    status = TYSendSoftTrigger(handle);
+    if(status != TY_STATUS_BUSY)
+      break;
+  }
+
+  printf("====send soft trigger status = %d!\n", status);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYSendSoftTrigger failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    return false;
+  }
+  return true;
+}
+
+bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser)
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return false;
+  }
+
+  TY_STATUS status = TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, laser);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYSetInt failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    return false;
+  }
   return true;
 }
 

@@ -47,9 +47,7 @@ def main():
     if not cl.isValidHandle(handle):
       print('no device found')
       return
-
-
-    #cl.DeviceRegisterEventCallBack(handle, add)
+      
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
@@ -98,7 +96,7 @@ def main():
     while True:
       if event.IsOffline():
         break
-      image_list = cl.DeviceStreamFetch(handle, 2000)
+      image_list = cl.DeviceStreamFetch(handle, -1)
       for i in range(len(image_list)):
         frame = image_list[i]
         arr = frame.as_nparray()
