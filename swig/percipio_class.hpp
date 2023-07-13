@@ -129,6 +129,49 @@ void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
     }
 }
 
+struct PercipioCalibData
+{
+  public:
+    PercipioCalibData() {};
+    ~PercipioCalibData() {};
+    PercipioCalibData(const TY_CAMERA_CALIB_INFO calib) {calib_data = calib;};
+
+    int Width();
+    int Height();
+    const std::vector<float>   Intrinsic();
+    const std::vector<float>   Extrinsic();
+    const std::vector<float>   Distortion();
+  private:
+    TY_CAMERA_CALIB_INFO calib_data;
+};
+
+int PercipioCalibData::Width()
+{
+  return calib_data.intrinsicWidth;
+}
+
+int PercipioCalibData::Height()
+{
+  return calib_data.intrinsicHeight;
+}
+
+const std::vector<float>   PercipioCalibData::Intrinsic() {
+  float* ptr = calib_data.intrinsic.data;
+  int cnt = sizeof(calib_data.intrinsic.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+const std::vector<float>   PercipioCalibData::Extrinsic() {
+  float* ptr = calib_data.extrinsic.data;
+  int cnt = sizeof(calib_data.extrinsic.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+
+const std::vector<float>   PercipioCalibData::Distortion() {
+  float* ptr = calib_data.distortion.data;
+  int cnt = sizeof(calib_data.distortion.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+
 class PercipioSDK
 {
   public:
@@ -155,13 +198,7 @@ class PercipioSDK
 
 
 
-    const TY_CAMERA_CALIB_INFO& DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    int                         DeviceReadCalibWidth(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    int                         DeviceReadCalibHeight(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    
-    const std::vector<float>   DeviceReadCalibIntrinsicArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    const std::vector<float>   DeviceReadCalibExtrinsicArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    const std::vector<float>   DeviceReadCalibDistortionArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
 
     bool  DeviceStreamOn(const TY_DEV_HANDLE handle);
     const std::vector<image_data>& DeviceStreamFetch(const TY_DEV_HANDLE handle, int timeout);
@@ -185,14 +222,14 @@ class PercipioSDK
 
       std::vector<TY_ENUM_ENTRY> fmt_list[STREMA_FMT_IDX_MAX];
       std::vector<image_data>    image_list;
-      TY_CAMERA_CALIB_INFO       calib_data_list[STREMA_FMT_IDX_MAX];
+      PercipioCalibData           calib_data_list[STREMA_FMT_IDX_MAX];
 
       device_info(const TY_DEV_HANDLE _handle, const char* id) {
         frameBuffer[0].clear();
         frameBuffer[1].clear();
         for(size_t i = 0; i < STREMA_FMT_IDX_MAX; i++) {
           fmt_list[i].clear();
-          memset(&calib_data_list[i], 0, sizeof(TY_CAMERA_CALIB_INFO));
+          memset(&calib_data_list[i], 0, sizeof(PercipioCalibData));
         }
         handle = _handle;
         devID = std::string(id);
@@ -403,11 +440,14 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
 
   //DUMP STREAM CALIB_DATA LIST
   for(size_t cnt = 0; cnt < STREMA_FMT_IDX_MAX; cnt++) {
-    status = TYGetStruct(handle, compID[cnt], TY_STRUCT_CAM_CALIB_DATA, &DevList[idx].calib_data_list[cnt], sizeof(TY_CAMERA_CALIB_INFO));
+    TY_CAMERA_CALIB_INFO calib_data;
+    status = TYGetStruct(handle, compID[cnt], TY_STRUCT_CAM_CALIB_DATA, &calib_data, sizeof(TY_CAMERA_CALIB_INFO));
     if(status != TY_STATUS_OK) {
       LOGE("TYGetStruct failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
       memset(&DevList[idx].calib_data_list[cnt], 0, sizeof(TY_CAMERA_CALIB_INFO));
     }
+
+    DevList[idx].calib_data_list[cnt] = PercipioCalibData(calib_data);
   }
 }
 
@@ -592,9 +632,9 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   return ;
 }
 
-const TY_CAMERA_CALIB_INFO& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
+const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
 {
-  static TY_CAMERA_CALIB_INFO  invalid_calib_data;
+  static PercipioCalibData  invalid_calib_data;
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -607,92 +647,6 @@ const TY_CAMERA_CALIB_INFO& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE
   }
 
   return DevList[idx].calib_data_list[compIDX];
-}
-
-int PercipioSDK::DeviceReadCalibWidth(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
-  int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    return 0;
-  }
-
-  int compIDX = stream_idx(stream);
-  if(compIDX == STREMA_FMT_IDX_MAX) {
-      return 0;
-  }
-
-  return DevList[idx].calib_data_list[compIDX].intrinsicWidth;
-}
-
-int PercipioSDK::DeviceReadCalibHeight(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
-  int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    return 0;
-  }
-
-  int compIDX = stream_idx(stream);
-  if(compIDX == STREMA_FMT_IDX_MAX) {
-      return 0;
-  }
-
-  return DevList[idx].calib_data_list[compIDX].intrinsicHeight;
-}
-
-const std::vector<float> PercipioSDK::DeviceReadCalibIntrinsicArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
-  int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    return std::vector<float>();
-  }
-
-  int compIDX = stream_idx(stream);
-  if(compIDX == STREMA_FMT_IDX_MAX) {
-      return std::vector<float>();
-  }
-
-  float* ptr = DevList[idx].calib_data_list[compIDX].intrinsic.data;
-  int cnt = sizeof(DevList[idx].calib_data_list[compIDX].intrinsic.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
-}
-
-const std::vector<float> PercipioSDK::DeviceReadCalibExtrinsicArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
-  int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    return std::vector<float>();
-  }
-
-  int compIDX = stream_idx(stream);
-  if(compIDX == STREMA_FMT_IDX_MAX) {
-      return std::vector<float>();
-  }
-
-  float* ptr = DevList[idx].calib_data_list[compIDX].extrinsic.data;
-  int cnt = sizeof(DevList[idx].calib_data_list[compIDX].extrinsic.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
-}
-
-const std::vector<float> PercipioSDK::DeviceReadCalibDistortionArray(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
-  int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    return std::vector<float>();
-  }
-
-  int compIDX = stream_idx(stream);
-  if(compIDX == STREMA_FMT_IDX_MAX) {
-      return std::vector<float>();
-  }
-
-  float* ptr = DevList[idx].calib_data_list[compIDX].distortion.data;
-  int cnt = sizeof(DevList[idx].calib_data_list[compIDX].distortion.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
 }
 
 bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle)
