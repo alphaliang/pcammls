@@ -22,13 +22,13 @@ def decode_rgb(pixelFormat,image):
         return cv2.imdecode(image, cv2.IMREAD_COLOR)
     return image
 
-class PythonPercipioDeviceEvent(pcammls.PercipioDeviceEvent):
+class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
 
     # Define Python class 'constructor'
     def __init__(self):
         # Call C++ base class constructor
-        pcammls.PercipioDeviceEvent.__init__(self)
+        pcammls.DeviceEvent.__init__(self)
 
     # Override C++ method: virtual int handle(int a, int b) = 0;
     def run(self, handle, eventID):
@@ -51,7 +51,7 @@ def main():
 
     #cl.DeviceRegisterEventCallBack(handle, add)
     event = PythonPercipioDeviceEvent()
-    cl.PercipioDeviceRegiststerCallBackEvent(event)
+    cl.DeviceRegiststerCallBackEvent(event)
 
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
 

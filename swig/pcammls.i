@@ -182,7 +182,7 @@
 
 %}
 
-%feature("director") PercipioDeviceEvent;
+%feature("director") DeviceEvent;
 
 //help functions
 %inline %{

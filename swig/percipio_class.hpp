@@ -95,14 +95,14 @@ typedef struct image_data {
 
 }image_data;
 
-struct PercipioDeviceEvent {
+struct DeviceEvent {
   virtual int run(void* handle, TY_EVENT event_id) = 0;
-  virtual ~PercipioDeviceEvent() {}
+  virtual ~DeviceEvent() {}
 };
 
-typedef PercipioDeviceEvent* PercipioDeviceEventHandle;
+typedef DeviceEvent* DeviceEventHandle;
 
-static PercipioDeviceEventHandle handler_ptr = NULL;
+static DeviceEventHandle handler_ptr = NULL;
 static int handler_execute(TY_DEV_HANDLE handle, TY_EVENT event_id) {
   // Make the call up to the target language when handler_ptr
   // is an instance of a target language director class
@@ -142,7 +142,7 @@ class PercipioSDK
     void Close(const TY_DEV_HANDLE handle);
 
     //bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
-    bool PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEventHandle handler);
+    bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
     /**/
     bool                                DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -410,27 +410,13 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     }
   }
 }
-#if 0
-bool PercipioSDK::DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr) {
-  if(hasDevice(handle) < 0) {
-    LOGE("DeviceRegisterEventCallBack failed: invalid handle %s:%d", __FILE__, __LINE__);
-    return false;
-  }
 
-  TY_STATUS status = TYRegisterEventCallback(handle, cbPtr, NULL);
-  if(status != TY_STATUS_OK) {
-    LOGE("TYRegisterEventCallback failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-    return false;
-  }
-  return true;
-}
-#else
-bool PercipioSDK::PercipioDeviceRegiststerCallBackEvent(PercipioDeviceEventHandle handler) {
+bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   handler_ptr = handler;
   handler = NULL;
   return true;
 }
-#endif
+
 bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
   TY_STATUS status;
   TY_COMPONENT_ID allComps;

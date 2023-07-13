@@ -14,14 +14,14 @@ using static OpenCvSharp.Stitcher;
 
 namespace pcammls_fetch_frame
 {
-    class CSharpPercipioDeviceEvent :  PercipioDeviceEvent
+    class CSharpPercipioDeviceEvent : DeviceEvent
     {
         bool Offline = false;
         public override int run(SWIGTYPE_p_void handle, int event_id)
         {
             IntPtr dev = handle.getCPtr();
             if(event_id == SDK.TY_EVENT_DEVICE_OFFLINE)
-            { 
+            {
                 Offline = true;
                 Console.WriteLine(string.Format("=== Event Callback: Device Offline"));
             }
@@ -48,7 +48,7 @@ namespace pcammls_fetch_frame
 
             CSharpPercipioDeviceEvent _event = new CSharpPercipioDeviceEvent();
 
-            cl.PercipioDeviceRegiststerCallBackEvent(_event);
+            cl.DeviceRegiststerCallBackEvent(_event);
 
             cl.DeviceStreamEnable(handle, SDK.PERCIPIO_STREAM_COLOR | SDK.PERCIPIO_STREAM_DEPTH);
             
