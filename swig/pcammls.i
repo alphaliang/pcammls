@@ -76,6 +76,9 @@
 %C_ARRAY_BUFFER_DEF(TY_CAMERA_DISTORTION);
 %C_ARRAY_BUFFER_DEF(TY_CAMERA_CALIB_INFO);
 
+%C_ARRAY_BUFFER_DEF(pointcloud_data);
+%C_ARRAY_BUFFER_DEF(pointcloud_data_list);
+
 %extend class TY_DEVICE_BASE_INFO{//deal with nested union which not suported by SWIG
     TY_DEVICE_NET_INFO get_netinfo() const {
         return self->netInfo;
@@ -139,6 +142,9 @@
 %STRUCT_PTR_EXTEND(TY_CAMERA_EXTRINSIC)
 %STRUCT_PTR_EXTEND(TY_CAMERA_DISTORTION)
 %STRUCT_PTR_EXTEND(TY_CAMERA_CALIB_INFO)
+
+%STRUCT_PTR_EXTEND(pointcloud_data)
+%STRUCT_PTR_EXTEND(pointcloud_data_list)
 
 %apply uint32_t* OUTPUT {uint32_t* pNumIfaces}
 %apply uint32_t* OUTPUT {uint32_t* filledCount}

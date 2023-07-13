@@ -1,4 +1,5 @@
 #include "TYApi.h"
+#include "TYCoordinateMapper.h"
 #include "../sample/common/Utils.hpp"
 
 #include <vector>
@@ -10,6 +11,43 @@ typedef enum PERCIPIO_STREAM_LIST {
   PERCIPIO_STREAM_IR_RIGHT  = 0x00000008,
 }PERCIPIO_STREAM_LIST;
 typedef int PERCIPIO_STREAM_ID;
+
+
+typedef struct PercipioCalibData
+{
+  public:
+    PercipioCalibData() {};
+    ~PercipioCalibData() {};
+    PercipioCalibData(const TY_CAMERA_CALIB_INFO calib) {calib_data = calib;};
+
+    int Width() const { return calib_data.intrinsicWidth; };
+    int Height() const { return calib_data.intrinsicHeight; };
+    const std::vector<float>   Intrinsic();
+    const std::vector<float>   Extrinsic();
+    const std::vector<float>   Distortion();
+
+    const TY_CAMERA_CALIB_INFO& data() const { return calib_data; }
+
+  private:
+    TY_CAMERA_CALIB_INFO calib_data;
+}PercipioCalibData;
+
+const std::vector<float>   PercipioCalibData::Intrinsic() {
+  float* ptr = calib_data.intrinsic.data;
+  int cnt = sizeof(calib_data.intrinsic.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+const std::vector<float>   PercipioCalibData::Extrinsic() {
+  float* ptr = calib_data.extrinsic.data;
+  int cnt = sizeof(calib_data.extrinsic.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+
+const std::vector<float>   PercipioCalibData::Distortion() {
+  float* ptr = calib_data.distortion.data;
+  int cnt = sizeof(calib_data.distortion.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
 
 typedef struct image_data {
   PERCIPIO_STREAM_ID streamID;
@@ -95,6 +133,74 @@ typedef struct image_data {
 
 }image_data;
 
+typedef struct pointcloud_data {
+  TY_VECT_3F p3d;
+
+  pointcloud_data() {
+    p3d.x = NAN;
+    p3d.y = NAN;
+    p3d.z = NAN;
+  }
+
+  pointcloud_data(const TY_VECT_3F& v) {
+    p3d.x = v.x;
+    p3d.y = v.y;
+    p3d.z = v.z;
+  }
+
+  float getX() { return p3d.x; }
+  float getY() { return p3d.y; }
+  float getZ() { return p3d.z; }
+}pointcloud_data;
+
+typedef struct pointcloud_data_list {
+  
+  pointcloud_data_list() {
+    memset(this, 0, sizeof(pointcloud_data_list));
+  }
+
+  pointcloud_data_list(const pointcloud_data_list& list) {
+    cnt = list.cnt;
+    p3d = new TY_VECT_3F[cnt];
+    memcpy(&p3d[0], &list.p3d[0], cnt * sizeof(pointcloud_data));
+  };
+
+  ~pointcloud_data_list() {
+    if(p3d) {
+      delete []p3d;
+      p3d = NULL;
+    }
+  }
+
+  void resize(int size) {
+    if(p3d) {
+      delete []p3d;
+    }
+
+    p3d = new TY_VECT_3F[size];
+    cnt = size;
+  }
+
+  int size() {
+    return cnt;
+  }
+
+  pointcloud_data get_value(int idx) {
+    if(idx < cnt)
+      return pointcloud_data(p3d[idx]);
+    else
+      return pointcloud_data();
+  }
+
+  void* getPtr() {
+    return p3d;
+  }
+
+  private:
+    int cnt;
+    TY_VECT_3F* p3d;
+}pointcloud_data_list;
+
 struct DeviceEvent {
   virtual int run(void* handle, TY_EVENT event_id) = 0;
   virtual ~DeviceEvent() {}
@@ -129,49 +235,6 @@ void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
     }
 }
 
-struct PercipioCalibData
-{
-  public:
-    PercipioCalibData() {};
-    ~PercipioCalibData() {};
-    PercipioCalibData(const TY_CAMERA_CALIB_INFO calib) {calib_data = calib;};
-
-    int Width();
-    int Height();
-    const std::vector<float>   Intrinsic();
-    const std::vector<float>   Extrinsic();
-    const std::vector<float>   Distortion();
-  private:
-    TY_CAMERA_CALIB_INFO calib_data;
-};
-
-int PercipioCalibData::Width()
-{
-  return calib_data.intrinsicWidth;
-}
-
-int PercipioCalibData::Height()
-{
-  return calib_data.intrinsicHeight;
-}
-
-const std::vector<float>   PercipioCalibData::Intrinsic() {
-  float* ptr = calib_data.intrinsic.data;
-  int cnt = sizeof(calib_data.intrinsic.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
-}
-const std::vector<float>   PercipioCalibData::Extrinsic() {
-  float* ptr = calib_data.extrinsic.data;
-  int cnt = sizeof(calib_data.extrinsic.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
-}
-
-const std::vector<float>   PercipioCalibData::Distortion() {
-  float* ptr = calib_data.distortion.data;
-  int cnt = sizeof(calib_data.distortion.data) / sizeof(float);
-  return std::vector<float>(ptr, ptr + cnt);
-}
-
 class PercipioSDK
 {
   public:
@@ -184,7 +247,6 @@ class PercipioSDK
         bool isValidHandle(const TY_DEV_HANDLE handle);
     void Close(const TY_DEV_HANDLE handle);
 
-    //bool DeviceRegisterEventCallBack(const TY_DEV_HANDLE handle, const TY_EVENT_CALLBACK cbPtr);
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
     /*stream control*/
@@ -202,14 +264,16 @@ class PercipioSDK
 
 
     /*read calib data*/
-    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    const PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) const;
+    const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) const;
 
-    /*device contrl*/
+    /*device control*/
     bool                        DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
     bool                        DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle);
     bool                        DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser);
 
-
+    /** stream control*/
+    bool DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
 
   private:
     typedef enum STREAM_FMT_LIST_IDX {
@@ -225,6 +289,7 @@ class PercipioSDK
       TY_DEV_HANDLE       handle;
       std::string         devID;
       PERCIPIO_STREAM_ID  stream;
+      float               depth_scale_unit;
       std::vector<char>   frameBuffer[2];
 
       std::vector<TY_ENUM_ENTRY> fmt_list[STREMA_FMT_IDX_MAX];
@@ -238,6 +303,7 @@ class PercipioSDK
           fmt_list[i].clear();
           memset(&calib_data_list[i], 0, sizeof(PercipioCalibData));
         }
+        depth_scale_unit = 1.f;
         handle = _handle;
         devID = std::string(id);
         image_list.clear();
@@ -486,6 +552,17 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
 
     DevList[idx].calib_data_list[cnt] = PercipioCalibData(calib_data);
   }
+
+  //DUMP DEPTH SCAL UNIT
+  float scale_unit = 1.f;
+  status = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYGetFloat failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+  }
+  DevList[idx].depth_scale_unit = scale_unit;
+
+  //
+  return;
 }
 
 bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
@@ -669,7 +746,7 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   return ;
 }
 
-const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
+const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) const
 {
   static PercipioCalibData  invalid_calib_data;
   int idx = hasDevice(handle);
@@ -684,6 +761,17 @@ const PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE ha
   }
 
   return DevList[idx].calib_data_list[compIDX];
+}
+
+const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) const
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return NAN;
+  }
+
+  return DevList[idx].depth_scale_unit;
 }
 
 bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle)
@@ -790,8 +878,6 @@ bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, con
     return false;
   }
 
-  printf("====DeviceControlTriggerModeEnable  enable = %d\n", enable);
-
   TY_TRIGGER_PARAM trigger;
   if(enable)
     trigger.mode = TY_TRIGGER_MODE_SLAVE;
@@ -828,7 +914,6 @@ bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE 
 
   TY_STATUS status;
   while(true) {
-    printf("====send soft trigger!");
     status = TYSendSoftTrigger(handle);
     if(status != TY_STATUS_BUSY)
       break;
@@ -854,6 +939,24 @@ bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int 
     LOGE("TYSetInt failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     return false;
   }
+  return true;
+}
+
+bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d)
+{
+  if(depth.streamID != PERCIPIO_STREAM_DEPTH) {
+    LOGE("Invalid stream data: %d.", depth.streamID);
+      return false;
+  }
+
+  int size = depth.width * depth.height;
+  p3d.resize(size);
+
+  TYMapDepthImageToPoint3d(&calib_data.data(),
+                                     depth.width, depth.height,
+                                     (const uint16_t*)depth.buffer,
+                                     p3d.getPtr(), 
+                                     scale);
   return true;
 }
 
