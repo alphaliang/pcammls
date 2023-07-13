@@ -820,7 +820,6 @@ bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, con
 
 bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle)
 {
-  printf("====DeviceControlTriggerModeSendTriggerSignal in!\n");
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -835,7 +834,6 @@ bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE 
       break;
   }
 
-  printf("====send soft trigger status = %d!\n", status);
   if(status != TY_STATUS_OK) {
     LOGE("TYSendSoftTrigger failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     return false;
