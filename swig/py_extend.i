@@ -49,6 +49,11 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
     $result = _CreatePyList($1, $1_dim0,$1_descriptor);
 }
 
+
+%typemap(out) image_data [ANY] {
+    $result = _CreatePyList($1, $1_dim0,$1_descriptor);
+}
+
 %define %CARRAY_ITEM_ASSIGN(type_name)
 %rename(__getitem__) type_name##_ARRAY::getitem;
 %rename(__setitem__) type_name##_ARRAY::setitem;
@@ -72,6 +77,9 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_EXTRINSIC);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_DISTORTION);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO);
+%CARRAY_ITEM_ASSIGN(TY_EVENT_INFO);
+
+%CARRAY_ITEM_ASSIGN(image_data);
 
 
 //PVOID HANDLE /////////////////////////////////////////////////////////////////////////////
@@ -118,6 +126,19 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
     PyObject* out_list = _CreatePyList(&vec[0], vec.size(),SWIGTYPE_p_TY_DEVICE_BASE_INFO);
     $result = SWIG_Python_AppendOutput($result, out_list);
 }
+
+%include "std_vector.i"
+
+%template(ty_enum_vector) std::vector<TY_ENUM_ENTRY>;
+%template(ty_image_data_vector) std::vector<image_data>;
+%template(ty_float_vector) std::vector<float>;
+
+
+
+//%constant void cb(TY_EVENT_INFO *event_info, void *userdata);
+//%constant void func(TY_EVENT_INFO *event_info, void *userdata);
+//int binary_op(int a, int b, int (*op)(int, int));
+//bool PercipioSDK::DeviceRegisterEventCallBack(const TY_DEV_HANDLE , const TY_EVENT_CALLBACK );
 
 //return code to exception//////////////////////////////////////////////////////////
 
@@ -322,6 +343,42 @@ def as_nparray(self):
 %}
 }//endof  %extend TY_IMAGE_DATA 
 
+
+%extend image_data {
+%pythoncode %{
+__U8CX = [TY_PIXEL_FORMAT_MJPG, TY_PIXEL_FORMAT_JPEG]
+__U8C1 = [TY_PIXEL_FORMAT_MONO , TY_PIXEL_FORMAT_BAYER8GB , TY_PIXEL_FORMAT_BAYER8BG]
+__U8C2 = [TY_PIXEL_FORMAT_YVYU,TY_PIXEL_FORMAT_YUYV]
+__U8C3 = [TY_PIXEL_FORMAT_RGB,TY_PIXEL_FORMAT_BGR]
+__U16C1 = [TY_PIXEL_FORMAT_DEPTH16 , TY_PIXEL_FORMAT_MONO16]
+
+def as_nparray(self):
+    '''
+    convert image to numpy array
+    *** YOU SHOULD COPY DATA TO YOUR OWN ARRAY BEFORE invoking Enqueuebuffer  ***
+    '''
+    if self.buffer==None or self.width<=0 or self.height<=0:
+        return None
+    pformat = self.pixelFormat
+    if pformat in self.__U8CX:
+        sz = self.size
+        return uint8_t_ARRAY.ptr_as_nparray1d(self.buffer,self.size)
+    if pformat in self.__U8C1:
+        sz = self.height*self.width
+        return uint8_t_ARRAY.ptr_as_nparray2d(self.buffer,self.height,self.width)
+    elif pformat  in self.__U8C2:
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,2)
+    elif pformat  in self.__U8C3:
+        sz = self.height*self.width*3
+        return uint8_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,3)
+    elif pformat  in self.__U16C1:
+        sz = self.height*self.width
+        return uint16_t_ARRAY.ptr_as_nparray3d(self.buffer,self.height,self.width,1)
+    else:
+        raise Exception('not supported format {}'.format(pformat))
+    return None    
+%}
+}//endof  %extend image_data 
 #endif //WITH_NUMPY
 
 

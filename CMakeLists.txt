@@ -4,9 +4,10 @@ include(ExternalProject)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)   
 set(CAMPORT_DIR  "${CMAKE_SOURCE_DIR}/camport3" CACHE  PATH "Percipio SDK Path")
-set(CAMPORT_ARCH  CACHE STRING "Percipio SDK Arch")
+set(CAMPORT_ARCH  x64 CACHE STRING "Percipio SDK Arch")
+set_property(CACHE CAMPORT_ARCH PROPERTY STRINGS x64 i686 Aarch64 armv7hf)
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
-set(PYTHON_VERSION "2.7" CACHE STRING "python version")
+set(PYTHON_VERSION "3.8" CACHE STRING "python version")
 set(CSHARP_NET_VERSION  "v4.8" CACHE STRING ".NET version")
 
 option(WITH_OPENCV OFF)
@@ -77,7 +78,7 @@ if ( (NOT EXISTS "${CAMPORT_DIR}") OR (NOT EXISTS "${CAMPORT_DIR}/include"))
 endif()
 
 add_library(tycam SHARED IMPORTED GLOBAL)
-target_include_directories(tycam INTERFACE ${CAMPORT_DIR}/include)
+target_include_directories(tycam INTERFACE ${CAMPORT_DIR}/include ./swig/)
 if (MSVC)#for windows
     set(CAMPORT_LIB_ROOT "${CAMPORT_DIR}/lib/win/hostapp")
     if(CMAKE_CL_64) #x64

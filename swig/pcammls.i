@@ -2,12 +2,14 @@
 
 %{
 #include "TYApi.h"
-#include "TYImageProc.h"
+#include "percipio_class.hpp"
 #include "TyIsp.h"
 #include "../sample/common/Utils.hpp"
 #include "../sample/common/TYThread.hpp"
 #include "../sample/common/TYThread.cpp"
 #include "../sample/common/BayerISP.hpp"
+
+#include "TYImageProc.h"
 %}
 
 
@@ -81,6 +83,17 @@
 
     TY_DEVICE_USB_INFO get_usbinfo() const {
         return self->usbInfo;
+    }
+}
+
+
+%extend class TY_ENUM_ENTRY{
+    const char* getDesc() const {
+        return self->description;
+    }
+
+    unsigned int getValue() const {
+        return self->value;
     }
 }
 
@@ -178,11 +191,11 @@
 
 %}
 
-
 %include "TYApi.h"
 %include "TYImageProc.h"
 %include "TYCoordinateMapper.h"
 %include "TyIsp.h"
+%include "percipio_class.hpp"
 %include "../sample/common/Utils.hpp"
 %include "../sample/common/TYThread.hpp"
 %include "../sample/common/TYThread.cpp"
