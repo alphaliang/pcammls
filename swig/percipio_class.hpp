@@ -1,6 +1,10 @@
 #include "TYApi.h"
 #include "TYCoordinateMapper.h"
+#include "TYImageProc.h"
 #include "../sample/common/Utils.hpp"
+
+#include <opencv2/opencv.hpp>
+
 
 #include <vector>
 
@@ -271,7 +275,7 @@ class PercipioSDK
 
 
     /*read calib data*/
-    PercipioCalibData&    DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    PercipioCalibData&          DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle);
 
     /*device control*/
@@ -281,7 +285,9 @@ class PercipioSDK
     bool                        DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser);
 
     /** stream control*/
+    bool DeviceStreamImageDecode(const image_data& src, image_data& dst);
     bool DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
+    bool DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst);
     bool DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALIB_INFO& depth_calib, const int depthW, const int depthH, const float scale, 
                                                     const image_data& srcDepth, 
                                                     const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
@@ -352,8 +358,8 @@ void PercipioSDK::AddDevice(const TY_DEV_HANDLE hanlde, const char* sn) {
 	DevList.push_back(device_info(hanlde, sn));
 }
 
-int PercipioSDK::stream_idx(const PERCIPIO_STREAM_ID stream)
-{
+int PercipioSDK::stream_idx(const PERCIPIO_STREAM_ID stream) {
+
   int compIDX;
   switch(stream) {
     case PERCIPIO_STREAM_COLOR:
@@ -655,8 +661,8 @@ bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_
   return true;
 }
 
-bool PercipioSDK::DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
+bool PercipioSDK::DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
+
   if(stream & PERCIPIO_STREAM_COLOR) {
     TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
   }
@@ -694,11 +700,13 @@ const std::vector<TY_ENUM_ENTRY>& PercipioSDK::DeviceStreamFormatDump(const TY_D
 int  PercipioSDK::Width(const TY_ENUM_ENTRY fmt) {
   return TYImageWidth(fmt.value);
 }
+
 int  PercipioSDK::Height(const TY_ENUM_ENTRY fmt) {
   return TYImageHeight(fmt.value);
 }
 
 bool PercipioSDK::DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, const TY_ENUM_ENTRY fmt) {
+
   TY_COMPONENT_ID compID;
   switch(stream) {
     case PERCIPIO_STREAM_COLOR:
@@ -758,8 +766,8 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   return ;
 }
 
-PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
-{
+PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
+
   static PercipioCalibData  invalid_calib_data;
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -775,8 +783,8 @@ PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, 
   return DevList[idx].calib_data_list[compIDX];
 }
 
-const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle)
-{
+const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) {
+
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -786,8 +794,8 @@ const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handl
   return DevList[idx].depth_scale_unit;
 }
 
-bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle)
-{
+bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
+
   if(hasDevice(handle) < 0) {
     LOGE("Invalid device handle!");
     return false;
@@ -861,9 +869,8 @@ const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE
   return DevList[idx].image_list;
 }
 
+bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
 
-bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle)
-{
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -882,8 +889,8 @@ bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle)
   return true;
 }
 
-bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable)
-{
+bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable) {
+
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -916,8 +923,8 @@ bool PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, con
   return true;
 }
 
-bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle)
-{
+bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle) {
+
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -938,8 +945,7 @@ bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE 
   return true;
 }
 
-bool PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE handle, bool enable)
-{
+bool PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE handle, bool enable) {
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -952,11 +958,10 @@ bool PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE h
     return false;
   }
   return true;
-
 }
 
-bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser)
-{
+bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser) {
+
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
@@ -971,8 +976,205 @@ bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int 
   return true;
 }
 
-bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d)
+static bool convertcvMat2image_data(const cv::Mat& mat, image_data& image)
 {
+  int type = mat.type();
+  if(type == CV_8UC3) {
+    image.pixelFormat = TY_PIXEL_FORMAT_BGR;
+  } else if(type == CV_8U) {
+    image.pixelFormat = TY_PIXEL_FORMAT_MONO;
+  } else if(type == CV_16U) {
+    image.pixelFormat = TY_PIXEL_FORMAT_MONO16;
+  } else {
+    return false;
+  }
+
+  int size = mat.total() * mat.elemSize();
+  printf("=====%d X %d, channel: %d, elem : %d\n", mat.cols, mat.rows, size);
+  image.resize(size);
+  image.width = mat.cols;
+  image.height = mat.rows;
+  memcpy(image.buffer, mat.data, size);
+  return true;
+}
+
+static bool parseCsiRaw10(const image_data& src, image_data& dst) {
+  int width = src.width;
+  int height = src.height;
+  if(width & 0x3) {
+    LOGE("Invalid ir stream size : %d x %d\n", src.width, src.height);
+    return false;
+  }
+
+  dst.streamID     = src.streamID;
+  dst.timestamp    = src.timestamp;
+  dst.imageIndex   = src.imageIndex;
+  dst.status       = src.status;
+  dst.width        = src.width;
+  dst.height       = src.height;
+  dst.pixelFormat  = TY_PIXEL_FORMAT_MONO16;
+  dst.resize(dst.width * dst.height * 2);
+
+  uint16_t* src_ptr = (uint16_t*)src.buffer;
+  uint16_t* dst_ptr = (uint16_t*)dst.buffer;
+  int raw10_line_size = 5 * width / 4;
+  for(size_t i = 0, j = 0; i < raw10_line_size * height; i+=5, j+=4)
+  {
+    //[A2 - A9] | [B2 - B9] | [C2 - C9] | [D2 - D9] | [A0A1-B0B1-C0C1-D0D1]
+    dst_ptr[j + 0] = ((uint16_t)src_ptr[i + 0] << 2) | ((src_ptr[i + 4] & 0x3)  >> 0);
+    dst_ptr[j + 1] = ((uint16_t)src_ptr[i + 1] << 2) | ((src_ptr[i + 4] & 0xc)  >> 2);
+    dst_ptr[j + 2] = ((uint16_t)src_ptr[i + 2] << 2) | ((src_ptr[i + 4] & 0x30) >> 4);
+    dst_ptr[j + 3] = ((uint16_t)src_ptr[i + 3] << 2) | ((src_ptr[i + 4] & 0xc0) >> 6);
+  }
+  return true;
+}
+
+static bool parseCsiRaw12(const image_data& src, image_data& dst) {
+  int width = src.width;
+  int height = src.height;
+  if(width & 0x1) {
+    LOGE("Invalid ir stream size : %d x %d\n", src.width, src.height);
+    return false;
+  }
+
+  dst.streamID     = src.streamID;
+  dst.timestamp    = src.timestamp;
+  dst.imageIndex   = src.imageIndex;
+  dst.status       = src.status;
+  dst.width        = src.width;
+  dst.height       = src.height;
+  dst.pixelFormat  = TY_PIXEL_FORMAT_MONO16;
+  dst.resize(dst.width * dst.height * 2);
+
+  uint16_t* src_ptr = (uint16_t*)src.buffer;
+  uint16_t* dst_ptr = (uint16_t*)dst.buffer;
+  int raw12_line_size = 3 * width / 2;
+  for(size_t i = 0, j = 0; i < raw12_line_size * height; i+=3, j+=2)
+  {
+    //[A4 - A11] | [B4 - B11] | [A0A1A2A3-B0B1B2B3]
+    dst_ptr[j + 0] = ((uint16_t)src_ptr[i + 0] << 4) | ((src_ptr[i + 2] & 0x0f)  >> 0);
+    dst_ptr[j + 1] = ((uint16_t)src_ptr[i + 1] << 4) | ((src_ptr[i + 2] & 0xf0)  >> 4);
+  }
+  return true;
+}
+
+static bool parseIrFrame(const image_data& src, image_data& dst) {
+  if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat==TY_PIXEL_FORMAT_TOF_IR_MONO16){
+    dst = src;
+    return true;
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
+    //target: TY_PIXEL_FORMAT_MONO16
+    return parseCsiRaw10(src, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
+    //target: TY_PIXEL_FORMAT_MONO
+    dst = src;
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
+    //target: TY_PIXEL_FORMAT_MONO16
+    return parseCsiRaw12(src, dst);
+  } 
+  else {
+    LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
+	  return false;
+  }
+}
+
+static bool parseColorFrame(const image_data& src, image_data& dst) {
+
+  //TODO
+  cv::Mat color;
+  if (src.pixelFormat == TY_PIXEL_FORMAT_JPEG){
+    printf("==JPEG\n");
+    cv::Mat jpeg(src.height, src.width, CV_8UC1, src.buffer);
+    color = cv::imdecode(jpeg, cv::IMREAD_COLOR);
+  }
+
+  if (src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
+    printf("==YVYU\n");
+    cv::Mat yuv(src.height, src.width , CV_8UC2, src.buffer);
+    cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
+  }
+
+  if (src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
+    printf("==YUYV\n");
+    cv::Mat yuv(src.height, src.width, CV_8UC2, src.buffer);
+    cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YUYV);
+  }
+
+  if (src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
+    printf("==RGB\n");
+    cv::Mat rgb(src.height, src.width, CV_8UC3, src.buffer);
+    cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
+  }
+
+  if (src.pixelFormat == TY_PIXEL_FORMAT_BGR){
+    printf("==BGR\n");
+    color = cv::Mat(src.height, src.width, CV_8UC3, src.buffer);
+  }
+  
+  if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GB){
+    printf("==BAYER8GB\n");
+    cv::Mat raw(src.height, src.width, CV_8U, src.buffer);
+    cv::cvtColor(raw, color, cv::COLOR_BayerGB2BGR);
+  }
+
+  if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
+    printf("==MONI\n");
+    color = cv::Mat(src.height, src.width, CV_8U, src.buffer);
+  }
+
+  if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) || 
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB)) {
+    printf("==CSI BAYER10\n");
+    return parseCsiRaw10(src, dst);//ret = parseBayer10Frame(img, pColor);
+  } 
+  
+  if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB)) {
+    printf("==CSI BAYER12\n");
+    return parseCsiRaw12(src, dst);
+  }
+
+  dst.streamID = src.streamID;
+  return convertcvMat2image_data(color, dst);
+}
+
+bool PercipioSDK::DeviceStreamImageDecode(const image_data& src, image_data& dst) {
+
+  if (src.streamID == PERCIPIO_STREAM_DEPTH) {
+    if (src.pixelFormat == TY_PIXEL_FORMAT_XYZ48) {
+      dst = src;
+      return true;
+    } else if(src.pixelFormat == TY_PIXEL_FORMAT_DEPTH16){
+      dst = src;
+      return true;
+    } else {
+      LOGE("Invalid depth stream pixel format : 0x%x\n", src.pixelFormat);
+      return false;
+    }
+  }
+  // get left ir image
+  else if (src.streamID == PERCIPIO_STREAM_IR_LEFT) {
+    return parseIrFrame(src, dst);
+  }
+  // get right ir image
+  else if (src.streamID == PERCIPIO_STREAM_IR_RIGHT) {
+    return parseIrFrame(src, dst);
+  }
+  // get BGR
+  else if (src.streamID == PERCIPIO_STREAM_COLOR) {
+    return parseColorFrame(src, dst);
+  }
+  else {
+    LOGE("Invalid stream id : %d\n", src.streamID);
+    return false;
+  }
+}
+
+bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d) {
   if(depth.streamID != PERCIPIO_STREAM_DEPTH) {
     LOGE("Invalid stream data: %d.", depth.streamID);
       return false;
@@ -986,6 +1188,66 @@ bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, co
                                      (const uint16_t*)depth.buffer,
                                      (TY_VECT_3F*)p3d.getPtr(), 
                                      scale);
+  return true;
+}
+
+bool PercipioSDK::DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst) {
+
+  bool is_support = false;
+  static int fmt_support_list[] = {
+    TY_PIXEL_FORMAT_MONO,
+    TY_PIXEL_FORMAT_DEPTH16,
+    TY_PIXEL_FORMAT_MONO16,
+    TY_PIXEL_FORMAT_RGB,
+    TY_PIXEL_FORMAT_BGR,
+    TY_PIXEL_FORMAT_RGB48,
+    TY_PIXEL_FORMAT_BGR48
+  };
+  for(size_t i = 0; i < sizeof(fmt_support_list) / sizeof(int); i++) {
+    if(src.pixelFormat == fmt_support_list[i]) {
+      is_support = true;
+      break;
+    }
+  }
+
+  if(!is_support) {
+    LOGE("src stream pixel format is not support!");
+    return false;
+  }
+
+  dst.resize(src.size);
+  dst.streamID     = src.streamID;
+  dst.timestamp    = src.timestamp;
+  dst.imageIndex   = src.imageIndex;
+  dst.status       = src.status;
+  dst.width        = src.width;
+  dst.height       = src.height;
+  dst.pixelFormat  = src.pixelFormat;
+  
+  TY_IMAGE_DATA  src_image, dst_image;
+  src_image.timestamp   = src.timestamp;
+  src_image.imageIndex  = src.imageIndex;
+  src_image.status      = src.status;
+  src_image.size        = src.size;
+  src_image.buffer      = src.buffer;
+  src_image.width       = src.width;
+  src_image.height      = src.height;
+  src_image.pixelFormat = src.pixelFormat;
+
+  dst_image.timestamp   = dst.timestamp;
+  dst_image.imageIndex  = dst.imageIndex;
+  dst_image.status      = dst.status;
+  dst_image.size        = dst.size;
+  dst_image.buffer      = dst.buffer;
+  dst_image.width       = dst.width;
+  dst_image.height      = dst.height;
+  dst_image.pixelFormat = dst.pixelFormat;
+
+  TY_STATUS status = TYUndistortImage(&calib_data, &src_image, NULL, &dst_image);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYUndistortImage failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    return false;
+  }
   return true;
 }
 

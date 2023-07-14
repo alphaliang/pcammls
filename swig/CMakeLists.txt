@@ -100,8 +100,11 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
 	set_property(TARGET ${PCAM_LIBNAME} PROPERTY SWIG_COMPILE_OPTIONS -namespace pcammls )
 endif()
 
+find_package(OpenCV)
 if(OpenCV_FOUND)
 	target_link_libraries(${PCAM_LIBNAME} ${OpenCV_LIBS})
+else()
+	message(FATAL_ERROR "not found OpenCV")
 endif()
 
 ##################################################

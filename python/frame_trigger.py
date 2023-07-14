@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-13 15:38:51
 LastEditors: zxy
-LastEditTime: 2023-07-14 09:28:45
+LastEditTime: 2023-07-14 16:57:07
 '''
 import pcammls
 from pcammls import * 
@@ -15,14 +15,10 @@ import os
 class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
 
-    # Define Python class 'constructor'
     def __init__(self):
-        # Call C++ base class constructor
         pcammls.DeviceEvent.__init__(self)
 
-    # Override C++ method: virtual int handle(int a, int b) = 0;
     def run(self, handle, eventID):
-        # Return the product
         if eventID==TY_EVENT_DEVICE_OFFLINE:
           print('=== Event Callback: Device Offline!')
           self.Offline = True

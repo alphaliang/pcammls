@@ -25,14 +25,10 @@ def decode_rgb(pixelFormat,image):
 class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
 
-    # Define Python class 'constructor'
     def __init__(self):
-        # Call C++ base class constructor
         pcammls.DeviceEvent.__init__(self)
 
-    # Override C++ method: virtual int handle(int a, int b) = 0;
     def run(self, handle, eventID):
-        # Return the product
         if eventID==TY_EVENT_DEVICE_OFFLINE:
           print('=== Event Callback: Device Offline!')
           self.Offline = True

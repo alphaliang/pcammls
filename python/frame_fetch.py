@@ -5,34 +5,13 @@ import numpy
 import sys
 import os
 
-def decode_rgb(pixelFormat,image):
-    if pixelFormat == TY_PIXEL_FORMAT_YUYV:
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YUYV)
-    if pixelFormat == TY_PIXEL_FORMAT_YVYU: 
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YVYU)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GB:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGB2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8BG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerBG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GR:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGR2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8RG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerRG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(image, cv2.IMREAD_COLOR)
-    return image
-
 class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
 
-    # Define Python class 'constructor'
     def __init__(self):
-        # Call C++ base class constructor
         pcammls.DeviceEvent.__init__(self)
 
-    # Override C++ method: virtual int handle(int a, int b) = 0;
     def run(self, handle, eventID):
-        # Return the product
         if eventID==TY_EVENT_DEVICE_OFFLINE:
           print('=== Event Callback: Device Offline!')
           self.Offline = True
@@ -91,6 +70,7 @@ def main():
     print('\tcalib extr       : {}'.format(depth_calib_extr))
     print('\tcalib distortion : {}'.format(depth_calib_dis))
 
+    rgb_image = image_data()
     cl.DeviceStreamOn(handle)
 
     while True:
@@ -99,12 +79,13 @@ def main():
       image_list = cl.DeviceStreamRead(handle, -1)
       for i in range(len(image_list)):
         frame = image_list[i]
-        arr = frame.as_nparray()
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
+          arr = frame.as_nparray()
           depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
           cv2.imshow('depth',depthu8)
         if frame.streamID == PERCIPIO_STREAM_COLOR:
-          arr = decode_rgb(frame.pixelFormat,arr)
+          cl.DeviceStreamImageDecode(frame, rgb_image)
+          arr = rgb_image.as_nparray()
           cv2.imshow('color',arr)
       k = cv2.waitKey(10)
       if k==ord('q'): 

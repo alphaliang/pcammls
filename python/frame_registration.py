@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-14 09:48:00
 LastEditors: zxy
-LastEditTime: 2023-07-14 10:37:54
+LastEditTime: 2023-07-14 16:55:28
 '''
 import pcammls
 from pcammls import * 
@@ -12,34 +12,13 @@ import numpy
 import sys
 import os
 
-def decode_rgb(pixelFormat,image):
-    if pixelFormat == TY_PIXEL_FORMAT_YUYV:
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YUYV)
-    if pixelFormat == TY_PIXEL_FORMAT_YVYU: 
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YVYU)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GB:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGB2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8BG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerBG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GR:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGR2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8RG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerRG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(image, cv2.IMREAD_COLOR)
-    return image
-
 class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
 
-    # Define Python class 'constructor'
     def __init__(self):
-        # Call C++ base class constructor
         pcammls.DeviceEvent.__init__(self)
 
-    # Override C++ method: virtual int handle(int a, int b) = 0;
     def run(self, handle, eventID):
-        # Return the product
         if eventID==TY_EVENT_DEVICE_OFFLINE:
           print('=== Event Callback: Device Offline!')
           self.Offline = True
@@ -81,26 +60,35 @@ def main():
     color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
 
     cl.DeviceStreamOn(handle)
-    registration_depth = image_data()
-    
+    img_registration_depth = image_data()
+    img_parsed_color       = image_data()
+    img_undistortion_color = image_data()
     while True:
       if event.IsOffline():
         break
       image_list = cl.DeviceStreamRead(handle, 2000)
-      for i in range(len(image_list)):
-        frame = image_list[i]
-        if frame.streamID == PERCIPIO_STREAM_DEPTH:
-          arr_depth = frame
-        if frame.streamID == PERCIPIO_STREAM_COLOR:
-          arr_color = frame
+      if len(image_list) == 2:
+        for i in range(len(image_list)):
+          frame = image_list[i]
+          if frame.streamID == PERCIPIO_STREAM_DEPTH:
+            img_depth = frame
+          if frame.streamID == PERCIPIO_STREAM_COLOR:
+            img_color = frame
 
-      cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib.data(), arr_depth.width, arr_depth.height, scale_unit,  arr_depth,  color_calib.data(), arr_color.width, arr_color.height, registration_depth)
-      arr = registration_depth.as_nparray()
-      depthu8 = cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
-      cv2.imshow('registration',depthu8)
-      k = cv2.waitKey(10)
-      if k==ord('q'): 
-        break
+        
+        cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib.data(), img_depth.width, img_depth.height, scale_unit,  img_depth,  color_calib.data(), img_color.width, img_color.height, img_registration_depth)
+        
+        mat_depth = img_registration_depth.as_nparray()
+        mat_depthu8 = cv2.convertScaleAbs(mat_depth, alpha=(255.0/4000.0))
+        cv2.imshow('registration', mat_depthu8)
+
+        cl.DeviceStreamImageDecode(img_color, img_parsed_color)
+        cl.DeviceStreamDoUndistortion(color_calib.data(), img_parsed_color, img_undistortion_color)
+        mat_undistortion_color = img_undistortion_color.as_nparray()
+        cv2.imshow('undistortion rgb', mat_undistortion_color)
+        k = cv2.waitKey(10)
+        if k==ord('q'): 
+          break
 
     cl.DeviceStreamOff(handle)    
     cl.Close(handle)
