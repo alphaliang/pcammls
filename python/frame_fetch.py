@@ -96,7 +96,7 @@ def main():
     while True:
       if event.IsOffline():
         break
-      image_list = cl.DeviceStreamFetch(handle, -1)
+      image_list = cl.DeviceStreamRead(handle, -1)
       for i in range(len(image_list)):
         frame = image_list[i]
         arr = frame.as_nparray()

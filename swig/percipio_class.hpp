@@ -259,7 +259,7 @@ class PercipioSDK
         int  Height(const TY_ENUM_ENTRY fmt);
 
     bool  DeviceStreamOn(const TY_DEV_HANDLE handle);
-    const std::vector<image_data>& DeviceStreamFetch(const TY_DEV_HANDLE handle, int timeout);
+    const std::vector<image_data>& DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
     bool DeviceStreamOff(const TY_DEV_HANDLE handle);
 
 
@@ -270,6 +270,7 @@ class PercipioSDK
     /*device control*/
     bool                        DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
     bool                        DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle);
+    bool                        DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE handle, bool enable);
     bool                        DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser);
 
     /** stream control*/
@@ -802,7 +803,7 @@ bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle)
   return true;
 }
 
-const std::vector<image_data>& PercipioSDK::DeviceStreamFetch(const TY_DEV_HANDLE handle, int timeout) {
+const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
   static std::vector<image_data> INVALID_FRAME(0);
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -924,6 +925,23 @@ bool PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE 
     return false;
   }
   return true;
+}
+
+bool PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE handle, bool enable)
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return false;
+  }
+
+  TY_STATUS status = TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, enable);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYSetBool failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    return false;
+  }
+  return true;
+
 }
 
 bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser)

@@ -69,7 +69,7 @@ namespace pcammls_fetch_frame
                 if (_event.isOffLine())
                     break;
                 cl.DeviceControlTriggerModeSendTriggerSignal(handle);
-                FrameVector frames = cl.DeviceStreamFetch(handle, 2000);
+                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)
                 {
                     image_data image = frames[i];

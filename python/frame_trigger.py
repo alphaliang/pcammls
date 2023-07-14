@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-13 15:38:51
 LastEditors: zxy
-LastEditTime: 2023-07-13 16:01:44
+LastEditTime: 2023-07-14 09:28:45
 '''
 import pcammls
 from pcammls import * 
@@ -59,7 +59,7 @@ def main():
         break
         
       cl.DeviceControlTriggerModeSendTriggerSignal(handle)
-      image_list = cl.DeviceStreamFetch(handle, 20000)
+      image_list = cl.DeviceStreamRead(handle, 20000)
       for i in range(len(image_list)):
         frame = image_list[i]
         arr = frame.as_nparray()
