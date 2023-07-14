@@ -129,6 +129,7 @@ typedef struct image_data {
       delete []buffer;
     buffer = new char[sz];
     size = sz;
+    return true;
   }
 
   ~image_data() {
@@ -990,7 +991,6 @@ static bool convertcvMat2image_data(const cv::Mat& mat, image_data& image)
   }
 
   int size = mat.total() * mat.elemSize();
-  printf("=====%d X %d, channel: %d, elem : %d\n", mat.cols, mat.rows, size);
   image.resize(size);
   image.width = mat.cols;
   image.height = mat.rows;
@@ -1068,13 +1068,14 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
     //target: TY_PIXEL_FORMAT_MONO
     dst = src;
+    return true;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
     //target: TY_PIXEL_FORMAT_MONO16
     return parseCsiRaw12(src, dst);
   } 
   else {
     LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
-	  return false;
+	return false;
   }
 }
 
@@ -1083,42 +1084,35 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
   //TODO
   cv::Mat color;
   if (src.pixelFormat == TY_PIXEL_FORMAT_JPEG){
-    printf("==JPEG\n");
     cv::Mat jpeg(src.height, src.width, CV_8UC1, src.buffer);
     color = cv::imdecode(jpeg, cv::IMREAD_COLOR);
   }
 
   if (src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
-    printf("==YVYU\n");
     cv::Mat yuv(src.height, src.width , CV_8UC2, src.buffer);
     cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
   }
 
   if (src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
-    printf("==YUYV\n");
     cv::Mat yuv(src.height, src.width, CV_8UC2, src.buffer);
     cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YUYV);
   }
 
   if (src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
-    printf("==RGB\n");
     cv::Mat rgb(src.height, src.width, CV_8UC3, src.buffer);
     cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
   }
 
   if (src.pixelFormat == TY_PIXEL_FORMAT_BGR){
-    printf("==BGR\n");
     color = cv::Mat(src.height, src.width, CV_8UC3, src.buffer);
   }
   
   if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GB){
-    printf("==BAYER8GB\n");
     cv::Mat raw(src.height, src.width, CV_8U, src.buffer);
     cv::cvtColor(raw, color, cv::COLOR_BayerGB2BGR);
   }
 
   if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
-    printf("==MONI\n");
     color = cv::Mat(src.height, src.width, CV_8U, src.buffer);
   }
 
@@ -1126,7 +1120,6 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) ||
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) ||
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB)) {
-    printf("==CSI BAYER10\n");
     return parseCsiRaw10(src, dst);//ret = parseBayer10Frame(img, pColor);
   } 
   
@@ -1134,7 +1127,6 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) ||
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) ||
       (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB)) {
-    printf("==CSI BAYER12\n");
     return parseCsiRaw12(src, dst);
   }
 
