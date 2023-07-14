@@ -120,6 +120,13 @@ typedef struct image_data {
     }
   }
 
+  bool resize(const int sz) {
+    if(buffer) 
+      delete []buffer;
+    buffer = new char[sz];
+    size = sz;
+  }
+
   ~image_data() {
     if(buffer) {
       delete []buffer;
@@ -275,6 +282,10 @@ class PercipioSDK
 
     /** stream control*/
     bool DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
+    bool DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALIB_INFO& depth_calib, const int depthW, const int depthH, const float scale, 
+                                                    const image_data& srcDepth, 
+                                                    const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
+                                                    image_data& dstDepth);
 
   private:
     typedef enum STREAM_FMT_LIST_IDX {
@@ -975,6 +986,33 @@ bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, co
                                      (const uint16_t*)depth.buffer,
                                      (TY_VECT_3F*)p3d.getPtr(), 
                                      scale);
+  return true;
+}
+
+bool PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALIB_INFO& depth_calib, const int depthW, const int depthH, const float scale, 
+                                                    const image_data& srcDepth, 
+                                                    const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
+                                                    image_data& dstDepth)
+{
+  if(srcDepth.streamID != PERCIPIO_STREAM_DEPTH) {
+    LOGE("Invalid stream data: %d.", srcDepth.streamID);
+    return false;
+  }
+
+  if(srcDepth.size != 2*depthW*depthH) {
+    LOGE("Invalid stream size: %d.", srcDepth.size);
+    return false;
+  }
+
+  dstDepth.resize(targetW * targetH * 2);
+  dstDepth.streamID     = PERCIPIO_STREAM_DEPTH;
+  dstDepth.timestamp    = srcDepth.timestamp;
+  dstDepth.imageIndex   = srcDepth.imageIndex;
+  dstDepth.status       = srcDepth.status;
+  dstDepth.width        = targetW;
+  dstDepth.height       = targetH;
+  dstDepth.pixelFormat  = srcDepth.pixelFormat;
+  TYMapDepthImageToColorCoordinate(&depth_calib, depthW, depthH, (const uint16_t*)srcDepth.buffer,  &color_calib, targetW, targetH, (uint16_t*)dstDepth.buffer, scale);
   return true;
 }
 
