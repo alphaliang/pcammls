@@ -2,6 +2,7 @@
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
 #include "../sample/common/Utils.hpp"
+#include "../sample/common/DepthRender.hpp"
 
 #include <opencv2/opencv.hpp>
 
@@ -127,9 +128,32 @@ typedef struct image_data {
   bool resize(const int sz) {
     if(buffer) 
       delete []buffer;
-    buffer = new char[sz];
+
+    if(sz) 
+      buffer = new char[sz];
+    else
+      buffer = NULL;
+
     size = sz;
     return true;
+  }
+
+  image_data& operator=(const image_data& d) {
+    this->streamID = d.streamID;
+    this->timestamp = d.timestamp;
+    this->imageIndex = d.imageIndex;
+    this->status = d.status;
+    this->size = d.size;
+  
+    this->width = d.width;
+    this->height = d.height;
+    this->pixelFormat =d.pixelFormat;
+
+    this->resize(d.size);
+
+    if(d.size)
+      memcpy(this->buffer, d.buffer, d.size);
+    return *this;
   }
 
   ~image_data() {
@@ -286,6 +310,7 @@ class PercipioSDK
     bool                        DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int laser);
 
     /** stream control*/
+    bool DeviceStreamDepthRender(const image_data& src, image_data& dst);
     bool DeviceStreamImageDecode(const image_data& src, image_data& dst);
     bool DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
     bool DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst);
@@ -1068,6 +1093,7 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
     //target: TY_PIXEL_FORMAT_MONO
     dst = src;
+
     return true;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
     //target: TY_PIXEL_FORMAT_MONO16
@@ -1075,7 +1101,7 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
   } 
   else {
     LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
-	return false;
+	  return false;
   }
 }
 
@@ -1132,6 +1158,27 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
 
   dst.streamID = src.streamID;
   return convertcvMat2image_data(color, dst);
+}
+
+bool PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst) {
+  if(src.pixelFormat != TY_PIXEL_FORMAT_DEPTH16){
+    LOGE("Invalid pixel format 0x:%x", src.pixelFormat);
+    return false;
+  } 
+  DepthRender render;
+  cv::Mat depth = cv::Mat(cv::Size(src.width, src.height), CV_16U, src.buffer);
+  cv::Mat color = render.Compute(depth);
+
+  dst.resize(color.total() * color.elemSize());
+  dst.streamID     = src.streamID;
+  dst.timestamp    = src.timestamp;
+  dst.imageIndex   = src.imageIndex;
+  dst.status       = src.status;
+  dst.width        = src.width;
+  dst.height       = src.height;
+  dst.pixelFormat  = TY_PIXEL_FORMAT_BGR;
+  memcpy(dst.buffer, color.data, dst.size);
+  return true;
 }
 
 bool PercipioSDK::DeviceStreamImageDecode(const image_data& src, image_data& dst) {

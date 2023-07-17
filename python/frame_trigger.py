@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-13 15:38:51
 LastEditors: zxy
-LastEditTime: 2023-07-14 16:57:07
+LastEditTime: 2023-07-17 09:21:34
 '''
 import pcammls
 from pcammls import * 
@@ -48,20 +48,23 @@ def main():
 
     cl.DeviceControlTriggerModeEnable(handle, 1)
 
+    depth_render = image_data()
     cl.DeviceStreamOn(handle)
 
     while True:
       if event.IsOffline():
         break
-        
+      
+      
       cl.DeviceControlTriggerModeSendTriggerSignal(handle)
       image_list = cl.DeviceStreamRead(handle, 20000)
       for i in range(len(image_list)):
         frame = image_list[i]
         arr = frame.as_nparray()
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
-          depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
-          cv2.imshow('depth',depthu8)
+          cl.DeviceStreamDepthRender(frame, depth_render)
+          mat_depth_render = depth_render.as_nparray()
+          cv2.imshow('depth',mat_depth_render)
       k = cv2.waitKey(10)
       if k==ord('q'): 
         break

@@ -1,3 +1,10 @@
+'''
+Description: 
+Author: zxy
+Date: 2023-07-14 19:12:19
+LastEditors: zxy
+LastEditTime: 2023-07-17 10:17:47
+'''
 import pcammls
 from pcammls import * 
 import cv2
@@ -41,15 +48,19 @@ def main():
     while True:
       if event.IsOffline():
         break
+        
       image_list = cl.DeviceStreamRead(handle, 2000)
       for i in range(len(image_list)):
         frame = image_list[i]
-        cl.DeviceStreamImageDecode(frame, img_ir)
-        arr = img_ir.as_nparray()
         if frame.streamID == PERCIPIO_STREAM_IR_LEFT:
-          cv2.imshow('left it',arr)
+          cl.DeviceStreamImageDecode(frame, img_ir)
+          arr = img_ir.as_nparray()
+          cv2.imshow('leftir',arr)
         if frame.streamID == PERCIPIO_STREAM_IR_RIGHT:
+          cl.DeviceStreamImageDecode(frame, img_ir)
+          arr = img_ir.as_nparray()
           cv2.imshow('right ir',arr)
+
       k = cv2.waitKey(10)
       if k==ord('q'): 
         break

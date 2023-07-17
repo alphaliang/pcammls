@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-14 09:48:00
 LastEditors: zxy
-LastEditTime: 2023-07-14 16:55:28
+LastEditTime: 2023-07-17 09:20:17
 '''
 import pcammls
 from pcammls import * 
@@ -60,9 +60,10 @@ def main():
     color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
 
     cl.DeviceStreamOn(handle)
-    img_registration_depth = image_data()
-    img_parsed_color       = image_data()
-    img_undistortion_color = image_data()
+    img_registration_depth  = image_data()
+    img_registration_render = image_data()
+    img_parsed_color        = image_data()
+    img_undistortion_color  = image_data()
     while True:
       if event.IsOffline():
         break
@@ -78,9 +79,9 @@ def main():
         
         cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib.data(), img_depth.width, img_depth.height, scale_unit,  img_depth,  color_calib.data(), img_color.width, img_color.height, img_registration_depth)
         
-        mat_depth = img_registration_depth.as_nparray()
-        mat_depthu8 = cv2.convertScaleAbs(mat_depth, alpha=(255.0/4000.0))
-        cv2.imshow('registration', mat_depthu8)
+        cl.DeviceStreamDepthRender(img_registration_depth, img_registration_render)
+        mat_depth_render = img_registration_render.as_nparray()
+        cv2.imshow('registration', mat_depth_render)
 
         cl.DeviceStreamImageDecode(img_color, img_parsed_color)
         cl.DeviceStreamDoUndistortion(color_calib.data(), img_parsed_color, img_undistortion_color)

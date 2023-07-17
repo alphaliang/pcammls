@@ -71,6 +71,7 @@ def main():
     print('\tcalib distortion : {}'.format(depth_calib_dis))
 
     rgb_image = image_data()
+    depth_render = image_data()
     cl.DeviceStreamOn(handle)
 
     while True:
@@ -80,9 +81,9 @@ def main():
       for i in range(len(image_list)):
         frame = image_list[i]
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
-          arr = frame.as_nparray()
-          depthu8 =  cv2.convertScaleAbs(arr, alpha=(255.0/4000.0))
-          cv2.imshow('depth',depthu8)
+          cl.DeviceStreamDepthRender(frame, depth_render)
+          arr = depth_render.as_nparray()
+          cv2.imshow('depth',arr)
         if frame.streamID == PERCIPIO_STREAM_COLOR:
           cl.DeviceStreamImageDecode(frame, rgb_image)
           arr = rgb_image.as_nparray()
