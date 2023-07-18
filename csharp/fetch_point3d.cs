@@ -36,7 +36,25 @@ namespace pcammls_fetch_frame
         {
             Console.WriteLine("test start\n");
             PercipioSDK cl = new PercipioSDK();
-            System.IntPtr handle = cl.Open();
+
+            DeviceInfoVector dev_list = cl.ListDevice();
+            int sz = dev_list.Count();
+            if (sz == 0)
+            {
+                Console.WriteLine(string.Format("no device found."));
+                return ;
+            }
+
+            Console.WriteLine(string.Format("found follow devices:"));
+            for (int idx = 0; idx < sz; idx++)
+            {
+                var item = dev_list[idx];
+                Console.WriteLine("{0} -- {1} {2}", idx, item.id, item.modelName);
+            }
+            Console.WriteLine("select one:");
+            int select = int.Parse(Console.ReadLine());
+
+            IntPtr handle = cl.Open(dev_list[select].id);
             if (!cl.isValidHandle(handle))
             {
                 Console.WriteLine(string.Format("can not open device!"));

@@ -51,6 +51,7 @@ namespace demo
         private Bitmap image;
         private Thread camera;
         private PercipioSDK cl;
+        private DeviceInfoVector dev_list;
         private System.IntPtr handle;
         CSharpPercipioDeviceEvent _event;
 
@@ -71,7 +72,25 @@ namespace demo
         {
             Console.WriteLine("test start\n");
             cl = new PercipioSDK();
-            handle = cl.Open();
+
+            dev_list = cl.ListDevice();
+            int sz = dev_list.Count();
+            if (sz == 0)
+            {
+                Console.WriteLine(string.Format("no device found."));
+                return false;
+            }
+
+            Console.WriteLine(string.Format("found follow devices:"));
+            for (int idx = 0; idx < sz; idx++)
+            {
+                var item = dev_list[idx];
+                Console.WriteLine("{0} -- {1} {2}", idx, item.id, item.modelName);
+            }
+            Console.WriteLine("select one:");
+            int select = int.Parse(Console.ReadLine());
+
+            handle = cl.Open(dev_list[select].id);
             if (!cl.isValidHandle(handle))
             {
                 Console.WriteLine(string.Format("can not open device!"));
