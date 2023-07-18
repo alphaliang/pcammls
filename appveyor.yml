@@ -18,7 +18,8 @@ for:
         - image: Ubuntu
     install:
       - echo start install
-      - sudo apt-get -y install libpcre3-dev
+      - sudo apt-get -y install libpcre3-dev python-dev python3-dev
+      - python --version
       - wget http://prdownloads.sourceforge.net/swig/swig-4.0.0.tar.gz
       - tar -zxf swig-4.0.0.tar.gz
       - cd swig-4.0.0
@@ -30,7 +31,7 @@ for:
     build_script:
       - mkdir build
       - cd build
-      - cmake .. -DCMAKE_INSTALL_PREFIX=./install/ -DCAMPORT_ARCH=x64
+      - cmake .. -DCMAKE_INSTALL_PREFIX=./install/ -DCAMPORT_ARCH=x64 -DPYTHON_INCLUDE_DIR=/usr/include/python3.8 -DPYTHON_LIBRARY=/usr/lib/python3.8/config
       - make install -j4
 
     artifacts:
