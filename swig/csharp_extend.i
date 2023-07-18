@@ -161,6 +161,7 @@ namespace std
   %template(EnumEntryVector) vector<TY_ENUM_ENTRY>;
   %template(FrameVector) vector<image_data>;
   %template(CalibDataVector) vector<float>;
+  
 }
 %CARRAY_ITEM_ASSIGN(DeviceInfoVector, TY_DEVICE_BASE_INFO);
 

@@ -1,26 +1,16 @@
+'''
+Description: 
+Author: zxy
+Date: 2023-07-18 09:55:47
+LastEditors: zxy
+LastEditTime: 2023-07-18 11:57:46
+'''
 import pcammls
 from pcammls import * 
 import cv2
 import numpy
 import sys
 import os
-
-def decode_rgb(pixelFormat,image):
-    if pixelFormat == TY_PIXEL_FORMAT_YUYV:
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YUYV)
-    if pixelFormat == TY_PIXEL_FORMAT_YVYU: 
-        return cv2.cvtColor(image,cv2.COLOR_YUV2BGR_YVYU)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GB:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGB2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8BG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerBG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8GR:
-        return cv2.cvtColor(image,cv2.COLOR_BayerGR2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_BAYER8RG:
-        return cv2.cvtColor(image,cv2.COLOR_BayerRG2BGR)
-    if pixelFormat == TY_PIXEL_FORMAT_JPEG:
-        return cv2.imdecode(image, cv2.IMREAD_COLOR)
-    return image
 
 class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
     Offline = False
@@ -39,7 +29,24 @@ class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
 
 def main():
     cl = PercipioSDK()
-    handle = cl.Open()
+
+    dev_list = cl.ListDevice()
+    for idx in range(len(dev_list)):
+      dev = dev_list[idx]
+      print ('{} -- {} \t {}'.format(idx,dev.id,dev.iface.id))
+    if  len(dev_list)==0:
+      print ('no device')
+      return
+    if len(dev_list) == 1:
+        selected_idx = 0 
+    else:
+        selected_idx  = int(input('select a device:'))
+    if selected_idx < 0 or selected_idx >= len(dev_list):
+        return
+
+    sn = dev_list[selected_idx].id
+
+    handle = cl.Open(sn)
     if not cl.isValidHandle(handle):
       print('no device found')
       return

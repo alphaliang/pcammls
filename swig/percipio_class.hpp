@@ -277,6 +277,8 @@ class PercipioSDK
     PercipioSDK();
     ~PercipioSDK();
 
+    std::vector<TY_DEVICE_BASE_INFO>& ListDevice();
+
     TY_DEV_HANDLE Open();
     TY_DEV_HANDLE Open(const char* sn);
     TY_DEV_HANDLE OpenDeviceByIP(const char* ip);
@@ -358,7 +360,11 @@ class PercipioSDK
 
     }device_info;
 
+    std::vector< TY_DEVICE_BASE_INFO>  iDevBaseInfoList;
     std::vector< TY_INTERFACE_HANDLE>  iFaceList;
+
+    int isValidDevice(const char* sn);
+
     void AddInterface(const TY_INTERFACE_HANDLE iface);
     void AddDevice(const TY_DEV_HANDLE hanlde, const char* sn);
 
@@ -419,26 +425,62 @@ PercipioSDK::~PercipioSDK() {
   TYDeinitLib();
 }
 
+std::vector<TY_DEVICE_BASE_INFO>& PercipioSDK::ListDevice()
+{
+  iDevBaseInfoList.clear();
+  selectDevice(TY_INTERFACE_ALL, "", "", 10, iDevBaseInfoList);  
+  return iDevBaseInfoList;
+}
+
+int PercipioSDK::isValidDevice(const char* sn) {
+  size_t sz = iDevBaseInfoList.size();
+  if(sz) {
+    if(sn == NULL) {
+      return 0;
+    } 
+    else {
+      //search
+      for(size_t i = 0; i < sz; i++) {
+        if(0 == strcmp(iDevBaseInfoList[i].id, sn)) {
+          return i;
+        }
+      }
+    }
+  }
+
+  return -1;
+}
+
 TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
   std::string SN;
   if(sn != NULL)
     SN = std::string(sn);
   else
     SN = std::string("");
-  std::vector<TY_DEVICE_BASE_INFO> selected;
-  TY_STATUS status = selectDevice(TY_INTERFACE_ALL, SN, "", 10, selected);
-  if(status != TY_STATUS_OK) {
-    return 0;
-  }
 
-  if(!selected.size()) {
-    return 0;
-  }
-  
+  TY_STATUS status = TY_STATUS_OK;
   TY_INTERFACE_HANDLE hIface = NULL;
   TY_DEV_HANDLE hDevice = NULL;
 
-  TY_DEVICE_BASE_INFO& selectedDev = selected[0];
+  TY_DEVICE_BASE_INFO selectedDev;
+  int idx = isValidDevice(sn);
+  if(idx < 0) {
+    std::vector<TY_DEVICE_BASE_INFO> selected;
+    status = selectDevice(TY_INTERFACE_ALL, SN, "", 10, selected);
+    if(status != TY_STATUS_OK) {
+      return 0;
+    }
+
+    if(!selected.size()) {
+      return 0;
+    }
+
+    selectedDev = selected[0];
+  } else {
+    selectedDev = iDevBaseInfoList[idx];
+  }
+  
+  
   status = TYOpenInterface(selectedDev.iface.id, &hIface);
   if(status != TY_STATUS_OK) {
     LOGE("TYOpenInterface failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
@@ -465,40 +507,41 @@ TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
 }
 
 TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
-  std::vector<TY_DEVICE_BASE_INFO> selected;
-  TY_STATUS status = selectDevice(TY_INTERFACE_ALL, "", ip, 10, selected);
-  if(status != TY_STATUS_OK) {
-    return 0;
+  LOGD("Update interface list");
+  ASSERT_OK( TYUpdateInterfaceList() );
+
+  uint32_t n = 0;
+  ASSERT_OK( TYGetInterfaceNumber(&n) );
+  LOGD("Got %u interface list", n);
+  if(n == 0){
+    LOGE("interface number incorrect");
+    return NULL;
   }
 
-  if(!selected.size()) {
-    return 0;
-  }
-  
   TY_INTERFACE_HANDLE hIface = NULL;
   TY_DEV_HANDLE hDevice = NULL;
 
-  TY_DEVICE_BASE_INFO& selectedDev = selected[0];
-  status = TYOpenInterface(selectedDev.iface.id, &hIface);
-  if(status != TY_STATUS_OK) {
-    LOGE("TYOpenInterface failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-    return 0;
+  std::vector<TY_INTERFACE_INFO> ifaces(n);
+  ASSERT_OK( TYGetInterfaceList(&ifaces[0], n, &n) );
+  ASSERT( n == ifaces.size() );
+  for(uint32_t i = 0; i < n; i++){
+    if(TYIsNetworkInterface(ifaces[i].type)){
+      ASSERT_OK( TYOpenInterface(ifaces[i].id, &hIface) );
+      if (TYOpenDeviceWithIP(hIface, ip, &hDevice) == TY_STATUS_OK) {
+
+        TY_DEVICE_BASE_INFO device_base_info;
+        TYGetDeviceInfo           (hDevice, &device_base_info);
+        DevList.push_back(device_info(hDevice, device_base_info.id));
+        LOGD("Device %s is on!", device_base_info.id);
+
+        TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
+
+        ConfigDevice(hDevice);
+
+        DumpDeviceInfo(hDevice);
+      }
+    }
   }
-
-  status = TYOpenDevice(hIface, selectedDev.id, &hDevice);
-  if(status != TY_STATUS_OK) {
-    LOGE("TYOpenDevice failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-    return 0;
-  }
-
-  DevList.push_back(device_info(hDevice, selectedDev.id));
-  LOGD("Device %s is on!", selectedDev.id);
-
-  TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
-
-  ConfigDevice(hDevice);
-
-  DumpDeviceInfo(hDevice);
 
   return hDevice;
 }
@@ -1138,6 +1181,45 @@ static bool parseRaw8_to_bgr888(const image_data& src, image_data& dst)
 }
 
 
+static bool parseBayer8Frame(const image_data& src, image_data& dst) {
+  int code = cv::COLOR_BayerGB2BGR;
+  switch (src.pixelFormat)
+  {
+  case TY_PIXEL_FORMAT_BAYER8GBRG:
+    code = cv::COLOR_BayerGR2BGR;
+    break;
+  case TY_PIXEL_FORMAT_BAYER8BGGR:
+    code = cv::COLOR_BayerRG2BGR;
+    break;                
+  case TY_PIXEL_FORMAT_BAYER8GRBG:
+    code = cv::COLOR_BayerGB2BGR;
+    break;                
+  case TY_PIXEL_FORMAT_BAYER8RGGB:
+    code = cv::COLOR_BayerBG2BGR;
+    break;
+  default:
+    LOGE("Invalid bayer8 fmt!");
+    return false;
+  }
+
+  dst.streamID = src.streamID;
+  dst.timestamp = src.timestamp;
+  dst.imageIndex = src.imageIndex;
+  dst.status = src.status;
+  dst.width = src.width;
+  dst.height = src.height;
+  dst.pixelFormat = TY_PIXEL_FORMAT_BGR;
+
+  dst.resize(3 * dst.width * dst.height);
+
+  cv::Mat raw(src.height, src.width, CV_8U, src.buffer);
+  cv::Mat color(dst.height, dst.width, CV_8UC3, dst.buffer);
+  cv::cvtColor(raw, color, code);
+  
+  return true;
+}
+
+
 bool PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
     bool ret;
     image_data  temp, gray8;
@@ -1202,6 +1284,7 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
 
   //TODO
   cv::Mat color;
+  printf("=====pixelFormat = 0x%x\n", src.pixelFormat);
   if (src.pixelFormat == TY_PIXEL_FORMAT_JPEG){
     cv::Mat jpeg(src.height, src.width, CV_8UC1, src.buffer);
     color = cv::imdecode(jpeg, cv::IMREAD_COLOR);
@@ -1226,11 +1309,13 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
     color = cv::Mat(src.height, src.width, CV_8UC3, src.buffer);
   }
   
-  if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GB){
-    cv::Mat raw(src.height, src.width, CV_8U, src.buffer);
-    cv::cvtColor(raw, color, cv::COLOR_BayerGB2BGR);
+  if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG || 
+           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR || 
+           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG || 
+           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8RGGB) 
+  {
+    return parseBayer8Frame(src, dst);
   }
-
   if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
     color = cv::Mat(src.height, src.width, CV_8U, src.buffer);
   }

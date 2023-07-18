@@ -22,7 +22,24 @@ class PythonPercipioDeviceEvent(pcammls.DeviceEvent):
 
 def main():
     cl = PercipioSDK()
-    handle = cl.Open()
+
+    dev_list = cl.ListDevice()
+    for idx in range(len(dev_list)):
+      dev = dev_list[idx]
+      print ('{} -- {} \t {}'.format(idx,dev.id,dev.iface.id))
+    if  len(dev_list)==0:
+      print ('no device')
+      return
+    if len(dev_list) == 1:
+        selected_idx = 0 
+    else:
+        selected_idx  = int(input('select a device:'))
+    if selected_idx < 0 or selected_idx >= len(dev_list):
+        return
+
+    sn = dev_list[selected_idx].id
+
+    handle = cl.Open(sn)
     if not cl.isValidHandle(handle):
       print('no device found')
       return

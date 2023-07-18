@@ -129,9 +129,11 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 
 %include "std_vector.i"
 
+%template(ty_dev_info_vector) std::vector<TY_DEVICE_BASE_INFO>;
 %template(ty_enum_vector) std::vector<TY_ENUM_ENTRY>;
 %template(ty_image_data_vector) std::vector<image_data>;
 %template(ty_float_vector) std::vector<float>;
+
 
 
 
