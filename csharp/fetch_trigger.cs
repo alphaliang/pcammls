@@ -1,15 +1,14 @@
 using System;
-using System.IO;
-using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows.Forms;
+
 using pcammls;
 using static pcammls.pcammls;
-using pcammls_isp;
-using SDK_ISP = pcammls_isp.pcammls_isp_api;
-namespace pcammls_fetch_frame
+
+namespace demo
 {
     class CSharpPercipioDeviceEvent : DeviceEvent
     {
@@ -30,68 +29,116 @@ namespace pcammls_fetch_frame
             return Offline;
         }
     }
-    class Program
+
+    public partial class Form1 : Form
     {
-        static void Main(string[] args)
+        public Form1()
+        {
+            if (!DeviceInit()) {
+
+                Console.WriteLine("Press Enter to exit");
+                Console.Read();
+                Environment.Exit(0);
+            }
+            InitializeComponent();
+
+            textBox1.Text = "Depth";
+            textBox2.Text = "RGB";
+
+            CaptureCamera();
+        }
+
+        private Bitmap image;
+        private Thread camera;
+        private PercipioSDK cl;
+        private System.IntPtr handle;
+        CSharpPercipioDeviceEvent _event;
+
+        private bool isCameraRunning = false;
+
+        
+        private bool DeviceInit()
         {
             Console.WriteLine("test start\n");
-            PercipioSDK cl = new PercipioSDK();
-            System.IntPtr handle = cl.Open();
+            cl = new PercipioSDK();
+            handle = cl.Open();
             if (!cl.isValidHandle(handle))
             {
                 Console.WriteLine(string.Format("can not open device!"));
-                return;
+                return false;
             }
 
-            CSharpPercipioDeviceEvent _event = new CSharpPercipioDeviceEvent();
+            _event = new CSharpPercipioDeviceEvent();
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
             float depth_scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle);
             Console.WriteLine(string.Format("depth image scale unit:{0}", depth_scale_unit));
 
-            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
+            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH);
             
-            EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
-            Console.WriteLine(string.Format("depth image format list:"));
-            for (int i = 0; i < depth_fmt_list.Count(); i++)
-            {
-                TY_ENUM_ENTRY fmt = depth_fmt_list[i];
-                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
-            }
-            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
-
             cl.DeviceControlTriggerModeEnable(handle, 1);
 
+            return true;
+        }
+        private void CaptureCamera()
+        {
+            camera = new Thread(new ThreadStart(CaptureCameraCallback));
+            camera.Start();
+        }
+
+        private IntPtr ArrToPtr(byte[] array)
+        {
+            return System.Runtime.InteropServices.Marshal.UnsafeAddrOfPinnedArrayElement(array, 0);
+        }
+        private void CaptureCameraCallback()
+        {
             cl.DeviceStreamOn(handle);
-            
-            while(true) {
+            isCameraRunning = true;
+
+            while (isCameraRunning)
+            {
                 if (_event.isOffLine())
                     break;
-                cl.DeviceControlTriggerModeSendTriggerSignal(handle);
+
+                bool ret = cl.DeviceControlTriggerModeSendTriggerSignal(handle);
+                Console.WriteLine(string.Format("Send trigger signal ret = {0}.", ret));
                 FrameVector frames = cl.DeviceStreamRead(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)
                 {
-                    image_data image = frames[i];
-                    if (image.streamID == PERCIPIO_STREAM_DEPTH) 
+                    if (frames[i].streamID == PERCIPIO_STREAM_DEPTH) 
                     {
-                        unsafe
-                        {
-                            IntPtr pt = image.buffer.getCPtr();
-                            ushort* ptr = (ushort*)pt.ToPointer();
-                            int width = image.width;
-                            int height = image.height;
-                            int dep = ptr[width * height / 2 + width / 2];
-                            float distance = depth_scale_unit * dep;
-                            Console.WriteLine(string.Format("\tdistance :{0}", distance));
-                        }
+                        image_data depth = new image_data();
+                        cl.DeviceStreamDepthRender(frames[i], depth);
+                        IntPtr pt = depth.buffer.getCPtr();
+                        Bitmap bmp_depth = new Bitmap(depth.width, depth.height, depth.width * 3, PixelFormat.Format24bppRgb, pt);
+                        pictureBox1.Image = (Image)(new Bitmap(bmp_depth, new Size(640, 480))).Clone();
+                    }
+                    if (frames[i].streamID == PERCIPIO_STREAM_COLOR)
+                    {
+                        image_data bgr = new image_data();
+                        cl.DeviceStreamImageDecode(frames[i], bgr);
+                        IntPtr pt = bgr.buffer.getCPtr();
+                        Bitmap bmp_color = new Bitmap(bgr.width, bgr.height, bgr.width * 3, PixelFormat.Format24bppRgb, pt);
+                        pictureBox2.Image = (Image)(new Bitmap(bmp_color, new Size(640, 480))).Clone();
                     }
                 }
+
+                Application.DoEvents();
+                Thread.Sleep(10);
             }
-            
+
             cl.DeviceStreamOff(handle);
-            
+
             cl.Close(handle);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            isCameraRunning = false;
+            camera.Join();
+
+            Application.Exit();
         }
     }
 }

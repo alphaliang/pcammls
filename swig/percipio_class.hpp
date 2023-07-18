@@ -311,6 +311,7 @@ class PercipioSDK
 
     /** stream control*/
     bool DeviceStreamDepthRender(const image_data& src, image_data& dst);
+    bool DeviceStreamIRRender(const image_data& src, image_data& dst);
     bool DeviceStreamImageDecode(const image_data& src, image_data& dst);
     bool DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
     bool DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst);
@@ -1083,6 +1084,98 @@ static bool parseCsiRaw12(const image_data& src, image_data& dst) {
   return true;
 }
 
+static bool parseRaw16_to_Raw8(const image_data& src, image_data& dst) {
+    if ((src.pixelFormat != TY_PIXEL_FORMAT_MONO16) &&
+        (src.pixelFormat != TY_PIXEL_FORMAT_TOF_IR_MONO16)) {
+        LOGE("Invalid pixel format : 0x%x!", src.pixelFormat);
+        return false;
+    }
+
+    dst.streamID = src.streamID;
+    dst.timestamp = src.timestamp;
+    dst.imageIndex = src.imageIndex;
+    dst.status = src.status;
+    dst.width = src.width;
+    dst.height = src.height;
+    dst.pixelFormat = TY_PIXEL_FORMAT_MONO;
+    dst.resize(dst.width * dst.height);
+
+    uint16_t* src_ptr = (uint16_t*)src.buffer;
+    uint8_t*  dst_ptr = (uint8_t*)dst.buffer;
+    for (size_t i = 0; i < src.width * src.height; i++)
+    {
+        dst_ptr[i] = (uint8_t)(src_ptr[i] >> 8);
+    }
+    return true;
+}
+
+static bool parseRaw8_to_bgr888(const image_data& src, image_data& dst)
+{
+    if (src.pixelFormat != TY_PIXEL_FORMAT_MONO) {
+        LOGE("Invalid pixel format!");
+        return false;
+    }
+
+    dst.streamID = src.streamID;
+    dst.timestamp = src.timestamp;
+    dst.imageIndex = src.imageIndex;
+    dst.status = src.status;
+    dst.width = src.width;
+    dst.height = src.height;
+    dst.pixelFormat = TY_PIXEL_FORMAT_BGR;
+
+    dst.resize(3 * dst.width * dst.height);
+
+    uint8_t* src_ptr = (uint8_t*)src.buffer;
+    uint8_t* dst_ptr = (uint8_t*)dst.buffer;
+    for (size_t i = 0; i < src.width * src.height; i++)
+    {
+        dst_ptr[3 * i + 0] = src_ptr[i];
+        dst_ptr[3 * i + 1] = src_ptr[i];
+        dst_ptr[3 * i + 2] = src_ptr[i];
+    }
+    return true;
+}
+
+
+bool PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
+    bool ret;
+    image_data  temp, gray8;
+    if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat == TY_PIXEL_FORMAT_TOF_IR_MONO16) {
+        parseRaw16_to_Raw8(src, gray8);
+    }
+    else if (src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
+        //target: TY_PIXEL_FORMAT_MONO16
+        ret = parseCsiRaw10(src, temp);
+        if (!ret) {
+            LOGE("parseCsiRaw10 fail!\n");
+            return false;
+        }
+
+        parseRaw16_to_Raw8(temp, gray8);
+    }
+    else if (src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
+        //target: TY_PIXEL_FORMAT_MONO
+        gray8 = src;
+    }
+    else if (src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
+        //target: TY_PIXEL_FORMAT_MONO16
+        ret = parseCsiRaw12(src, temp);
+        if (!ret) {
+            LOGE("parseCsiRaw12 fail!\n");
+            return false;
+        }
+
+        parseRaw16_to_Raw8(temp, gray8);
+    }
+    else {
+        LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
+        return false;
+    }
+
+    return parseRaw8_to_bgr888(gray8, dst);
+}
+
 static bool parseIrFrame(const image_data& src, image_data& dst) {
   if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat==TY_PIXEL_FORMAT_TOF_IR_MONO16){
     dst = src;
@@ -1180,6 +1273,8 @@ bool PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst
   memcpy(dst.buffer, color.data, dst.size);
   return true;
 }
+
+
 
 bool PercipioSDK::DeviceStreamImageDecode(const image_data& src, image_data& dst) {
 
