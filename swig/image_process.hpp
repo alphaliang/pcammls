@@ -3,7 +3,7 @@
  * @Author: zxy
  * @Date: 2023-07-18 15:55:24
  * @LastEditors: zxy
- * @LastEditTime: 2023-07-19 10:09:41
+ * @LastEditTime: 2023-07-19 10:48:25
  */
 
 #include <iostream>
@@ -12,6 +12,7 @@
 #include <map>
 #include <cmath>
 #include <numeric>
+#include <algorithm>
 //#include <math.h>
 #include <iostream>
 #include <vector>
