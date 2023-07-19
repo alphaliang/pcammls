@@ -22,6 +22,7 @@ set (REF_LIST
     "System.Deployment"
     "System.Drawing"
     "System.Xml"
+	"System.Windows.Forms"
 )
 
 
@@ -33,44 +34,45 @@ message("target net version is ${NET_VERSION}")
 set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST})
 set_property(TARGET pcammls_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 
-add_executable(test_cs ${CMAKE_CURRENT_SOURCE_DIR}/test.cs )
-set_property(TARGET test_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
-set_property(TARGET test_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
-
-if(${MSVC_VERSION} LESS 1915)	#VS2017
-	option(OpenCV_USE "Using opencv" OFF)
-else()
-    option(OpenCV_USE "Using opencv" ON)
-endif()
-
-if(OpenCV_USE)
-	add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame_opencv.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-	set_property(TARGET fetch_frame_cs PROPERTY VS_PACKAGE_REFERENCES "OpenCvSharp4_4.6.0.20220608;OpenCvSharp4.runtime.win_4.6.0.20220608")
-else()
-	add_executable(fetch_frame_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-endif()
+add_executable(fetch_frame_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_frame.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.Designer.cs
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.resx)
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_executable(fetch_registration_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
+add_executable(fetch_IR_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_IR.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.Designer.cs
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.resx)
+set_property(TARGET fetch_IR_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+set_property(TARGET fetch_IR_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+
+add_executable(fetch_registration_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_registration.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.Designer.cs
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.resx)
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_registration_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_executable(fetch_color3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_color3d.cs ${CMAKE_CURRENT_SOURCE_DIR}/TY_ISP.cs)
-set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
-set_property(TARGET fetch_color3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+add_executable(fetch_trigger_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_trigger.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.Designer.cs
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.resx)
+set_property(TARGET fetch_trigger_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+set_property(TARGET fetch_trigger_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_executable(fetch_point3d_cs ${CMAKE_CURRENT_SOURCE_DIR}/fetch_point3d.cs)
+add_executable(fetch_point3d_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_point3d.cs)
 set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
-add_dependencies(fetch_point3d_cs pcammls_cs)
-add_dependencies(fetch_registration_cs pcammls_cs)
-add_dependencies(fetch_color3d_cs pcammls_cs)
-add_dependencies(fetch_frame_cs pcammls_cs)
-add_dependencies(test_cs pcammls_cs)
-target_link_libraries(test_cs pcammls_cs)
 target_link_libraries(fetch_frame_cs pcammls_cs)
+target_link_libraries(fetch_IR_cs pcammls_cs)
 target_link_libraries(fetch_registration_cs pcammls_cs)
-target_link_libraries(fetch_color3d_cs pcammls_cs)
+target_link_libraries(fetch_trigger_cs pcammls_cs)
 target_link_libraries(fetch_point3d_cs pcammls_cs)

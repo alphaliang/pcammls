@@ -1,160 +1,115 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+
 using pcammls;
-using SDK = pcammls.pcammls;
-namespace pcammls_fetch_point3d
+using static pcammls.pcammls;
+
+namespace pcammls_fetch_frame
 {
+    class CSharpPercipioDeviceEvent : DeviceEvent
+    {
+        bool Offline = false;
+        public override int run(SWIGTYPE_p_void handle, int event_id)
+        {
+            IntPtr dev = handle.getCPtr();
+            if (event_id == TY_EVENT_DEVICE_OFFLINE)
+            {
+                Offline = true;
+                Console.WriteLine(string.Format("=== Event Callback: Device Offline"));
+            }
+            return 0;
+        }
+
+        public bool isOffLine()
+        {
+            return Offline;
+        }
+    }
     class Program
     {
-        static uint8_t_ARRAY[] buffer = new uint8_t_ARRAY[2];
-
-        static TY_CAMERA_CALIB_INFO calib_inf = new TY_CAMERA_CALIB_INFO();
-
-        static TY_DEVICE_BASE_INFO SimpleDeviceSelect()
-        {
-            DeviceInfoVector devs = new DeviceInfoVector();
-            SDK.selectDevice(SDK.TY_INTERFACE_ALL, "", "", 10, devs);
-            int sz = devs.Count();
-            if (sz == 0)
-            {
-                return null;
-            }
-            Console.WriteLine("found follow devices:");
-            for (int idx = 0; idx < sz; idx++)
-            {
-                var item = devs[idx];
-                Console.WriteLine("{0} -- {1} {2}", idx, item.id, item.modelName);
-            }
-            Console.WriteLine("select one:");
-            int selected_idx = int.Parse(Console.ReadLine());
-            return devs[selected_idx];
-        }
-
-        static void FetchFrameLoop(IntPtr handle)
-        {
-            uint cal_size = calib_inf.CSize();
-            SDK.TYGetStruct(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_STRUCT_CAM_CALIB_DATA, calib_inf.getCPtr(), cal_size);
-            Console.WriteLine(string.Format("Depth calib inf width:{0} height:{1}", calib_inf.intrinsicWidth, calib_inf.intrinsicHeight));
-            Console.WriteLine(string.Format("Depth intrinsic:{0} {1} {2} {3} {4} {5} {6} {7} {8}",
-                calib_inf.intrinsic.data[0], calib_inf.intrinsic.data[1], calib_inf.intrinsic.data[2],
-                calib_inf.intrinsic.data[3], calib_inf.intrinsic.data[4], calib_inf.intrinsic.data[5],
-                calib_inf.intrinsic.data[6], calib_inf.intrinsic.data[7], calib_inf.intrinsic.data[8]));
-
-            SDK.TYEnableComponents(handle, SDK.TY_COMPONENT_DEPTH_CAM);
-
-            //set depth cam resolution
-            SDK.TYSetEnum(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_ENUM_IMAGE_MODE, (int)(SDK.TY_RESOLUTION_MODE_640x480 | SDK.TY_PIXEL_FORMAT_DEPTH16));
-
-            uint buff_sz;
-            SDK.TYGetFrameBufferSize(handle, out buff_sz);
-
-            buffer[0] = new uint8_t_ARRAY((int)buff_sz);
-            buffer[1] = new uint8_t_ARRAY((int)buff_sz);
-
-            SDK.TYEnqueueBuffer(handle, buffer[0].VoidPtr(), buff_sz);
-            SDK.TYEnqueueBuffer(handle, buffer[1].VoidPtr(), buff_sz);
-
-            TY_PIXEL_DESC_ARRAY pixArray = new TY_PIXEL_DESC_ARRAY(640*480);
-            TY_VECT_3F_ARRAY p3dArray = new TY_VECT_3F_ARRAY(640 * 480);
-            TY_PIXEL_DESC temp = new TY_PIXEL_DESC();
-            
-            float f_depth_unit = 1.0f;
-            SDK.TYGetFloat(handle, SDK.TY_COMPONENT_DEPTH_CAM, SDK.TY_FLOAT_SCALE_UNIT, out f_depth_unit);
-            Console.WriteLine(string.Format("##########f_depth_unit =  {0}", f_depth_unit));
-
-            //trigger mode
-            TY_TRIGGER_PARAM param = new TY_TRIGGER_PARAM();
-            param.mode = SDK.TY_TRIGGER_MODE_OFF;
-            SDK.TYSetStruct(handle, SDK.TY_COMPONENT_DEVICE, SDK.TY_STRUCT_TRIGGER_PARAM, param.getCPtr(), param.CSize());
-
-            SDK.TYStartCapture(handle);
-            int img_index = 0;
-
-            while (true)
-            {
-                TY_FRAME_DATA frame = new TY_FRAME_DATA();
-                try
-                {
-                    //send soft trigger sig
-                    //SDK.TYSendSoftTrigger(handle);
-                    SDK.TYFetchFrame(handle, frame, 20000);
-                    Console.WriteLine(string.Format("capture {0} ", img_index));
-
-                    var images = frame.image;
-                    for (int idx = 0; idx < frame.validCount; idx++)
-                    {
-                        var img = images[idx];
-                        if (img.componentID == SDK.TY_COMPONENT_DEPTH_CAM)
-                        {
-                            var pixel_arr = uint16_t_ARRAY.FromVoidPtr(img.buffer,img.width*img.height);
-                            
-                            SDK.TYMapDepthImageToPoint3d(calib_inf, img.width, img.height, pixel_arr.cast(), p3dArray.cast(), f_depth_unit);
-                            uint16_t_ARRAY.ReleasePtr(pixel_arr);
-
-                            IntPtr ptP3D = p3dArray.VoidPtr2();
-
-                            int offset = img.width * img.height / 2 + img.width / 2;
-                            float p3d_fx = p3dArray.getitem(offset).x;
-                            float p3d_fy = p3dArray.getitem(offset).y;
-                            float p3d_fz = p3dArray.getitem(offset).z;
-                            Console.WriteLine(string.Format("Point Cloud Center Data:(x:{0} y:{1} z:{2})", p3d_fx, p3d_fy, p3d_fz));
-                        }
-                    }
-
-                    SDK.TYEnqueueBuffer(handle, frame.userBuffer, (uint)frame.bufferSize);
-                    img_index++;
-                }
-                catch (System.ComponentModel.Win32Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
-            }
-        }
-
         static void Main(string[] args)
         {
             Console.WriteLine("test start\n");
-            try
+            PercipioSDK cl = new PercipioSDK();
+
+            DeviceInfoVector dev_list = cl.ListDevice();
+            int sz = dev_list.Count();
+            if (sz == 0)
             {
-                SDK.TYInitLib();
-                TY_VERSION_INFO info = new TY_VERSION_INFO();
-                SDK.TYLibVersion(info);
-                Console.WriteLine(string.Format("LIB VERSION :{0} {1} {2}", info.major, info.minor, info.patch));
-                var dev_info = SimpleDeviceSelect();
-                if (dev_info == null)
+                Console.WriteLine(string.Format("no device found."));
+                return ;
+            }
+
+            Console.WriteLine(string.Format("found follow devices:"));
+            for (int idx = 0; idx < sz; idx++)
+            {
+                var item = dev_list[idx];
+                Console.WriteLine("{0} -- {1} {2}", idx, item.id, item.modelName);
+            }
+            Console.WriteLine("select one:");
+            int select = int.Parse(Console.ReadLine());
+
+            IntPtr handle = cl.Open(dev_list[select].id);
+            if (!cl.isValidHandle(handle))
+            {
+                Console.WriteLine(string.Format("can not open device!"));
+                return;
+            }
+
+            CSharpPercipioDeviceEvent _event = new CSharpPercipioDeviceEvent();
+
+            cl.DeviceRegiststerCallBackEvent(_event);
+
+            float f_depth_scale = cl.DeviceReadCalibDepthScaleUnit(handle);
+
+            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
+
+            EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
+            Console.WriteLine(string.Format("depth image format list:"));
+            for (int i = 0; i < depth_fmt_list.Count(); i++)
+            {
+                TY_ENUM_ENTRY fmt = depth_fmt_list[i];
+                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+            }
+            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
+
+            PercipioCalibData depth_calib_data = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH);
+
+            pointcloud_data_list p3d_list = new pointcloud_data_list();
+            cl.DeviceStreamOn(handle);
+
+            while (true)
+            {
+                if (_event.isOffLine())
+                    break;
+
+                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
+                for (int i = 0; i < frames.Count(); i++)
                 {
-                    return;
+                    image_data image = frames[i];
+                    if (image.streamID == PERCIPIO_STREAM_DEPTH)
+                    {
+                        if (cl.DeviceStreamMapDepthImageToPoint3D(image, depth_calib_data, f_depth_scale, p3d_list))
+                        {
+                            int cnt = p3d_list.size();
+                            int center = image.width * image.height / 2 + image.width / 2;
+                            pointcloud_data _p3d = p3d_list.get_value(center);
+                            Console.WriteLine(string.Format("\tpoint cloud center value: {0} {1} {2}", _p3d.getX(), _p3d.getY(), _p3d.getZ()));
+                        }
+
+                    }
                 }
-                IntPtr dev_handle = new IntPtr();
-                IntPtr iface_handle = new IntPtr();
-                SDK.TYOpenInterface(dev_info.iface.id, ref iface_handle);
-                
-                IntPtr errCode = IntPtr.Zero;
-                var status = SDK.TYOpenDevice(iface_handle, dev_info.id, ref dev_handle, ref errCode);
-                if (status != SDK.TY_STATUS_OK)
-                {
-                    Console.WriteLine(string.Format(".TYOpenDevice ret :{0}", status));
-                    return;
-                }
-                FetchFrameLoop(dev_handle);
-                SDK.TYCloseDevice(dev_handle, false);
-                SDK.TYCloseInterface(iface_handle);
+
             }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            finally
-            {
-                SDK.TYDeinitLib();
-            }
-            Console.WriteLine("done");
-            Console.ReadKey();
+
+            cl.DeviceStreamOff(handle);
+
+            cl.Close(handle);
         }
     }
 }

@@ -2,12 +2,14 @@
 
 %{
 #include "TYApi.h"
-#include "TYImageProc.h"
+#include "percipio_class.hpp"
 #include "TyIsp.h"
 #include "../sample/common/Utils.hpp"
 #include "../sample/common/TYThread.hpp"
 #include "../sample/common/TYThread.cpp"
 #include "../sample/common/BayerISP.hpp"
+
+#include "TYImageProc.h"
 %}
 
 
@@ -74,6 +76,9 @@
 %C_ARRAY_BUFFER_DEF(TY_CAMERA_DISTORTION);
 %C_ARRAY_BUFFER_DEF(TY_CAMERA_CALIB_INFO);
 
+%C_ARRAY_BUFFER_DEF(pointcloud_data);
+%C_ARRAY_BUFFER_DEF(pointcloud_data_list);
+
 %extend class TY_DEVICE_BASE_INFO{//deal with nested union which not suported by SWIG
     TY_DEVICE_NET_INFO get_netinfo() const {
         return self->netInfo;
@@ -81,6 +86,17 @@
 
     TY_DEVICE_USB_INFO get_usbinfo() const {
         return self->usbInfo;
+    }
+}
+
+
+%extend class TY_ENUM_ENTRY{
+    const char* getDesc() const {
+        return self->description;
+    }
+
+    unsigned int getValue() const {
+        return self->value;
     }
 }
 
@@ -127,6 +143,9 @@
 %STRUCT_PTR_EXTEND(TY_CAMERA_DISTORTION)
 %STRUCT_PTR_EXTEND(TY_CAMERA_CALIB_INFO)
 
+%STRUCT_PTR_EXTEND(pointcloud_data)
+%STRUCT_PTR_EXTEND(pointcloud_data_list)
+
 %apply uint32_t* OUTPUT {uint32_t* pNumIfaces}
 %apply uint32_t* OUTPUT {uint32_t* filledCount}
 %apply uint32_t* OUTPUT {uint32_t* filledDeviceCount}
@@ -169,6 +188,8 @@
 
 %}
 
+%feature("director") DeviceEvent;
+
 //help functions
 %inline %{
     int CPointerSize(){
@@ -178,11 +199,11 @@
 
 %}
 
-
 %include "TYApi.h"
 %include "TYImageProc.h"
 %include "TYCoordinateMapper.h"
 %include "TyIsp.h"
+%include "percipio_class.hpp"
 %include "../sample/common/Utils.hpp"
 %include "../sample/common/TYThread.hpp"
 %include "../sample/common/TYThread.cpp"

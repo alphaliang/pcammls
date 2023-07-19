@@ -89,6 +89,8 @@
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_EXTRINSIC, TY_CAMERA_EXTRINSIC);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_DISTORTION, TY_CAMERA_DISTORTION);
 %CARRAY_ITEM_ASSIGN(TY_CAMERA_CALIB_INFO, TY_CAMERA_CALIB_INFO);
+
+%CARRAY_ITEM_ASSIGN(image_data, image_data);
 //ARRAY BUFFER ARGOUT ////////////////////////////////////////
 
 
@@ -157,6 +159,9 @@ namespace std
 {
   %template(DeviceInfoVector) vector<TY_DEVICE_BASE_INFO>;
   %template(EnumEntryVector) vector<TY_ENUM_ENTRY>;
+  %template(FrameVector) vector<image_data>;
+  %template(CalibDataVector) vector<float>;
+  
 }
 %CARRAY_ITEM_ASSIGN(DeviceInfoVector, TY_DEVICE_BASE_INFO);
 
@@ -209,6 +214,8 @@ namespace std
 %typemap(cstype) void* INPUT " global::System.IntPtr"
 %typemap(csin) void* INPUT %{  $csinput %}
 
+// %typemap(cstype) void* OUTPUT "global::System.IntPtr"
+
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
 %apply void** INPUT{TY_INTERFACE_HANDLE *, TY_DEV_HANDLE * , TY_ISP_HANDLE* , TY_FW_ERRORCODE*}
 %apply void* INPUT{TY_INTERFACE_HANDLE , TY_DEV_HANDLE  , TY_ISP_HANDLE , TY_FW_ERRORCODE}
@@ -251,6 +258,17 @@ namespace std
 
 
 //return code to exception  //////////////////////////////////////////////////
+%typemap(csout) TY_DEV_HANDLE {
+	System.IntPtr ret = $imcall;$excode
+	return ret;
+}
+
+%typemap(cscode) void* %{
+  public System.IntPtr getCPtr() {
+    return (global::System.IntPtr)swigCPtr;
+  }
+%}
+
 %typemap(cstype) TY_STATUS "int"
 %typemap(csout) TY_STATUS {
 	int ret;

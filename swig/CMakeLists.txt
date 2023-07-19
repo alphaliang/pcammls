@@ -11,6 +11,7 @@ endif()
 
 
 set(PCAM_LIBNAME pcammls)
+
 if (${TARGET_LANGUAGE} STREQUAL "PYTHON") #python
     include_directories(BEFORE ${SWIG_DIR}/Lib/python )
     set(PYTHON_DIR "" CACHE PATH "python dir")
@@ -57,6 +58,11 @@ swig_add_library(${PCAM_LIBNAME}
         OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig/_output
 )
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic")
+
+add_subdirectory(./third-party/libjpeg-turbo)
+
 file(GLOB swig_dep_files ${CMAKE_CURRENT_SOURCE_DIR}/*.i)
 set (SWIG_CLEAN_STAMP_FILE  ${CMAKE_CURRENT_BINARY_DIR}/swig/swig_clean.stamp)
 
@@ -81,10 +87,8 @@ else()
 	add_dependencies( ${PCAM_LIBNAME} clean_swig_dir)
 endif ()
 
-
-
 get_property(support_files TARGET ${PCAM_LIBNAME} PROPERTY SWIG_SUPPORT_FILES)
-target_link_libraries(${PCAM_LIBNAME} tycam )
+target_link_libraries(${PCAM_LIBNAME} tycam)
 set(PCAM_LIB_SUPPORT_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swig/_output PARENT_SCOPE)
 set(PCAM_LIB_BINARY_NAME $<TARGET_FILE:${PCAM_LIBNAME}> PARENT_SCOPE)
 
@@ -100,9 +104,8 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
 	set_property(TARGET ${PCAM_LIBNAME} PROPERTY SWIG_COMPILE_OPTIONS -namespace pcammls )
 endif()
 
-if(OpenCV_FOUND)
-	target_link_libraries(${PCAM_LIBNAME} ${OpenCV_LIBS})
-endif()
+include_directories(./third-party/libjpeg-turbo)
+target_link_libraries(${PCAM_LIBNAME} turbojpeg-static)
 
 ##################################################
 install( TARGETS ${PCAM_LIBNAME} DESTINATION "${TARGET_LANGUAGE}")
