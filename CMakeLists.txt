@@ -10,7 +10,6 @@ set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
 set(PYTHON_VERSION "3.8" CACHE STRING "python version")
 set(CSHARP_NET_VERSION  "v4.8" CACHE STRING ".NET version")
 
-option(WITH_OPENCV OFF)
 #set(SWIG_DIR  CACHE PATH "SWIG tool path")
 
 message("target language is ${TARGET_LANGUAGE}")
@@ -58,20 +57,7 @@ endmacro()
 
 configure_msvc_runtime()
 ##################################################
-# OpenCV
-if(WITH_OPENCV)
-    find_package(OpenCV)
-    if ( OpenCV_FOUND)
-        option (OpenCV_STATIC OFF)
-        include_directories(${OpenCV_INCLUDE_DIRS})
-        include_directories(${OpenCV2_INCLUDE_DIRS})
-        link_directories(${OpenCV_LIB_DIR})
-    else()
-        message("OpenCV library not found")
-    endif()
-endif()
 
-##################################################
 #tycam
 if ( (NOT EXISTS "${CAMPORT_DIR}") OR (NOT EXISTS "${CAMPORT_DIR}/include"))
     message(FATAL_ERROR "need set CAMPORT_DIR to sdk directory")
@@ -102,6 +88,7 @@ else(MSVC)
         set_target_properties( tycam PROPERTIES IMPORTED_LOCATION ${CAM_LIB_FILEPATH})
     endif()
 endif(MSVC)
+
 
 get_property(tylib_file TARGET tycam PROPERTY IMPORTED_LOCATION)
 if (UNIX)

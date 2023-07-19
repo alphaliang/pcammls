@@ -2,10 +2,6 @@
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
 #include "../sample/common/Utils.hpp"
-#include "../sample/common/DepthRender.hpp"
-
-#include <opencv2/opencv.hpp>
-
 
 #include <vector>
 
@@ -168,6 +164,8 @@ typedef struct image_data {
   }
 
 }image_data;
+
+#include "image_process.hpp"
 
 typedef struct pointcloud_data {
   TY_VECT_3F p3d;
@@ -1046,27 +1044,6 @@ bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int 
   return true;
 }
 
-static bool convertcvMat2image_data(const cv::Mat& mat, image_data& image)
-{
-  int type = mat.type();
-  if(type == CV_8UC3) {
-    image.pixelFormat = TY_PIXEL_FORMAT_BGR;
-  } else if(type == CV_8U) {
-    image.pixelFormat = TY_PIXEL_FORMAT_MONO;
-  } else if(type == CV_16U) {
-    image.pixelFormat = TY_PIXEL_FORMAT_MONO16;
-  } else {
-    return false;
-  }
-
-  int size = mat.total() * mat.elemSize();
-  image.resize(size);
-  image.width = mat.cols;
-  image.height = mat.rows;
-  memcpy(image.buffer, mat.data, size);
-  return true;
-}
-
 static bool parseCsiRaw10(const image_data& src, image_data& dst) {
   int width = src.width;
   int height = src.height;
@@ -1127,135 +1104,27 @@ static bool parseCsiRaw12(const image_data& src, image_data& dst) {
   return true;
 }
 
-static bool parseRaw16_to_Raw8(const image_data& src, image_data& dst) {
-    if ((src.pixelFormat != TY_PIXEL_FORMAT_MONO16) &&
-        (src.pixelFormat != TY_PIXEL_FORMAT_TOF_IR_MONO16)) {
-        LOGE("Invalid pixel format : 0x%x!", src.pixelFormat);
-        return false;
-    }
-
-    dst.streamID = src.streamID;
-    dst.timestamp = src.timestamp;
-    dst.imageIndex = src.imageIndex;
-    dst.status = src.status;
-    dst.width = src.width;
-    dst.height = src.height;
-    dst.pixelFormat = TY_PIXEL_FORMAT_MONO;
-    dst.resize(dst.width * dst.height);
-
-    uint16_t* src_ptr = (uint16_t*)src.buffer;
-    uint8_t*  dst_ptr = (uint8_t*)dst.buffer;
-    for (size_t i = 0; i < src.width * src.height; i++)
-    {
-        dst_ptr[i] = (uint8_t)(src_ptr[i] >> 8);
-    }
-    return true;
-}
-
-static bool parseRaw8_to_bgr888(const image_data& src, image_data& dst)
-{
-    if (src.pixelFormat != TY_PIXEL_FORMAT_MONO) {
-        LOGE("Invalid pixel format!");
-        return false;
-    }
-
-    dst.streamID = src.streamID;
-    dst.timestamp = src.timestamp;
-    dst.imageIndex = src.imageIndex;
-    dst.status = src.status;
-    dst.width = src.width;
-    dst.height = src.height;
-    dst.pixelFormat = TY_PIXEL_FORMAT_BGR;
-
-    dst.resize(3 * dst.width * dst.height);
-
-    uint8_t* src_ptr = (uint8_t*)src.buffer;
-    uint8_t* dst_ptr = (uint8_t*)dst.buffer;
-    for (size_t i = 0; i < src.width * src.height; i++)
-    {
-        dst_ptr[3 * i + 0] = src_ptr[i];
-        dst_ptr[3 * i + 1] = src_ptr[i];
-        dst_ptr[3 * i + 2] = src_ptr[i];
-    }
-    return true;
-}
-
-
-static bool parseBayer8Frame(const image_data& src, image_data& dst) {
-  int code = cv::COLOR_BayerGB2BGR;
-  switch (src.pixelFormat)
-  {
-  case TY_PIXEL_FORMAT_BAYER8GBRG:
-    code = cv::COLOR_BayerGR2BGR;
-    break;
-  case TY_PIXEL_FORMAT_BAYER8BGGR:
-    code = cv::COLOR_BayerRG2BGR;
-    break;                
-  case TY_PIXEL_FORMAT_BAYER8GRBG:
-    code = cv::COLOR_BayerGB2BGR;
-    break;                
-  case TY_PIXEL_FORMAT_BAYER8RGGB:
-    code = cv::COLOR_BayerBG2BGR;
-    break;
-  default:
-    LOGE("Invalid bayer8 fmt!");
-    return false;
-  }
-
-  dst.streamID = src.streamID;
-  dst.timestamp = src.timestamp;
-  dst.imageIndex = src.imageIndex;
-  dst.status = src.status;
-  dst.width = src.width;
-  dst.height = src.height;
-  dst.pixelFormat = TY_PIXEL_FORMAT_BGR;
-
-  dst.resize(3 * dst.width * dst.height);
-
-  cv::Mat raw(src.height, src.width, CV_8U, src.buffer);
-  cv::Mat color(dst.height, dst.width, CV_8UC3, dst.buffer);
-  cv::cvtColor(raw, color, code);
-  
-  return true;
-}
-
-
 bool PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
     bool ret;
     image_data  temp, gray8;
     if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat == TY_PIXEL_FORMAT_TOF_IR_MONO16) {
-        parseRaw16_to_Raw8(src, gray8);
+        ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO162RGB888, dst);
     }
     else if (src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
-        //target: TY_PIXEL_FORMAT_MONO16
-        ret = parseCsiRaw10(src, temp);
-        if (!ret) {
-            LOGE("parseCsiRaw10 fail!\n");
-            return false;
-        }
-
-        parseRaw16_to_Raw8(temp, gray8);
+        ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO102RGB888, dst);
     }
     else if (src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
-        //target: TY_PIXEL_FORMAT_MONO
-        gray8 = src;
+        ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO2RGB888, dst);
     }
     else if (src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
-        //target: TY_PIXEL_FORMAT_MONO16
-        ret = parseCsiRaw12(src, temp);
-        if (!ret) {
-            LOGE("parseCsiRaw12 fail!\n");
-            return false;
-        }
-
-        parseRaw16_to_Raw8(temp, gray8);
+        ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO122RGB888, dst);
     }
     else {
         LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
         return false;
     }
 
-    return parseRaw8_to_bgr888(gray8, dst);
+    return true;
 }
 
 static bool parseIrFrame(const image_data& src, image_data& dst) {
@@ -1268,7 +1137,6 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
     //target: TY_PIXEL_FORMAT_MONO
     dst = src;
-
     return true;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
     //target: TY_PIXEL_FORMAT_MONO16
@@ -1283,83 +1151,61 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
 static bool parseColorFrame(const image_data& src, image_data& dst) {
 
   //TODO
-  cv::Mat color;
-  printf("=====pixelFormat = 0x%x\n", src.pixelFormat);
   if (src.pixelFormat == TY_PIXEL_FORMAT_JPEG){
-    cv::Mat jpeg(src.height, src.width, CV_8UC1, src.buffer);
-    color = cv::imdecode(jpeg, cv::IMREAD_COLOR);
-  }
-
-  if (src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
-    cv::Mat yuv(src.height, src.width , CV_8UC2, src.buffer);
-    cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-  }
-
-  if (src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
-    cv::Mat yuv(src.height, src.width, CV_8UC2, src.buffer);
-    cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YUYV);
-  }
-
-  if (src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
-    cv::Mat rgb(src.height, src.width, CV_8UC3, src.buffer);
-    cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
-  }
-
-  if (src.pixelFormat == TY_PIXEL_FORMAT_BGR){
-    color = cv::Mat(src.height, src.width, CV_8UC3, src.buffer);
-  }
-  
-  if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG || 
-           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR || 
-           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG || 
-           src.pixelFormat == TY_PIXEL_FORMAT_BAYER8RGGB) 
-  {
-    return parseBayer8Frame(src, dst);
-  }
-  if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
-    color = cv::Mat(src.height, src.width, CV_8U, src.buffer);
-  }
-
-  if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) || 
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) ||
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) ||
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB)) {
-    return parseCsiRaw10(src, dst);//ret = parseBayer10Frame(img, pColor);
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_JPEG2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_YVYU2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_YUYV2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BGR2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BGR){
+    dst = src;
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8GB2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8BG2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8GR2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BAYER8RGGB) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8RG2RGB888, dst);
+  } else if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO2RGB888, dst);
   } 
   
-  if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) ||
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) ||
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) ||
-      (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB)) {
-    return parseCsiRaw12(src, dst);
+  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10GB2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10BG2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10GR2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10RG2RGB888, dst);
+  } 
+  
+  
+  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GB2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12BG2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GR2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12RG2RGB888, dst);
   }
 
-  dst.streamID = src.streamID;
-  return convertcvMat2image_data(color, dst);
+  return true;
 }
 
 bool PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst) {
   if(src.pixelFormat != TY_PIXEL_FORMAT_DEPTH16){
     LOGE("Invalid pixel format 0x:%x", src.pixelFormat);
     return false;
-  } 
-  DepthRender render;
-  cv::Mat depth = cv::Mat(cv::Size(src.width, src.height), CV_16U, src.buffer);
-  cv::Mat color = render.Compute(depth);
+  }
 
-  dst.resize(color.total() * color.elemSize());
-  dst.streamID     = src.streamID;
-  dst.timestamp    = src.timestamp;
-  dst.imageIndex   = src.imageIndex;
-  dst.status       = src.status;
-  dst.width        = src.width;
-  dst.height       = src.height;
-  dst.pixelFormat  = TY_PIXEL_FORMAT_BGR;
-  memcpy(dst.buffer, color.data, dst.size);
+  ImgProc::cvtColor(src, ImgProc::IMGPROC_DEPTH2RGB888, dst);
   return true;
 }
-
-
 
 bool PercipioSDK::DeviceStreamImageDecode(const image_data& src, image_data& dst) {
 
