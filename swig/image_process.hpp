@@ -19,7 +19,6 @@
 
 #define MAX_DEPTH 0x10000 
 
-
 static void BGRToRGB(const void* bgrFrame, int width, int height, void* rgbFrame)
 {
   uint8_t* pBGR = (uint8_t*)bgrFrame;
@@ -283,7 +282,7 @@ public:
           dst[pix] =(int16_t)(*(src + 3*pix + 2) * f_scale_unit + 0.5f);
       }
     }
-    static inline int decodeCsiRaw10(unsigned char* src, unsigned short* dst, int width, int height)
+    static inline int decodeCsiRaw10(uint8_t* src, unsigned short* dst, int width, int height)
     {
         if(width & 0x3) {
             return -1;
@@ -301,7 +300,7 @@ public:
         return 0;
     }
 
-    static inline int decodeCsiRaw12(unsigned char* src, unsigned short* dst, int width, int height)
+    static inline int decodeCsiRaw12(uint8_t* src, uint16_t* dst, int width, int height)
     {
         if(width & 0x1) {
             return -1;
@@ -316,13 +315,13 @@ public:
         return 0;
     }
 
-    static inline int parseCsiRaw10(unsigned char* src, ushort* dst, int width, int height)
+    static inline int parseCsiRaw10(uint8_t* src, uint16_t* dst, int width, int height)
     {
         decodeCsiRaw10(src, dst, width, height);
         return 0;
     }
 
-    static inline int parseCsiRaw12(unsigned char* src, ushort* dst, int width, int height)
+    static inline int parseCsiRaw12(uint8_t* src, uint16_t* dst, int width, int height)
     {
         decodeCsiRaw12(src, dst, width, height);
         return 0;
@@ -528,9 +527,9 @@ public:
         }
         default:
           return -1;
- 
-        return 0;
       }
+
+      return 0;
     }
 
     static int cvtColor(const image_data&src,  IMGPROC_MDOE type, image_data& dst)
@@ -561,11 +560,11 @@ public:
             jpeg = tjInitDecompress();
 
             int real_width, real_height, subsamp;
-            if(-1 != tjDecompressHeader2(jpeg, (unsigned char*)src.buffer, src.size, &real_width, &real_height, &subsamp))
+            if(-1 != tjDecompressHeader2(jpeg, (uint8_t*)src.buffer, src.size, &real_width, &real_height, &subsamp))
             {
               int32_t pitch = real_width * tjPixelSize[TJPF::TJPF_RGB];
               int32_t img_size = pitch * real_height;
-              if(!tjDecompress2(jpeg, (unsigned char*)src.buffer, src.size, dst.buffer, real_width, pitch, real_height, TJPF::TJPF_RGB, 0))
+              if(!tjDecompress2(jpeg, (uint8_t*)src.buffer, src.size, (uint8_t*)dst.buffer, real_width, pitch, real_height, TJPF::TJPF_RGB, 0))
               {
                 //
               }   
@@ -632,9 +631,9 @@ public:
           break;
         }
         case IMGPROC_CSI_MONO102RGB888: {
-          std::vector<ushort> mono10(src.width * src.height);
-          std::vector<unsigned char> mono8(src.width * src.height);
-          parseCsiRaw10((unsigned char*)src.buffer, &mono10[0], src.width, src.height);
+          std::vector<uint16_t> mono10(src.width * src.height);
+          std::vector<uint8_t> mono8(src.width * src.height);
+          parseCsiRaw10((uint8_t*)src.buffer, &mono10[0], src.width, src.height);
           for(size_t idx = 0; idx < mono10.size(); idx++) {
             mono8[idx] = mono10[idx] >> 8;
           }
@@ -642,9 +641,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER10GB2RGB888: {
-          std::vector<ushort> bayer10(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw10((unsigned char*)src.buffer, &bayer10[0], src.width, src.height);
+          std::vector<uint16_t> bayer10(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw10((uint8_t*)src.buffer, &bayer10[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer10.size(); idx++) {
             bayer8[idx] = bayer10[idx] >> 8;
           }
@@ -659,9 +658,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER10BG2RGB888: {
-          std::vector<ushort> bayer10(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw10((unsigned char*)src.buffer, &bayer10[0], src.width, src.height);
+          std::vector<uint16_t> bayer10(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw10((uint8_t*)src.buffer, &bayer10[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer10.size(); idx++) {
             bayer8[idx] = bayer10[idx] >> 8;
           }
@@ -676,9 +675,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER10GR2RGB888: {
-          std::vector<ushort> bayer10(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw10((unsigned char*)src.buffer, &bayer10[0], src.width, src.height);
+          std::vector<uint16_t> bayer10(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw10((uint8_t*)src.buffer, &bayer10[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer10.size(); idx++) {
             bayer8[idx] = bayer10[idx] >> 8;
           }
@@ -693,9 +692,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER10RG2RGB888: {
-          std::vector<ushort> bayer10(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw10((unsigned char*)src.buffer, &bayer10[0], src.width, src.height);
+          std::vector<uint16_t> bayer10(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw10((uint8_t*)src.buffer, &bayer10[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer10.size(); idx++) {
             bayer8[idx] = bayer10[idx] >> 8;
           }
@@ -710,9 +709,9 @@ public:
           break;
         }
         case IMGPROC_CSI_MONO122RGB888: {
-          std::vector<ushort> mono12(src.width * src.height);
-          std::vector<unsigned char> mono8(src.width * src.height);
-          parseCsiRaw12((unsigned char*)src.buffer, &mono12[0], src.width, src.height);
+          std::vector<uint16_t> mono12(src.width * src.height);
+          std::vector<uint8_t> mono8(src.width * src.height);
+          parseCsiRaw12((uint8_t*)src.buffer, &mono12[0], src.width, src.height);
           for(size_t idx = 0; idx < mono12.size(); idx++) {
             mono8[idx] = mono12[idx] >> 8;
           }
@@ -720,9 +719,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER12GB2RGB888: {
-          std::vector<ushort> bayer12(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw12((unsigned char*)src.buffer, &bayer12[0], src.width, src.height);
+          std::vector<uint16_t> bayer12(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw12((uint8_t*)src.buffer, &bayer12[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer12.size(); idx++) {
             bayer8[idx] = bayer12[idx] >> 8;
           }
@@ -737,9 +736,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER12BG2RGB888: {
-          std::vector<ushort> bayer12(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw12((unsigned char*)src.buffer, &bayer12[0], src.width, src.height);
+          std::vector<uint16_t> bayer12(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw12((uint8_t*)src.buffer, &bayer12[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer12.size(); idx++) {
             bayer8[idx] = bayer12[idx] >> 8;
           }
@@ -754,9 +753,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER12GR2RGB888: {
-          std::vector<ushort> bayer12(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw12((unsigned char*)src.buffer, &bayer12[0], src.width, src.height);
+          std::vector<uint16_t> bayer12(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw12((uint8_t*)src.buffer, &bayer12[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer12.size(); idx++) {
             bayer8[idx] = bayer12[idx] >> 8;
           }
@@ -771,9 +770,9 @@ public:
           break;
         }
         case IMGPROC_CSI_BAYER12RG2RGB888: {
-          std::vector<ushort> bayer12(src.width * src.height);
-          std::vector<unsigned char> bayer8(src.width * src.height);
-          parseCsiRaw12((unsigned char*)src.buffer, &bayer12[0], src.width, src.height);
+          std::vector<uint16_t> bayer12(src.width * src.height);
+          std::vector<uint8_t> bayer8(src.width * src.height);
+          parseCsiRaw12((uint8_t*)src.buffer, &bayer12[0], src.width, src.height);
           for(size_t idx = 0; idx < bayer12.size(); idx++) {
             bayer8[idx] = bayer12[idx] >> 8;
           }
@@ -788,8 +787,8 @@ public:
           break;
         }    
         case IMGPROC_MONO162RGB888: {
-          ushort* ptr = (ushort*)src.buffer;
-          std::vector<unsigned char> mono8(src.width * src.height);
+            uint16_t* ptr = (uint16_t*)src.buffer;
+          std::vector<uint8_t> mono8(src.width * src.height);
           for(size_t idx = 0; idx < src.width * src.height; idx++) {
             mono8[idx] = ptr[idx] >> 8;
           }

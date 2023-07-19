@@ -104,6 +104,7 @@ if (${TARGET_LANGUAGE} STREQUAL "CSHARP")
 	set_property(TARGET ${PCAM_LIBNAME} PROPERTY SWIG_COMPILE_OPTIONS -namespace pcammls )
 endif()
 
+include_directories(./third-party/libjpeg-turbo)
 target_link_libraries(${PCAM_LIBNAME} turbojpeg-static)
 
 ##################################################
