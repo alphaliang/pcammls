@@ -821,8 +821,8 @@ bool PercipioSDK::FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize)
     free(DevList[idx].frameBuffer[0]);
   if(DevList[idx].frameBuffer[1])
     free(DevList[idx].frameBuffer[1]);
-  DevList[idx].frameBuffer[0] = (void*)malloc(frameSize);
-  DevList[idx].frameBuffer[1] = (void*)malloc(frameSize);
+  DevList[idx].frameBuffer[0] = (char*)malloc(frameSize);
+  DevList[idx].frameBuffer[1] = (char*)malloc(frameSize);
 
   ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[0], frameSize));
   ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[1], frameSize));
