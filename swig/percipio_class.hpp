@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include "TYApi.h"
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
@@ -321,6 +323,9 @@ class PercipioSDK
                                                     image_data& dstDepth);
 
   private:
+    std::mutex _mutex;
+
+
     typedef enum STREAM_FMT_LIST_IDX {
         STREMA_FMT_IDX_COLOR      = 0,
         STREMA_FMT_IDX_DEPTH      = 1,
@@ -334,15 +339,15 @@ class PercipioSDK
       std::string         devID;
       PERCIPIO_STREAM_ID  stream;
       float               depth_scale_unit;
-      std::vector<char>   frameBuffer[2];
+      char*               frameBuffer[2];
 
       std::vector<TY_ENUM_ENTRY> fmt_list[STREMA_FMT_IDX_MAX];
       std::vector<image_data>    image_list;
-      PercipioCalibData           calib_data_list[STREMA_FMT_IDX_MAX];
+      PercipioCalibData          calib_data_list[STREMA_FMT_IDX_MAX];
 
       device_info(const TY_DEV_HANDLE _handle, const char* id) {
-        frameBuffer[0].clear();
-        frameBuffer[1].clear();
+        frameBuffer[0] = NULL;
+        frameBuffer[1] = NULL;
         for(size_t i = 0; i < STREMA_FMT_IDX_MAX; i++) {
           fmt_list[i].clear();
           memset(&calib_data_list[i], 0, sizeof(PercipioCalibData));
@@ -450,6 +455,7 @@ int PercipioSDK::isValidDevice(const char* sn) {
 }
 
 TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
+  std::unique_lock<std::mutex> lock(_mutex);
   std::string SN;
   if(sn != NULL)
     SN = std::string(sn);
@@ -505,6 +511,7 @@ TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
 }
 
 TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
+  std::unique_lock<std::mutex> lock(_mutex);
   LOGD("Update interface list");
   ASSERT_OK( TYUpdateInterfaceList() );
 
@@ -810,13 +817,15 @@ bool PercipioSDK::FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize)
     return false;
   }
 
-  DevList[idx].frameBuffer[0].resize(frameSize);
-  DevList[idx].frameBuffer[1].resize(frameSize);
+  if(DevList[idx].frameBuffer[0])
+    free(DevList[idx].frameBuffer[0]);
+  if(DevList[idx].frameBuffer[1])
+    free(DevList[idx].frameBuffer[1]);
+  DevList[idx].frameBuffer[0] = (void*)malloc(frameSize);
+  DevList[idx].frameBuffer[1] = (void*)malloc(frameSize);
 
-  void* pBuf1 = &DevList[idx].frameBuffer[0][0];
-  void* pBuf2 = &DevList[idx].frameBuffer[1][0];
-  ASSERT_OK(TYEnqueueBuffer(handle, pBuf1, frameSize));
-  ASSERT_OK(TYEnqueueBuffer(handle, pBuf2, frameSize));
+  ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[0], frameSize));
+  ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[1], frameSize));
 
   return true;
 }
@@ -829,8 +838,12 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   }
 
   TYClearBufferQueue(handle);
-  DevList[idx].frameBuffer[0].clear();
-  DevList[idx].frameBuffer[1].clear();
+
+  free(DevList[idx].frameBuffer[0]);
+  free(DevList[idx].frameBuffer[1]);
+  DevList[idx].frameBuffer[0] = NULL;
+  DevList[idx].frameBuffer[1] = NULL;
+
   return ;
 }
 
@@ -863,7 +876,7 @@ const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handl
 }
 
 bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
-
+  std::unique_lock<std::mutex> lock(_mutex);
   if(hasDevice(handle) < 0) {
     LOGE("Invalid device handle!");
     return false;
@@ -877,6 +890,7 @@ bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
   }
 
   if(!FrameBufferAlloc(handle, frameSize)) {
+    LOGE("====FrameBufferAlloc fail!\n");
     return false;
   }
 
@@ -938,7 +952,7 @@ const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE
 }
 
 bool PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
-
+  std::unique_lock<std::mutex> lock(_mutex);
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
