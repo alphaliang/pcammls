@@ -54,6 +54,7 @@ def main():
     for idx in range(len(color_fmt_list)):
         fmt = color_fmt_list[idx]
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
+    print('\tSelect {}'.format(fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[0])
 
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
@@ -61,6 +62,7 @@ def main():
     for idx in range(len(depth_fmt_list)):
         fmt = depth_fmt_list[idx]
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
+    print('\tSelect {}'.format(fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
     color_calib_data   = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)

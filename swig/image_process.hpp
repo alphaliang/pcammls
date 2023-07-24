@@ -3,7 +3,7 @@
  * @Author: zxy
  * @Date: 2023-07-18 15:55:24
  * @LastEditors: zxy
- * @LastEditTime: 2023-07-19 10:48:25
+ * @LastEditTime: 2023-07-24 13:13:53
  */
 
 #include <iostream>
@@ -533,6 +533,12 @@ public:
       return 0;
     }
 
+    struct jpeg_decoder{
+        tjhandle jpeg;
+        jpeg_decoder() {jpeg = tjInitDecompress();}
+        ~jpeg_decoder() {tjDestroy(jpeg);};
+    };
+
     static int cvtColor(const image_data&src,  IMGPROC_MDOE type, image_data& dst)
     {
       int i, j;
@@ -556,20 +562,17 @@ public:
           break;
         }    
         case IMGPROC_JPEG2RGB888: {
-          static tjhandle jpeg = NULL;
-          if(!jpeg) {
-            jpeg = tjInitDecompress();
-
-            int real_width, real_height, subsamp;
-            if(-1 != tjDecompressHeader2(jpeg, (uint8_t*)src.buffer, src.size, &real_width, &real_height, &subsamp))
+          static jpeg_decoder jpeg_de;
+          
+          int real_width, real_height, subsamp;
+          if(-1 != tjDecompressHeader2(jpeg_de.jpeg, (uint8_t*)src.buffer, src.size, &real_width, &real_height, &subsamp))
+          {
+            int32_t pitch = real_width * tjPixelSize[TJPF::TJPF_RGB];
+            int32_t img_size = pitch * real_height;
+            if(!tjDecompress2(jpeg_de.jpeg, (uint8_t*)src.buffer, src.size, (uint8_t*)dst.buffer, real_width, pitch, real_height, TJPF::TJPF_RGB, 0))
             {
-              int32_t pitch = real_width * tjPixelSize[TJPF::TJPF_RGB];
-              int32_t img_size = pitch * real_height;
-              if(!tjDecompress2(jpeg, (uint8_t*)src.buffer, src.size, (uint8_t*)dst.buffer, real_width, pitch, real_height, TJPF::TJPF_RGB, 0))
-              {
                 //
-              }   
-            }
+            }   
           }
           break;
         }
