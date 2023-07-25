@@ -445,7 +445,7 @@ int PercipioSDK::isValidDevice(const char* sn) {
       //search
       for(size_t i = 0; i < sz; i++) {
         if(0 == strcmp(iDevBaseInfoList[i].id, sn)) {
-          return i;
+          return (int)i;
         }
       }
     }
@@ -558,7 +558,7 @@ TY_DEV_HANDLE PercipioSDK::Open() {
 int PercipioSDK::hasDevice(const TY_DEV_HANDLE handle) {
   for(size_t i = 0; i < DevList.size(); i++) {
     if(handle == DevList[i].handle) {
-      return i;
+      return (int)i;
     }
   }
   return -1;
@@ -1119,7 +1119,6 @@ static bool parseCsiRaw12(const image_data& src, image_data& dst) {
 }
 
 bool PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
-    bool ret;
     image_data  temp, gray8;
     if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat == TY_PIXEL_FORMAT_TOF_IR_MONO16) {
         ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO162RGB888, dst);
