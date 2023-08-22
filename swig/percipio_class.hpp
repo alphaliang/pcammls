@@ -322,6 +322,9 @@ class PercipioSDK
                                                     const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
                                                     image_data& dstDepth);
 
+    //
+    bool DeviceStreamDepthSpeckleFilter(int max_spc_size,  int max_spc_diff, image_data& image);
+
   private:
     std::mutex _mutex;
 
@@ -1217,6 +1220,28 @@ bool PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst
   }
 
   ImgProc::cvtColor(src, ImgProc::IMGPROC_DEPTH2RGB888, dst);
+  return true;
+}
+
+bool PercipioSDK::DeviceStreamDepthSpeckleFilter(int max_spc_size,  int max_spc_diff, image_data& image) {
+  if(image.pixelFormat != TY_PIXEL_FORMAT_DEPTH16){
+    LOGE("Invalid pixel format 0x:%x", image.pixelFormat);
+    return false;
+  }
+
+  TY_IMAGE_DATA depthImage;
+  depthImage.timestamp = image.timestamp;
+  depthImage.imageIndex = image.imageIndex;
+  depthImage.status = image.status;
+  depthImage.size = image.size;
+  depthImage.buffer = image.buffer;
+  
+  depthImage.width = image.width;
+  depthImage.height = image.height;
+  depthImage.pixelFormat =image.pixelFormat;
+
+  DepthSpeckleFilterParameters para = {max_spc_size, max_spc_diff};
+  TYDepthSpeckleFilter(&depthImage,  &para);
   return true;
 }
 

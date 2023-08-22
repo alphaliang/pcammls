@@ -3,7 +3,7 @@
  * @Author: zxy
  * @Date: 2023-07-18 15:55:24
  * @LastEditors: zxy
- * @LastEditTime: 2023-07-25 09:24:59
+ * @LastEditTime: 2023-08-22 15:09:29
  */
 
 #include <iostream>
@@ -251,7 +251,10 @@ public:
               }
             }
           } else {
-            pRGB += 3;
+            *pRGB++ = 0;
+            *pRGB++ = 0;
+            *pRGB++ = 0;
+            //pRGB += 3;
           }
         }
         pDepthRow += rowSize;
