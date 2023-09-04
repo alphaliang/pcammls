@@ -33,7 +33,6 @@ for:
       - mkdir build
       - cd build
       - cmake .. -DCMAKE_INSTALL_PREFIX=./install/ -DCAMPORT_ARCH=x64
-      - make install -j4
 
     artifacts:
       - path: build/install/
