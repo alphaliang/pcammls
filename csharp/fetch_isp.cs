@@ -115,6 +115,7 @@ namespace demo
             }
             cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[color_fmt_list.Count() - 1]);
 
+            //enable rgb image software isp 
             cl.DeviceColorStreamIspEnable(handle, true);
             return true;
         }

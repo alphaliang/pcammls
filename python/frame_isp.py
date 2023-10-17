@@ -57,6 +57,7 @@ def main():
     print('\tSelect {}'.format(fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[len(color_fmt_list) - 1])
 
+    #enable rgb image software isp
     cl.DeviceColorStreamIspEnable(handle, True)
 
     rgb_image = image_data()
