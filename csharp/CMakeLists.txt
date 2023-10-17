@@ -42,6 +42,15 @@ add_executable(fetch_frame_cs
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET fetch_frame_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
+
+add_executable(fetch_ISP
+    ${CMAKE_CURRENT_SOURCE_DIR}/fetch_isp.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.Designer.cs
+	${CMAKE_CURRENT_SOURCE_DIR}/Form1.resx)
+set_property(TARGET fetch_ISP PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+set_property(TARGET fetch_ISP PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+
 add_executable(fetch_IR_cs 
     ${CMAKE_CURRENT_SOURCE_DIR}/fetch_IR.cs 
 	${CMAKE_CURRENT_SOURCE_DIR}/Program.cs 
@@ -72,6 +81,7 @@ set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION
 set_property(TARGET fetch_point3d_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
 target_link_libraries(fetch_frame_cs pcammls_cs)
+target_link_libraries(fetch_ISP pcammls_cs)
 target_link_libraries(fetch_IR_cs pcammls_cs)
 target_link_libraries(fetch_registration_cs pcammls_cs)
 target_link_libraries(fetch_trigger_cs pcammls_cs)
