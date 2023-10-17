@@ -3,7 +3,7 @@
  * @Author: zxy
  * @Date: 2023-07-18 15:55:24
  * @LastEditors: zxy
- * @LastEditTime: 2023-08-22 15:09:29
+ * @LastEditTime: 2023-10-17 15:50:14
  */
 
 #include <iostream>
@@ -296,10 +296,10 @@ public:
         for(size_t i = 0, j = 0; i < raw10_line_size * height; i+=5, j+=4)
         {
             //[A2 - A9] | [B2 - B9] | [C2 - C9] | [D2 - D9] | [A0A1-B0B1-C0C1-D0D1]
-            dst[j + 0] = ((uint16_t)src[i + 0] << 2) | ((src[i + 4] & 0x3)  >> 0);
-            dst[j + 1] = ((uint16_t)src[i + 1] << 2) | ((src[i + 4] & 0xc)  >> 2);
-            dst[j + 2] = ((uint16_t)src[i + 2] << 2) | ((src[i + 4] & 0x30) >> 4);
-            dst[j + 3] = ((uint16_t)src[i + 3] << 2) | ((src[i + 4] & 0xc0) >> 6);
+            dst[j + 0] = ((uint16_t)src[i + 0] << 8) | ((src[i + 4] & 0x3)  << 6);
+            dst[j + 1] = ((uint16_t)src[i + 1] << 8) | ((src[i + 4] & 0xc)  << 4);
+            dst[j + 2] = ((uint16_t)src[i + 2] << 8) | ((src[i + 4] & 0x30) << 2);
+            dst[j + 3] = ((uint16_t)src[i + 3] << 8) | ((src[i + 4] & 0xc0) << 0);
         }
         return 0;
     }
@@ -313,8 +313,8 @@ public:
         for(size_t i = 0, j = 0; i < raw12_line_size * height; i+=3, j+=2)
         {
             //[A4 - A11] | [B4 - B11] | [A0A1A2A3-B0B1B2B3]
-            dst[j + 0] = ((uint16_t)src[i + 0] << 4) | ((src[i + 2] & 0x0f)  >> 0);
-            dst[j + 1] = ((uint16_t)src[i + 1] << 4) | ((src[i + 2] & 0xf0)  >> 4);
+            dst[j + 0] = ((uint16_t)src[i + 0] << 8) | ((src[i + 2] & 0x0f)  << 4);
+            dst[j + 1] = ((uint16_t)src[i + 1] << 8) | ((src[i + 2] & 0xf0)  << 0);
         }
         return 0;
     }

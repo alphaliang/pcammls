@@ -4,6 +4,7 @@
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
 #include "../sample/common/Utils.hpp"
+#include "../sample/common/BayerISP.hpp"
 
 #include <vector>
 
@@ -287,6 +288,8 @@ class PercipioSDK
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
+    void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
+
     /*stream control*/
     bool                                DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     bool                                DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -328,6 +331,7 @@ class PercipioSDK
   private:
     std::mutex _mutex;
 
+    bool TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE_DATA& src, image_data& dst);
 
     typedef enum STREAM_FMT_LIST_IDX {
         STREMA_FMT_IDX_COLOR      = 0,
@@ -339,6 +343,7 @@ class PercipioSDK
 
     typedef struct device_info {
       TY_DEV_HANDLE       handle;
+      TY_ISP_HANDLE       isp;
       std::string         devID;
       PERCIPIO_STREAM_ID  stream;
       float               depth_scale_unit;
@@ -357,6 +362,7 @@ class PercipioSDK
         }
         depth_scale_unit = 1.f;
         handle = _handle;
+        isp    = NULL;
         devID = std::string(id);
         image_list.clear();
       }
@@ -667,6 +673,35 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   return true;
 }
 
+void PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable) {
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+    return ;
+  }
+
+  TY_STATUS status;
+  if(enable && DevList[idx].isp == NULL) {
+    status = TYISPCreate(&DevList[idx].isp);
+    if(status != TY_STATUS_OK) {
+      LOGE("TYISPCreate failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    }
+
+    status = ColorIspInitSetting(DevList[idx].isp, handle);
+    if(status != TY_STATUS_OK) {
+      LOGE("ColorIspInitSetting failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    }
+  }
+
+  if(!enable && DevList[idx].isp != NULL) {
+    status = TYISPRelease(&DevList[idx].isp);
+    if(status != TY_STATUS_OK) {
+      LOGE("TYISPRelease failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    }
+    DevList[idx].isp = NULL;
+  }
+}
+
 bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
   TY_STATUS status;
   TY_COMPONENT_ID allComps;
@@ -907,6 +942,118 @@ bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
   return true;
 }
 
+//only support raw8 / raw10 / raw12
+static bool IsBayerColor(int32_t         pixelFormat) {
+  switch(pixelFormat) {
+    case TY_PIXEL_FORMAT_BAYER8GRBG:
+    case TY_PIXEL_FORMAT_BAYER8RGGB:
+    case TY_PIXEL_FORMAT_BAYER8GBRG:
+    case TY_PIXEL_FORMAT_BAYER8BGGR:
+    case TY_PIXEL_FORMAT_CSI_BAYER10GRBG:
+    case TY_PIXEL_FORMAT_CSI_BAYER10RGGB:
+    case TY_PIXEL_FORMAT_CSI_BAYER10GBRG:
+    case TY_PIXEL_FORMAT_CSI_BAYER10BGGR:
+    case TY_PIXEL_FORMAT_CSI_BAYER12GRBG:
+    case TY_PIXEL_FORMAT_CSI_BAYER12RGGB:
+    case TY_PIXEL_FORMAT_CSI_BAYER12GBRG:
+    case TY_PIXEL_FORMAT_CSI_BAYER12BGGR:
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}
+
+bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE_DATA& src, image_data& dst)
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    return false;
+  }
+
+  if(!DevList[idx].isp) {
+    LOGE("Isp handle is empty!");
+    return false;
+  }
+
+  if ((src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG) ||
+      (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8RGGB)) {
+    int src_sz = src.width*src.height;
+    int dst_sz = src.width*src.height * 3;
+    dst.resize(dst_sz);
+    TY_IMAGE_DATA out_buff = TYInitImageData(dst_sz, dst.buffer, src.width, src.height);
+    out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
+    int res = TYISPProcessImage(DevList[idx].isp, &src, &out_buff);
+    if (res != TY_STATUS_OK){
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      return false;
+    }
+  }
+  else if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB)) {
+    std::vector<uint16_t> bayer10(src.width * src.height);
+    std::vector<uint8_t> bayer8(src.width * src.height);
+    ImgProc::parseCsiRaw10((uint8_t*)src.buffer, &bayer10[0], src.width, src.height);
+    for(size_t idx = 0; idx < bayer10.size(); idx++)
+      bayer8[idx] = bayer10[idx] >> 8;
+    
+    int src_sz = src.width*src.height;
+    int dst_sz = src.width*src.height * 3;
+    dst.resize(dst_sz);
+    TY_IMAGE_DATA in_buff = TYInitImageData(src_sz, &bayer8[0], src.width, src.height);
+    TY_IMAGE_DATA out_buff = TYInitImageData(dst_sz, dst.buffer, src.width, src.height);
+    in_buff.pixelFormat = TY_PIXEL_8BIT  | ((0xf << 24) & src.pixelFormat);
+    out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
+    int res = TYISPProcessImage(DevList[idx].isp, &in_buff, &out_buff);
+    if (res != TY_STATUS_OK){
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      return false;
+    }
+  } 
+  else if( (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) ||
+           (src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB) ) {
+    std::vector<uint16_t> bayer12(src.width * src.height);
+    std::vector<uint8_t> bayer8(src.width * src.height);
+    ImgProc::parseCsiRaw12((uint8_t*)src.buffer, &bayer12[0], src.width, src.height);
+    for(size_t idx = 0; idx < bayer12.size(); idx++)
+      bayer8[idx] = bayer12[idx] >> 8;
+    
+    int src_sz = src.width*src.height;
+    int dst_sz = src.width*src.height * 3;
+    dst.resize(dst_sz);
+    TY_IMAGE_DATA in_buff = TYInitImageData(src_sz, &bayer8[0], src.width, src.height);
+    TY_IMAGE_DATA out_buff = TYInitImageData(dst_sz, dst.buffer, src.width, src.height);
+    in_buff.pixelFormat = TY_PIXEL_8BIT  | ((0xf << 24) & src.pixelFormat);
+    out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
+    int res = TYISPProcessImage(DevList[idx].isp, &in_buff, &out_buff);
+    if (res != TY_STATUS_OK){
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      return false;
+    }
+  }
+  else
+  {
+    return false;
+  }
+
+  dst.pixelFormat = TY_PIXEL_FORMAT_BGR;
+  dst.streamID     = PERCIPIO_STREAM_COLOR;
+  dst.timestamp    = src.timestamp;
+  dst.imageIndex   = src.imageIndex;
+  dst.status       = src.status;
+  dst.width        = src.width;
+  dst.height       = src.height;
+
+  return true;
+}
+
 const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
   static std::vector<image_data> INVALID_FRAME(0);
   int idx = hasDevice(handle);
@@ -943,7 +1090,12 @@ const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE
 
     // get BGR
     if (frame.image[i].componentID == TY_COMPONENT_RGB_CAM) {
-      DevList[idx].image_list.push_back(image_data(frame.image[i]));
+      if(DevList[idx].isp && IsBayerColor(frame.image[i].pixelFormat)) {
+        image_data dst;
+        TyBayerColorConvert(handle, frame.image[i], dst);
+        DevList[idx].image_list.push_back(dst);
+      } else
+        DevList[idx].image_list.push_back(image_data(frame.image[i]));
     }
   }
 
@@ -1061,7 +1213,7 @@ bool PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int 
   return true;
 }
 
-static bool parseCsiRaw10(const image_data& src, image_data& dst) {
+static bool parseIRCsiRaw10(const image_data& src, image_data& dst) {
   int width = src.width;
   int height = src.height;
   if(width & 0x3) {
@@ -1092,7 +1244,7 @@ static bool parseCsiRaw10(const image_data& src, image_data& dst) {
   return true;
 }
 
-static bool parseCsiRaw12(const image_data& src, image_data& dst) {
+static bool parseIRCsiRaw12(const image_data& src, image_data& dst) {
   int width = src.width;
   int height = src.height;
   if(width & 0x1) {
@@ -1149,14 +1301,14 @@ static bool parseIrFrame(const image_data& src, image_data& dst) {
     return true;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
     //target: TY_PIXEL_FORMAT_MONO16
-    return parseCsiRaw10(src, dst);
+    return parseIRCsiRaw10(src, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
     //target: TY_PIXEL_FORMAT_MONO
     dst = src;
     return true;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
     //target: TY_PIXEL_FORMAT_MONO16
-    return parseCsiRaw12(src, dst);
+    return parseIRCsiRaw12(src, dst);
   } 
   else {
     LOGE("Invalid ir stream pixel format : %d\n", src.pixelFormat);
@@ -1208,6 +1360,8 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GR2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12RG2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BGR) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_BGR2RGB888, dst);
   }
 
   return true;
@@ -1387,6 +1541,11 @@ void PercipioSDK::Close(const TY_DEV_HANDLE handle)
   if(idx < 0) {
     LOGE("Invalid device handle!");
     return ;
+  }
+
+  if(DevList[idx].isp) {
+    TYISPRelease(&DevList[idx].isp);
+    DevList[idx].isp = NULL;
   }
 
   LOGD("Device %s is close!", DevList[idx].devID.c_str());
