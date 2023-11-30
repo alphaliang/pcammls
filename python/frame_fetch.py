@@ -55,7 +55,12 @@ def main():
         fmt = color_fmt_list[idx]
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
     print('\tSelect {}'.format(fmt.getDesc()))
+
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[0])
+
+    color_enum_desc = TY_ENUM_ENTRY()
+    cl.DeviceReadCurrentEnumData(handle, PERCIPIO_STREAM_COLOR, color_enum_desc)
+    print('current color image mode  {}x{}'.format(cl.Width(color_enum_desc), cl.Height(color_enum_desc)))
 
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
     print ('depth image format list:')
@@ -64,6 +69,10 @@ def main():
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
     print('\tSelect {}'.format(fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
+
+    depth_enum_desc = TY_ENUM_ENTRY()
+    cl.DeviceReadCurrentEnumData(handle, PERCIPIO_STREAM_DEPTH, depth_enum_desc)
+    print('current color image mode  {}x{}'.format(cl.Width(depth_enum_desc), cl.Height(depth_enum_desc)))
 
     color_calib_data   = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
     color_calib_width  = color_calib_data.Width()

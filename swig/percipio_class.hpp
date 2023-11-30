@@ -303,6 +303,7 @@ class PercipioSDK
     const std::vector<image_data>& DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
     bool DeviceStreamOff(const TY_DEV_HANDLE handle);
 
+    bool                        DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, TY_ENUM_ENTRY& enum_desc);
 
     /*read calib data*/
     PercipioCalibData&          DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -846,6 +847,45 @@ bool PercipioSDK::DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PER
   }
 
   return true;
+}
+
+bool PercipioSDK::DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, TY_ENUM_ENTRY& enum_desc)
+{
+  TY_COMPONENT_ID compID;
+  switch(stream) {
+    case PERCIPIO_STREAM_COLOR:
+      compID = TY_COMPONENT_RGB_CAM;
+      break;
+    case PERCIPIO_STREAM_DEPTH:
+      compID = TY_COMPONENT_DEPTH_CAM;
+      break;
+    case PERCIPIO_STREAM_IR_LEFT:
+      compID = TY_COMPONENT_IR_CAM_LEFT;
+      break;
+    case PERCIPIO_STREAM_IR_RIGHT:
+      compID = TY_COMPONENT_IR_CAM_RIGHT;
+      break;
+    default:
+      LOGE("stream mode not support : %d", stream);
+      return false;
+  }
+
+  uint32_t value;
+  TY_STATUS status = TYGetEnum(handle, compID, TY_ENUM_IMAGE_MODE, &value);
+  if(status != TY_STATUS_OK) {
+    LOGE("Stream fmt is not support!");
+    return false;
+  }
+
+  std::vector<TY_ENUM_ENTRY> enum_data_list = DeviceStreamFormatDump(handle, stream);
+  for(size_t i = 0; i < enum_data_list.size(); i++) {
+    if(value == enum_data_list[i].value) {
+      enum_desc = enum_data_list[i];
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool PercipioSDK::FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize) {
