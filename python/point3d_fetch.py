@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-18 09:55:47
 LastEditors: zxy
-LastEditTime: 2023-07-18 11:57:46
+LastEditTime: 2023-12-18 11:54:11
 '''
 import pcammls
 from pcammls import * 
@@ -87,12 +87,17 @@ def main():
       image_list = cl.DeviceStreamRead(handle, -1)
       for i in range(len(image_list)):
         frame = image_list[i]
-        arr = frame.as_nparray()
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
           cl.DeviceStreamMapDepthImageToPoint3D(frame, depth_calib_data, scale_unit, pointcloud_data_arr)
           sz = pointcloud_data_arr.size()
           print('get p3d size : {}'.format(sz))
           center = frame.width * frame.height / 2 + frame.width / 2
+
+          #show p3d arr data
+          p3d_nparray = pointcloud_data_arr.as_nparray()
+          cv2.imshow('p3d',p3d_nparray)
+          cv2.waitKey(10)
+
           p3d = pointcloud_data_arr.get_value(int(center))
           print('\tp3d data : {} {} {}'.format(p3d.getX(), p3d.getY(), p3d.getZ()))
 

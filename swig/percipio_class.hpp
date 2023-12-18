@@ -197,9 +197,10 @@ typedef struct pointcloud_data_list {
   }
 
   pointcloud_data_list(const pointcloud_data_list& list) {
-    cnt = list.cnt;
-    p3d = new TY_VECT_3F[cnt];
-    memcpy(&p3d[0], &list.p3d[0], cnt * sizeof(pointcloud_data));
+    _width = list._width;
+    _height = list._height;
+    p3d = new TY_VECT_3F[_width*_height];
+    memcpy(&p3d[0], &list.p3d[0], _width*_height * sizeof(pointcloud_data));
   };
 
   ~pointcloud_data_list() {
@@ -209,21 +210,30 @@ typedef struct pointcloud_data_list {
     }
   }
 
-  void resize(int size) {
+  void resize(int w, int h) {
     if(p3d) {
       delete []p3d;
     }
 
-    p3d = new TY_VECT_3F[size];
-    cnt = size;
+    p3d = new TY_VECT_3F[w*h];
+    _width = w;
+    _height = h;
   }
 
   int size() {
-    return cnt;
+    return _width * _height;
+  }
+
+  int width() {
+    return _width;
+  }
+
+  int height() {
+    return _height;
   }
 
   pointcloud_data get_value(int idx) {
-    if(idx < cnt)
+    if(idx < (_width * _height))
       return pointcloud_data(p3d[idx]);
     else
       return pointcloud_data();
@@ -234,7 +244,8 @@ typedef struct pointcloud_data_list {
   }
 
   private:
-    int cnt;
+    int _width;
+    int _height;
     TY_VECT_3F* p3d;
 }pointcloud_data_list;
 
@@ -1478,7 +1489,7 @@ bool PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, co
   }
 
   int size = depth.width * depth.height;
-  p3d.resize(size);
+  p3d.resize(depth.width, depth.height);
 
   TYMapDepthImageToPoint3d(&calib_data.data(),
                                      depth.width, depth.height,

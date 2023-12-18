@@ -308,6 +308,17 @@ static TY_VECT_3F_ARRAY* from_nparray(double* NP_ARRAY_PTR, int ROW,  int COL) {
 
 }// %extend TY_VECT_3F_ARRAY{
 
+%extend pointcloud_data_list {
+%pythoncode %{
+def as_nparray(self):
+    '''
+    convert point cloud data to numpy array
+    '''
+    if self.size()<=0 or self.getPtr()==None:
+        return None
+    return float_ARRAY.ptr_as_nparray3d(self.getPtr(),self.height(),self.width(), 3)
+%}
+}
 
 %extend TY_IMAGE_DATA {
 %pythoncode %{
@@ -344,7 +355,6 @@ def as_nparray(self):
     return None    
 %}
 }//endof  %extend TY_IMAGE_DATA 
-
 
 %extend image_data {
 %pythoncode %{
