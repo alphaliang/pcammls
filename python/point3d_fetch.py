@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-18 09:55:47
 LastEditors: zxy
-LastEditTime: 2023-12-18 11:54:11
+LastEditTime: 2023-12-28 15:49:28
 '''
 import pcammls
 from pcammls import * 
@@ -96,10 +96,12 @@ def main():
           #show p3d arr data
           p3d_nparray = pointcloud_data_arr.as_nparray()
           cv2.imshow('p3d',p3d_nparray)
-          cv2.waitKey(10)
 
           p3d = pointcloud_data_arr.get_value(int(center))
           print('\tp3d data : {} {} {}'.format(p3d.getX(), p3d.getY(), p3d.getZ()))
+      k = cv2.waitKey(10)
+      if k==ord('q'): 
+        break
 
     cl.DeviceStreamOff(handle)    
     cl.Close(handle)
