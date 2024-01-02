@@ -107,22 +107,28 @@ namespace demo
             cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH);
 
             EnumEntryVector color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR);
-            Console.WriteLine(string.Format("color image format list:"));
-            for (int i = 0; i < color_fmt_list.Count(); i++)
-            {
-                TY_ENUM_ENTRY fmt = color_fmt_list[i];
-                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+            if(color_fmt_list.Count() != 0) 
+            { 
+                Console.WriteLine(string.Format("color image format list:"));
+                for (int i = 0; i < color_fmt_list.Count(); i++)
+                {
+                    TY_ENUM_ENTRY fmt = color_fmt_list[i];
+                    Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+                }
+                cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[0]);
             }
-            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[0]);
 
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
-            Console.WriteLine(string.Format("depth image format list:"));
-            for (int i = 0; i < depth_fmt_list.Count(); i++)
-            {
-                TY_ENUM_ENTRY fmt = depth_fmt_list[i];
-                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+            if (depth_fmt_list.Count() != 0)
+            { 
+                Console.WriteLine(string.Format("depth image format list:"));
+                for (int i = 0; i < depth_fmt_list.Count(); i++)
+                {
+                    TY_ENUM_ENTRY fmt = depth_fmt_list[i];
+                    Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+                }
+                cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
             }
-            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
 
             PercipioCalibData color_calib_data = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR);
             int color_calib_width = color_calib_data.Width();

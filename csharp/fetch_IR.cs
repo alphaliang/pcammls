@@ -91,21 +91,25 @@ namespace demo
             cl.DeviceRegiststerCallBackEvent(_event);
 
             EnumEntryVector ir_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_IR_LEFT);
-            Console.WriteLine(string.Format("ir image format list:"));
-            for (int i = 0; i < ir_fmt_list.Count(); i++)
-            {
-                TY_ENUM_ENTRY fmt = ir_fmt_list[i];
-                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
-            }
-            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, ir_fmt_list[0]);
+			if(ir_fmt_list.Count() != 0)
+			{
+                Console.WriteLine(string.Format("ir image format list:"));
+                for (int i = 0; i < ir_fmt_list.Count(); i++)
+                {
+                    TY_ENUM_ENTRY fmt = ir_fmt_list[i];
+                    Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+                }
+                cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, ir_fmt_list[0]);
 
-            cl.DeviceControlLaserPowerAutoControlEnable(handle, false);
-            cl.DeviceControlLaserPowerConfig(handle, 80);
+                cl.DeviceControlLaserPowerAutoControlEnable(handle, false);
+                cl.DeviceControlLaserPowerConfig(handle, 80);
 
 
-            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
+                cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
             
-			return true;
+	    		return true;
+			}
+			return false;
         }
 
         private void CaptureCamera()

@@ -107,17 +107,21 @@ namespace demo
             cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR);
 
             EnumEntryVector color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR);
-            Console.WriteLine(string.Format("color image format list:"));
-            for (int i = 0; i < color_fmt_list.Count(); i++)
-            {
-                TY_ENUM_ENTRY fmt = color_fmt_list[i];
-                Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
-            }
-            cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[color_fmt_list.Count() - 1]);
+			if(color_fmt_list.Count() != 0)
+			{
+				Console.WriteLine(string.Format("color image format list:"));
+				for (int i = 0; i < color_fmt_list.Count(); i++)
+				{
+					TY_ENUM_ENTRY fmt = color_fmt_list[i];
+					Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
+				}
+				cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[color_fmt_list.Count() - 1]);
 
-            //enable rgb image software isp 
-            cl.DeviceColorStreamIspEnable(handle, true);
-            return true;
+				//enable rgb image software isp 
+				cl.DeviceColorStreamIspEnable(handle, true);
+				return true;
+			}
+			return false;
         }
 
         private void CaptureCamera()
