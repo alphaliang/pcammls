@@ -646,14 +646,21 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
       continue;
     }
 
-    DevList[idx].fmt_list[cnt].resize(n);
-
-    TY_ENUM_ENTRY* pEntry = &DevList[idx].fmt_list[cnt][0];
+    std::vector<TY_ENUM_ENTRY> temp;
+    temp.resize(n);
+    TY_ENUM_ENTRY* pEntry = &temp[0];
     status = TYGetEnumEntryInfo(handle, compID[cnt], TY_ENUM_IMAGE_MODE, pEntry, n, &n);
     if(status != TY_STATUS_OK) {
       //LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
+      continue;
     }
+
+    for(size_t i = 0; i < n ; i++) {
+      if((compID[cnt] != TY_COMPONENT_DEPTH_CAM) || (TYPixelFormat(temp[i].value) == TY_PIXEL_FORMAT_DEPTH16))
+        DevList[idx].fmt_list[cnt].push_back(temp[i]);
+    }
+
   }
 
   //DUMP STREAM CALIB_DATA LIST
@@ -971,7 +978,6 @@ bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
     return false;
   }
 
-  printf("============frameSize = %d\n", frameSize);
   if(!FrameBufferAlloc(handle, frameSize)) {
     LOGE("====FrameBufferAlloc fail!\n");
     return false;
