@@ -50,12 +50,17 @@ def main():
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR)
 
     color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR)
-    print ('color image format list:')
-    for idx in range(len(color_fmt_list)):
+    if len(color_fmt_list) != 0:
+      print ('color image format list:')
+      for idx in range(len(color_fmt_list)):
         fmt = color_fmt_list[idx]
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
-    print('\tSelect {}'.format(fmt.getDesc()))
-    cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[len(color_fmt_list) - 1])
+      print('\tSelect {}'.format(fmt.getDesc()))
+      cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[len(color_fmt_list) - 1])
+    else:
+      print ('device has no color stream.')
+      cl.Close(handle)
+      return
 
     #enable rgb image software isp
     cl.DeviceColorStreamIspEnable(handle, True)

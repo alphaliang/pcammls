@@ -3,7 +3,7 @@ Description:
 Author: zxy
 Date: 2023-07-14 09:48:00
 LastEditors: zxy
-LastEditTime: 2023-07-18 11:57:23
+LastEditTime: 2024-01-02 11:36:57
 '''
 import pcammls
 from pcammls import * 
@@ -57,6 +57,10 @@ def main():
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
 
     color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR)
+    if len(color_fmt_list) == 0:
+      print ('device has no color stream.')
+      return
+
     print ('color image format list:')
     for idx in range(len(color_fmt_list)):
         fmt = color_fmt_list[idx]
@@ -64,6 +68,10 @@ def main():
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, color_fmt_list[0])
 
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
+    if len(depth_fmt_list) == 0:
+      print ('device has no depth stream.')
+      return
+
     print ('depth image format list:')
     for idx in range(len(depth_fmt_list)):
         fmt = depth_fmt_list[idx]

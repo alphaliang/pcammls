@@ -57,6 +57,10 @@ def main():
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH)
 
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
+    if len(depth_fmt_list) == 0:
+      print ('device has no depth stream.')
+      return
+
     print ('depth image format list:')
     for idx in range(len(depth_fmt_list)):
         fmt = depth_fmt_list[idx]

@@ -128,9 +128,10 @@ typedef struct image_data {
     if(buffer) 
       delete []buffer;
 
-    if(sz) 
+    if(sz) {
       buffer = new char[sz];
-    else
+      memset(buffer, 0, size);
+    } else
       buffer = NULL;
 
     size = sz;
@@ -635,7 +636,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     unsigned int n = 0;
     status = TYGetEnumEntryCount(handle, compID[cnt], TY_ENUM_IMAGE_MODE, &n);
     if(status != TY_STATUS_OK) {
-      LOGE("TYGetEnumEntryCount failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+      //LOGE("TYGetEnumEntryCount failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
       continue;
     }
@@ -650,7 +651,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     TY_ENUM_ENTRY* pEntry = &DevList[idx].fmt_list[cnt][0];
     status = TYGetEnumEntryInfo(handle, compID[cnt], TY_ENUM_IMAGE_MODE, pEntry, n, &n);
     if(status != TY_STATUS_OK) {
-      LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+      //LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
     }
   }
@@ -660,7 +661,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     TY_CAMERA_CALIB_INFO calib_data;
     status = TYGetStruct(handle, compID[cnt], TY_STRUCT_CAM_CALIB_DATA, &calib_data, sizeof(TY_CAMERA_CALIB_INFO));
     if(status != TY_STATUS_OK) {
-      LOGE("TYGetStruct failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+      //LOGE("TYGetStruct failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
       memset(&DevList[idx].calib_data_list[cnt], 0, sizeof(TY_CAMERA_CALIB_INFO));
     }
 
@@ -728,11 +729,9 @@ bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_
       status = TYEnableComponents(handle, TY_COMPONENT_RGB_CAM);
       if(status != TY_STATUS_OK) {
         LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-        return false;
       }
     } else {
       LOGE("The device does not support color stream.\n");
-      return false;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
@@ -743,11 +742,9 @@ bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_
       status = TYEnableComponents(handle, TY_COMPONENT_DEPTH_CAM);
       if(status != TY_STATUS_OK) {
         LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-        return false;
       }
     } else {
       LOGE("The device does not support depth stream.\n");
-      return false;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
@@ -758,11 +755,9 @@ bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_
       status = TYEnableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
       if(status != TY_STATUS_OK) {
         LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-        return false;
       }
     } else {
       LOGE("The device does not support left ir stream.\n");
-      return false;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
@@ -773,11 +768,9 @@ bool PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_
       status = TYEnableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
       if(status != TY_STATUS_OK) {
         LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
-        return false;
       }
     } else {
       LOGE("The device does not support right ir stream.\n");
-      return false;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
@@ -978,6 +971,7 @@ bool PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
     return false;
   }
 
+  printf("============frameSize = %d\n", frameSize);
   if(!FrameBufferAlloc(handle, frameSize)) {
     LOGE("====FrameBufferAlloc fail!\n");
     return false;
@@ -1573,6 +1567,10 @@ bool PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CAL
     LOGE("Invalid stream size: %d.", srcDepth.size);
     return false;
   }
+
+  printf("pixelFormat = %x\n", srcDepth.pixelFormat);
+  printf("depth calib : %d x %d   %dx%d\n", depth_calib.intrinsicWidth, depth_calib.intrinsicHeight, depthW, depthH);
+  printf("color calib : %d x %d   %dx%d\n", color_calib.intrinsicWidth, color_calib.intrinsicHeight, targetW, targetH);
 
   dstDepth.resize(targetW * targetH * 2);
   dstDepth.streamID     = PERCIPIO_STREAM_DEPTH;
