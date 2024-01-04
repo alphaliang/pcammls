@@ -284,6 +284,18 @@ void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
     }
 }
 
+
+typedef union DevParam
+{
+  bool b_param;
+  int m_param;
+  float f_param;
+
+  bool toBool() {return b_param;}
+  int toInt() {return m_param;}
+  float toFloat() {return f_param;}
+};
+
 class PercipioSDK
 {
   public:
@@ -292,6 +304,26 @@ class PercipioSDK
 
     std::vector<TY_DEVICE_BASE_INFO>& ListDevice();
 
+    DevParam DevParamFromInt(int val) {
+      DevParam param;
+      param.m_param = val;
+      return param;
+    }
+
+    DevParam DevParamFromFloat(float val)
+    {
+      DevParam param;
+      param.f_param = val;
+      return param;
+    }
+
+    DevParam DevParamFromBool(bool val)
+    {
+      DevParam param;
+      param.b_param = val;
+      return param;
+    }
+
     TY_DEV_HANDLE Open();
     TY_DEV_HANDLE Open(const char* sn);
     TY_DEV_HANDLE OpenDeviceByIP(const char* ip);
@@ -299,6 +331,10 @@ class PercipioSDK
     void Close(const TY_DEV_HANDLE handle);
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
+
+
+    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat, DevParam param);
+    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat);
 
     void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
@@ -691,6 +727,92 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   handler_ptr = handler;
   handler = NULL;
   return true;
+}
+bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat, DevParam value) {
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+    return false;
+  }
+
+  bool has = false;
+  TYHasFeature(handle, comp, feat, &has);
+  if(!has) {
+    LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+    return false;
+  }
+
+  TY_STATUS status;
+  TY_FEATURE_TYPE type = TYFeatureType(feat);
+  switch (type)
+  {
+  case TY_FEATURE_INT:
+    status = TYSetInt(handle, comp, feat, static_cast<int32_t>(value.m_param));
+    break;
+  case  TY_FEATURE_ENUM:
+    status = TYSetEnum(handle, comp, feat, static_cast<uint32_t>(value.m_param));
+    break;
+  case  TY_FEATURE_BOOL:
+    status = TYSetBool(handle, comp, feat, static_cast<bool>(value.b_param));
+    break;
+  case TY_FEATURE_FLOAT:
+    status = TYSetFloat(handle, comp, feat, static_cast<float>(value.f_param));
+    break;
+  default:
+    LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+    return false;
+  }
+
+  if(status != TY_STATUS_OK) {
+    LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+    return false;
+  }
+
+  return true;
+}
+
+DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat)
+{
+  DevParam para;
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+    return para;
+  }
+
+  bool has = false;
+  TYHasFeature(handle, comp, feat, &has);
+  if(!has) {
+    LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+    return para;
+  }
+
+  TY_STATUS status;
+  TY_FEATURE_TYPE type = TYFeatureType(feat);
+  switch (type)
+  {
+  case TY_FEATURE_INT:
+    status = TYGetInt(handle, comp, feat, &para.m_param);
+    break;
+  case  TY_FEATURE_ENUM:
+    status = TYGetEnum(handle, comp, feat, (uint32_t*)&para.m_param);
+    break;
+  case  TY_FEATURE_BOOL:
+    status = TYGetBool(handle, comp, feat, &para.b_param);
+    break;
+  case TY_FEATURE_FLOAT:
+    status = TYGetFloat(handle, comp, feat, &para.f_param);
+    break;
+  default:
+    LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+    return para;
+  }
+
+  if(status != TY_STATUS_OK) {
+    LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+  }
+
+  return para;
 }
 
 void PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable) {

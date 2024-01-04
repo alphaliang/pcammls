@@ -44,6 +44,7 @@
 
 //C ARRAY DEFINE //////////////////////////////////////////////////////////
 
+#if SWIG_VERSION < 0x040200 
 %typemap(cstype) unsigned int "uint"
 %typemap(cstype) unsigned __int32 "uint"
 
@@ -69,6 +70,33 @@
 %}
 
 %enddef
+#else
+%typemap(cstype) unsigned int "uint"
+%typemap(cstype) unsigned __int32 "uint"
+
+%define %CARRAY_ITEM_ASSIGN(type_name,cs_typename)
+%typemap(cscode) type_name##_ARRAY  %{
+	public cs_typename this [uint idx]{
+		get{
+			return getitem(idx);
+		}
+		set{
+			setitem(idx,value);
+		}
+	}
+
+	public global::System.IntPtr VoidPtr2(){
+		return (global::System.IntPtr)swigCPtr;
+	}
+
+	static public type_name##_ARRAY FromIntPtr(global::System.IntPtr t) {
+		type_name##_ARRAY var = new type_name##_ARRAY(t, false);
+		return var ;
+	}
+%}
+
+%enddef
+#endif
 
 
 %CARRAY_ITEM_ASSIGN(float, float);
