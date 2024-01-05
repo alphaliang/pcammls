@@ -584,26 +584,44 @@ TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
   TY_INTERFACE_HANDLE hIface = NULL;
   TY_DEV_HANDLE hDevice = NULL;
 
+  LOGD("Update interface list");
+  ASSERT_OK( TYUpdateInterfaceList() );
+
+  ASSERT_OK( TYGetInterfaceNumber(&n) );
+  LOGD("Got %u interface list", n);
+  if(n == 0){
+    LOGE("interface number incorrect");
+    return 0;
+  }
+
+  TY_STATUS status;
+
   std::vector<TY_INTERFACE_INFO> ifaces(n);
   ASSERT_OK( TYGetInterfaceList(&ifaces[0], n, &n) );
-  ASSERT( n == ifaces.size() );
-  for(uint32_t i = 0; i < n; i++){
-    if(TYIsNetworkInterface(ifaces[i].type)){
+
+  for(size_t i = 0; i < ifaces.size(); i++) {
+    if( (ifaces[i].type == TY_INTERFACE_ETHERNET) || 
+        (ifaces[i].type == TY_INTERFACE_IEEE80211)) {
       ASSERT_OK( TYOpenInterface(ifaces[i].id, &hIface) );
-      if (TYOpenDeviceWithIP(hIface, ip, &hDevice) == TY_STATUS_OK) {
-
-        TY_DEVICE_BASE_INFO device_base_info;
-        TYGetDeviceInfo           (hDevice, &device_base_info);
-        DevList.push_back(device_info(hDevice, device_base_info.id));
-        LOGD("Device %s is on!", device_base_info.id);
-
-        TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
-
-        ConfigDevice(hDevice);
-
-        DumpDeviceInfo(hDevice);
-      }
+      status =  TYOpenDeviceWithIP(hIface, ip, &hDevice);
+      if(status != TY_STATUS_OK)
+        TYCloseInterface(hIface);
+      else
+        break;
     }
+  }
+
+  if(hDevice) {
+    TY_DEVICE_BASE_INFO device_base_info;
+    TYGetDeviceInfo           (hDevice, &device_base_info);
+    DevList.push_back(device_info(hDevice, device_base_info.id));
+    LOGD("Device %s is on!", device_base_info.id);
+
+    TYRegisterEventCallback(hDevice, percipio_device_callback, hDevice);
+
+    ConfigDevice(hDevice);
+
+    DumpDeviceInfo(hDevice);
   }
 
   return hDevice;
