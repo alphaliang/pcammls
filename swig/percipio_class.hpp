@@ -304,6 +304,8 @@ class PercipioSDK
 
     std::vector<TY_DEVICE_BASE_INFO>& ListDevice();
 
+    int IPv4StringToInt(char* ip);
+
     DevParam DevParamFromInt(int val) {
       DevParam param;
       param.m_param = val;
@@ -439,6 +441,16 @@ class PercipioSDK
     bool FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize);
     void FrameBufferRelease(TY_DEV_HANDLE handle) ;
 };
+
+int PercipioSDK::IPv4StringToInt(char* ip) {
+  int32_t ip_i[4];
+  uint8_t ip_b[4];
+  int32_t ip32;
+  sscanf(ip, "%d.%d.%d.%d", &ip_i[0], &ip_i[1], &ip_i[2], &ip_i[3]);
+  ip_b[0] = ip_i[0];ip_b[1] = ip_i[1];ip_b[2] = ip_i[2];ip_b[3] = ip_i[3];
+  ip32 = TYIPv4ToInt(ip_b);
+  return ip32;
+}
 
 void PercipioSDK::AddInterface(const TY_INTERFACE_HANDLE iface) {
     for (size_t i = 0; i < iFaceList.size(); i++) {
