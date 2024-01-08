@@ -1535,7 +1535,9 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO2RGB888, dst);
   } 
   
-  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) {
+  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO102RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10GB2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10BG2RGB888, dst);
@@ -1545,8 +1547,9 @@ static bool parseColorFrame(const image_data& src, image_data& dst) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10RG2RGB888, dst);
   } 
   
-  
-  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) {
+  else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO122RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GB2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) {
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12BG2RGB888, dst);
