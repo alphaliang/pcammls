@@ -333,8 +333,8 @@ class PercipioSDK
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
 
-    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat, DevParam param);
-    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat);
+    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam param);
+    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat);
 
     void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
@@ -746,7 +746,7 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   handler = NULL;
   return true;
 }
-bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat, DevParam value) {
+bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -754,7 +754,9 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONE
   }
 
   bool has = false;
-  TYHasFeature(handle, comp, feat, &has);
+  TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+  
+  TYHasFeature(handle, id, feat, &has);
   if(!has) {
     LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
     return false;
@@ -765,16 +767,16 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONE
   switch (type)
   {
   case TY_FEATURE_INT:
-    status = TYSetInt(handle, comp, feat, static_cast<int32_t>(value.m_param));
+    status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.m_param));
     break;
   case  TY_FEATURE_ENUM:
-    status = TYSetEnum(handle, comp, feat, static_cast<uint32_t>(value.m_param));
+    status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.m_param));
     break;
   case  TY_FEATURE_BOOL:
-    status = TYSetBool(handle, comp, feat, static_cast<bool>(value.b_param));
+    status = TYSetBool(handle, id, feat, static_cast<bool>(value.b_param));
     break;
   case TY_FEATURE_FLOAT:
-    status = TYSetFloat(handle, comp, feat, static_cast<float>(value.f_param));
+    status = TYSetFloat(handle, id, feat, static_cast<float>(value.f_param));
     break;
   default:
     LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
@@ -789,7 +791,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const TY_COMPONE
   return true;
 }
 
-DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COMPONENT_ID comp, const TY_FEATURE_ID feat)
+DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat)
 {
   DevParam para;
   int idx = hasDevice(handle);
@@ -799,7 +801,8 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COM
   }
 
   bool has = false;
-  TYHasFeature(handle, comp, feat, &has);
+  TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+  TYHasFeature(handle, id, feat, &has);
   if(!has) {
     LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
     return para;
@@ -810,16 +813,16 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const TY_COM
   switch (type)
   {
   case TY_FEATURE_INT:
-    status = TYGetInt(handle, comp, feat, &para.m_param);
+    status = TYGetInt(handle, id, feat, &para.m_param);
     break;
   case  TY_FEATURE_ENUM:
-    status = TYGetEnum(handle, comp, feat, (uint32_t*)&para.m_param);
+    status = TYGetEnum(handle, id, feat, (uint32_t*)&para.m_param);
     break;
   case  TY_FEATURE_BOOL:
-    status = TYGetBool(handle, comp, feat, &para.b_param);
+    status = TYGetBool(handle, id, feat, &para.b_param);
     break;
   case TY_FEATURE_FLOAT:
-    status = TYGetFloat(handle, comp, feat, &para.f_param);
+    status = TYGetFloat(handle, id, feat, &para.f_param);
     break;
   default:
     LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
