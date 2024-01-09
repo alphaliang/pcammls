@@ -55,7 +55,7 @@ const std::vector<float>   PercipioCalibData::Distortion() {
 typedef struct image_data {
   PERCIPIO_STREAM_ID streamID;
 
-  int           timestamp;      ///< Timestamp in microseconds
+  int64_t       timestamp;      ///< Timestamp in microseconds
   int           imageIndex;     ///< image index used in trigger mode
   int           status;         ///< Status of this buffer
   int           size;           ///< Buffer size
