@@ -333,14 +333,12 @@ class PercipioSDK
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
-
-#ifdef PERCIPIO_PYTHON_API
     bool DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam param);
     DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat);
-#else
+
     bool DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam param);
     DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat);
-#endif
+
     void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
     /*stream control*/
@@ -762,7 +760,6 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   return true;
 }
 
-#ifdef PERCIPIO_PYTHON_API
 bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -845,7 +842,8 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
     LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
     return para;
   }
-#else
+}
+
 bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam value) {
     int idx = hasDevice(handle);
     if (idx < 0) {
@@ -929,13 +927,11 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
         return para;
     }
 
-#endif
+    if(status != TY_STATUS_OK) {
+        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+    }
 
-  if(status != TY_STATUS_OK) {
-    LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
-  }
-
-  return para;
+    return para;
 }
 
 void PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable) {
