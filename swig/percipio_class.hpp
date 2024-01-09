@@ -16,7 +16,6 @@ typedef enum PERCIPIO_STREAM_LIST {
 }PERCIPIO_STREAM_LIST;
 typedef int PERCIPIO_STREAM_ID;
 
-
 typedef struct PercipioCalibData
 {
   public:
@@ -335,9 +334,13 @@ class PercipioSDK
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
 
+#ifdef PERCIPIO_PYTHON_API
     bool DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam param);
     DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat);
-
+#else
+    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam param);
+    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat);
+#endif
     void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
     /*stream control*/
@@ -758,6 +761,8 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   handler = NULL;
   return true;
 }
+
+#ifdef PERCIPIO_PYTHON_API
 bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -840,6 +845,91 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
     LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
     return para;
   }
+#else
+bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam value) {
+    int idx = hasDevice(handle);
+    if (idx < 0) {
+        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        return false;
+    }
+
+    bool has = false;
+    TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+
+    TYHasFeature(handle, id, feat, &has);
+    if (!has) {
+        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        return false;
+    }
+
+    TY_STATUS status;
+    TY_FEATURE_TYPE type = TYFeatureType(feat);
+    switch (type)
+    {
+    case TY_FEATURE_INT:
+        status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.m_param));
+        break;
+    case  TY_FEATURE_ENUM:
+        status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.m_param));
+        break;
+    case  TY_FEATURE_BOOL:
+        status = TYSetBool(handle, id, feat, static_cast<bool>(value.b_param));
+        break;
+    case TY_FEATURE_FLOAT:
+        status = TYSetFloat(handle, id, feat, static_cast<float>(value.f_param));
+        break;
+    default:
+        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        return false;
+    }
+
+    if (status != TY_STATUS_OK) {
+        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+        return false;
+    }
+
+    return true;
+}
+
+DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat)
+{
+    DevParam para;
+    int idx = hasDevice(handle);
+    if (idx < 0) {
+        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        return para;
+    }
+
+    bool has = false;
+    TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+    TYHasFeature(handle, id, feat, &has);
+    if (!has) {
+        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        return para;
+    }
+
+    TY_STATUS status;
+    TY_FEATURE_TYPE type = TYFeatureType(feat);
+    switch (type)
+    {
+    case TY_FEATURE_INT:
+        status = TYGetInt(handle, id, feat, &para.m_param);
+        break;
+    case  TY_FEATURE_ENUM:
+        status = TYGetEnum(handle, id, feat, (uint32_t*)&para.m_param);
+        break;
+    case  TY_FEATURE_BOOL:
+        status = TYGetBool(handle, id, feat, &para.b_param);
+        break;
+    case TY_FEATURE_FLOAT:
+        status = TYGetFloat(handle, id, feat, &para.f_param);
+        break;
+    default:
+        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        return para;
+    }
+
+#endif
 
   if(status != TY_STATUS_OK) {
     LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);

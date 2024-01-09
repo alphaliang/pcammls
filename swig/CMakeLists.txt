@@ -16,6 +16,7 @@ if (${TARGET_LANGUAGE} STREQUAL "PYTHON") #python
     include_directories(BEFORE ${SWIG_DIR}/Lib/python )
     set(PYTHON_DIR "" CACHE PATH "python dir")
 	option(WITH_NUMPY "" ON)
+	add_definitions(-DPERCIPIO_PYTHON_API)
 	if(NOT ${PYTHON_VERSION}  STREQUAL "")
 		find_package(PythonLibs ${PYTHON_VERSION} EXACT REQUIRED)
 	else()
