@@ -1100,6 +1100,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
     {
     case TY_FEATURE_INT:
         para.type = TY_FEATURE_INT;
+        TYGetIntRange(handle, id, feat, &para.data.m_param.range);
         status = TYGetInt(handle, id, feat, &para.data.m_param.value);
         break;
     case  TY_FEATURE_ENUM:
@@ -1116,6 +1117,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
         break;
     case TY_FEATURE_FLOAT:
         para.type = TY_FEATURE_FLOAT;
+        TYGetFloatRange(handle, id, feat, &para.data.f_param.range);
         status = TYGetFloat(handle, id, feat, &para.data.f_param.value);
         break;
     case TY_FEATURE_BYTEARRAY:
