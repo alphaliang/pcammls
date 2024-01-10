@@ -133,7 +133,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %template(ty_enum_vector) std::vector<TY_ENUM_ENTRY>;
 %template(ty_image_data_vector) std::vector<image_data>;
 %template(ty_float_vector) std::vector<float>;
-
+%template(ty_uint8_vector) std::vector<unsigned char>;
 
 
 

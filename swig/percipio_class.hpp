@@ -283,16 +283,139 @@ void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
     }
 }
 
-
-typedef union DevParam
+typedef struct DevParamByteArray
 {
-  bool b_param;
-  int m_param;
-  float f_param;
+  unsigned char m_data[1024];
+  int real_size;
+};
 
-  bool toBool() {return b_param;}
-  int toInt() {return m_param;}
-  float toFloat() {return f_param;}
+typedef struct DevParamDataInt
+{
+  int value;
+  TY_INT_RANGE  range;
+
+  int entryCount; 
+  TY_ENUM_ENTRY list[100];
+};
+
+typedef struct DevParamDataEnum
+{
+  int value;
+};
+
+typedef struct DevParamDataFloat
+{
+  float value;
+  TY_FLOAT_RANGE range;
+};
+
+typedef struct DevParamDataBool
+{
+  bool value;
+};
+
+typedef union DevParamData
+{
+  DevParamDataBool    b_param;
+  DevParamDataInt     m_param;
+  DevParamDataFloat   f_param;
+
+  DevParamByteArray   byteArray;
+};
+
+typedef struct DevParam
+{
+  TY_FEATURE_TYPE type;
+  DevParamData data;
+
+  bool  toBool()  {
+    if(type != TY_FEATURE_BOOL) {
+      LOGE("Invalid device param data type.");
+      return false;
+    }
+    return data.b_param.value;
+  }
+
+  int   toInt()   {
+    if(type != TY_FEATURE_INT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.m_param.value;
+  }
+
+  float toFloat() {
+    if(type != TY_FEATURE_FLOAT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.f_param.value;
+  }
+
+  int mMin() {
+    if(type != TY_FEATURE_INT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.m_param.range.min;
+  }
+  int mMax() {
+    if(type != TY_FEATURE_INT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.m_param.range.max;
+  }
+  int mInc() {
+    if(type != TY_FEATURE_INT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.m_param.range.inc;
+  }
+
+  int fMin() {
+    if(type != TY_FEATURE_FLOAT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.f_param.range.min;
+  }
+  int fMax() {
+    if(type != TY_FEATURE_FLOAT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.f_param.range.max;
+  }
+  int fInc() {
+    if(type != TY_FEATURE_FLOAT) {
+      LOGE("Invalid device param data type.");
+      return 0;
+    }
+    return data.f_param.range.inc;
+  }
+
+  std::vector<TY_ENUM_ENTRY> eList() {
+    if(type != TY_FEATURE_INT) {
+      LOGE("Invalid device param data type.");
+      return std::vector<TY_ENUM_ENTRY>();
+    }
+    
+    if(0 == data.m_param.entryCount) {
+      return std::vector<TY_ENUM_ENTRY>();
+    }
+
+    return std::vector<TY_ENUM_ENTRY>(data.m_param.list,  data.m_param.list + data.m_param.entryCount);
+  }
+
+  std::vector<unsigned char> toByteArray() {
+    if(type != TY_FEATURE_BYTEARRAY) {
+      LOGE("Invalid device param data type.");
+      return std::vector<unsigned char>();
+    }
+    return std::vector<unsigned char>(data.byteArray.m_data, data.byteArray.m_data + data.byteArray.real_size);
+  }
 };
 
 class PercipioSDK
@@ -307,21 +430,38 @@ class PercipioSDK
 
     DevParam DevParamFromInt(int val) {
       DevParam param;
-      param.m_param = val;
+      param.type = TY_FEATURE_INT;
+      param.data.m_param.value = val;
       return param;
     }
 
     DevParam DevParamFromFloat(float val)
     {
       DevParam param;
-      param.f_param = val;
+      param.type = TY_FEATURE_FLOAT;
+      param.data.f_param.value = val;
       return param;
     }
 
     DevParam DevParamFromBool(bool val)
     {
       DevParam param;
-      param.b_param = val;
+      param.type = TY_FEATURE_BOOL;
+      param.data.b_param.value = val;
+      return param;
+    }
+
+    DevParam DevParamFromByteArray(std::vector<unsigned char> val)
+    {
+      DevParam param;
+      int max_size = sizeof(param.data.byteArray.m_data);
+      if(val.size() > max_size) {
+        LOGE("%s:%d Invalid ByteArray size.",__FILE__, __LINE__);
+      } else {
+        max_size = val.size();
+      }
+      param.type = TY_FEATURE_BYTEARRAY;
+      memcpy(param.data.byteArray.m_data, &val[0], max_size);
       return param;
     }
 
@@ -778,19 +918,28 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t co
 
     TY_STATUS status;
     TY_FEATURE_TYPE type = TYFeatureType(feat);
+    TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
+    if(type_check != value.type) {
+      LOGE("Invalid paramter type %s:%d", __FILE__, __LINE__);
+      return false;
+    }
+
     switch (type)
     {
     case TY_FEATURE_INT:
-        status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.m_param));
+        status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_ENUM:
-        status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.m_param));
+        status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_BOOL:
-        status = TYSetBool(handle, id, feat, static_cast<bool>(value.b_param));
+        status = TYSetBool(handle, id, feat, static_cast<bool>(value.data.b_param.value));
         break;
     case TY_FEATURE_FLOAT:
-        status = TYSetFloat(handle, id, feat, static_cast<float>(value.f_param));
+        status = TYSetFloat(handle, id, feat, static_cast<float>(value.data.f_param.value));
+        break;
+    case TY_FEATURE_BYTEARRAY:
+        status = TYSetByteArray(handle, id, feat, value.data.byteArray.m_data, value.data.byteArray.real_size);
         break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
@@ -798,7 +947,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t co
     }
 
     if(status != TY_STATUS_OK) {
-        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device set parameters failed: %s: %d", TYErrorString(status), __LINE__);
         return false;
     }
 
@@ -808,6 +957,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t co
 DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat)
 {
     DevParam para;
+    memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if(idx < 0) {
         LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -823,20 +973,41 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
     }
 
     TY_STATUS status;
+    uint32_t count = 0;
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     switch (type)
     {
     case TY_FEATURE_INT:
-        status = TYGetInt(handle, id, feat, &para.m_param);
+        para.type = TY_FEATURE_INT;
+        TYGetIntRange(handle, id, feat, &para.data.m_param.range);
+        status = TYGetInt(handle, id, feat, &para.data.m_param.value);
         break;
     case  TY_FEATURE_ENUM:
-        status = TYGetEnum(handle, id, feat, (uint32_t*)&para.m_param);
+        para.type = TY_FEATURE_INT;
+        TYGetEnumEntryCount(handle, id, feat, &count);
+        if(count > sizeof(para.data.m_param.list) / sizeof(TY_ENUM_ENTRY))
+          count = sizeof(para.data.m_param.list);
+        TYGetEnumEntryInfo(handle, id, feat, para.data.m_param.list, count, (uint32_t*)(&para.data.m_param.entryCount));
+        status = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.m_param.value);
         break;
     case  TY_FEATURE_BOOL:
-        status = TYGetBool(handle, id, feat, &para.b_param);
+        para.type = TY_FEATURE_BOOL;
+        status = TYGetBool(handle, id, feat, &para.data.b_param.value);
         break;
     case TY_FEATURE_FLOAT:
-        status = TYGetFloat(handle, id, feat, &para.f_param);
+        para.type = TY_FEATURE_FLOAT;
+        TYGetFloatRange(handle, id, feat, &para.data.f_param.range);
+        status = TYGetFloat(handle, id, feat, &para.data.f_param.value);
+        break;
+    case TY_FEATURE_BYTEARRAY:
+        para.type = TY_FEATURE_BYTEARRAY;
+        TYGetByteArraySize(handle, id, feat, &count);
+        if(count > sizeof(para.data.byteArray.m_data)) {
+          LOGE("Dev byte array paramters legth exceeds the limit.");
+          return para;
+        }
+        para.data.byteArray.real_size = count;
+        status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
@@ -844,7 +1015,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
     }
 
     if(status != TY_STATUS_OK) {
-        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device get paramter failed: %s: %d", TYErrorString(status), __LINE__);
     }
 
     return para;
@@ -868,19 +1039,28 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t c
 
     TY_STATUS status;
     TY_FEATURE_TYPE type = TYFeatureType(feat);
+    TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
+    if(type_check != value.type) {
+      LOGE("Invalid paramter type %s:%d", __FILE__, __LINE__);
+      return false;
+    }
+
     switch (type)
     {
     case TY_FEATURE_INT:
-        status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.m_param));
+        status = TYSetInt(handle, id, feat, static_cast<int32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_ENUM:
-        status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.m_param));
+        status = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_BOOL:
-        status = TYSetBool(handle, id, feat, static_cast<bool>(value.b_param));
+        status = TYSetBool(handle, id, feat, static_cast<bool>(value.data.b_param.value));
         break;
     case TY_FEATURE_FLOAT:
-        status = TYSetFloat(handle, id, feat, static_cast<float>(value.f_param));
+        status = TYSetFloat(handle, id, feat, static_cast<float>(value.data.f_param.value));
+        break;
+    case TY_FEATURE_BYTEARRAY:
+        status = TYSetByteArray(handle, id, feat, value.data.byteArray.m_data, value.data.byteArray.real_size);
         break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
@@ -888,7 +1068,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t c
     }
 
     if (status != TY_STATUS_OK) {
-        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device set paramter failed: %s: %d", TYErrorString(status), __LINE__);
         return false;
     }
 
@@ -898,6 +1078,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t c
 DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat)
 {
     DevParam para;
+    memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if (idx < 0) {
         LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -913,20 +1094,39 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
     }
 
     TY_STATUS status;
+    uint32_t count = 0;
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     switch (type)
     {
     case TY_FEATURE_INT:
-        status = TYGetInt(handle, id, feat, &para.m_param);
+        para.type = TY_FEATURE_INT;
+        status = TYGetInt(handle, id, feat, &para.data.m_param.value);
         break;
     case  TY_FEATURE_ENUM:
-        status = TYGetEnum(handle, id, feat, (uint32_t*)&para.m_param);
+        para.type = TY_FEATURE_INT;
+        TYGetEnumEntryCount(handle, id, feat, &count);
+        if(count > sizeof(para.data.m_param.list) / sizeof(TY_ENUM_ENTRY))
+          count = sizeof(para.data.m_param.list);
+        TYGetEnumEntryInfo(handle, id, feat, para.data.m_param.list, count, (uint32_t*)(&para.data.m_param.entryCount));
+        status = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.m_param.value);
         break;
     case  TY_FEATURE_BOOL:
-        status = TYGetBool(handle, id, feat, &para.b_param);
+        para.type = TY_FEATURE_BOOL;
+        status = TYGetBool(handle, id, feat, &para.data.b_param.value);
         break;
     case TY_FEATURE_FLOAT:
-        status = TYGetFloat(handle, id, feat, &para.f_param);
+        para.type = TY_FEATURE_FLOAT;
+        status = TYGetFloat(handle, id, feat, &para.data.f_param.value);
+        break;
+    case TY_FEATURE_BYTEARRAY:
+        para.type = TY_FEATURE_BYTEARRAY;
+        TYGetByteArraySize(handle, id, feat, &count);
+        if(count > sizeof(para.data.byteArray.m_data)) {
+          LOGE("Dev byte array paramters legth exceeds the limit.");
+          return para;
+        }
+        para.data.byteArray.real_size = count;
+        status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
@@ -934,7 +1134,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
     }
 
     if(status != TY_STATUS_OK) {
-        LOGE("DeviceSetParamter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device get paramter failed: %s: %d", TYErrorString(status), __LINE__);
     }
 
     return para;
@@ -1823,10 +2023,6 @@ bool PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CAL
     LOGE("Invalid stream size: %d.", srcDepth.size);
     return false;
   }
-
-  printf("pixelFormat = %x\n", srcDepth.pixelFormat);
-  printf("depth calib : %d x %d   %dx%d\n", depth_calib.intrinsicWidth, depth_calib.intrinsicHeight, depthW, depthH);
-  printf("color calib : %d x %d   %dx%d\n", color_calib.intrinsicWidth, color_calib.intrinsicHeight, targetW, targetH);
 
   dstDepth.resize(targetW * targetH * 2);
   dstDepth.streamID     = PERCIPIO_STREAM_DEPTH;
