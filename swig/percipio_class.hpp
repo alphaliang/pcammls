@@ -461,6 +461,7 @@ class PercipioSDK
         max_size = val.size();
       }
       param.type = TY_FEATURE_BYTEARRAY;
+      param.data.byteArray.real_size = max_size;
       memcpy(param.data.byteArray.m_data, &val[0], max_size);
       return param;
     }
