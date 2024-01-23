@@ -474,11 +474,11 @@ class PercipioSDK
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
-    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam param);
-    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat);
+    bool DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam param);
+    DevParam DeviceGetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat);
 
-    bool DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam param);
-    DevParam DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat);
+    bool DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam param);
+    DevParam DeviceGetParameter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat);
 
     void                                DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
@@ -901,7 +901,7 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   return true;
 }
 
-bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
+bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
     int idx = hasDevice(handle);
     if(idx < 0) {
         LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -921,7 +921,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t co
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
     if(type_check != value.type) {
-      LOGE("Invalid paramter type %s:%d", __FILE__, __LINE__);
+      LOGE("Invalid parameter type %s:%d", __FILE__, __LINE__);
       return false;
     }
 
@@ -955,7 +955,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const int32_t co
     return true;
 }
 
-DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat)
+DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat)
 {
     DevParam para;
     memset(&para, 0, sizeof(para));
@@ -1004,7 +1004,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
         para.type = TY_FEATURE_BYTEARRAY;
         TYGetByteArraySize(handle, id, feat, &count);
         if(count > sizeof(para.data.byteArray.m_data)) {
-          LOGE("Dev byte array paramters legth exceeds the limit.");
+          LOGE("Dev byte array parameters legth exceeds the limit.");
           return para;
         }
         para.data.byteArray.real_size = count;
@@ -1016,13 +1016,13 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const int32_
     }
 
     if(status != TY_STATUS_OK) {
-        LOGE("Device get paramter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device get parameter failed: %s: %d", TYErrorString(status), __LINE__);
     }
 
     return para;
 }
 
-bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam value) {
+bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam value) {
     int idx = hasDevice(handle);
     if (idx < 0) {
         LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
@@ -1042,7 +1042,7 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t c
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
     if(type_check != value.type) {
-      LOGE("Invalid paramter type %s:%d", __FILE__, __LINE__);
+      LOGE("Invalid parameter type %s:%d", __FILE__, __LINE__);
       return false;
     }
 
@@ -1069,14 +1069,14 @@ bool PercipioSDK::DeviceSetParamter(const TY_DEV_HANDLE handle, const uint32_t c
     }
 
     if (status != TY_STATUS_OK) {
-        LOGE("Device set paramter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device set parameter failed: %s: %d", TYErrorString(status), __LINE__);
         return false;
     }
 
     return true;
 }
 
-DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat)
+DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat)
 {
     DevParam para;
     memset(&para, 0, sizeof(para));
@@ -1125,7 +1125,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
         para.type = TY_FEATURE_BYTEARRAY;
         TYGetByteArraySize(handle, id, feat, &count);
         if(count > sizeof(para.data.byteArray.m_data)) {
-          LOGE("Dev byte array paramters legth exceeds the limit.");
+          LOGE("Dev byte array parameters legth exceeds the limit.");
           return para;
         }
         para.data.byteArray.real_size = count;
@@ -1137,7 +1137,7 @@ DevParam PercipioSDK::DeviceGetParamter(const TY_DEV_HANDLE handle, const uint32
     }
 
     if(status != TY_STATUS_OK) {
-        LOGE("Device get paramter failed: %s: %d", TYErrorString(status), __LINE__);
+        LOGE("Device get parameter failed: %s: %d", TYErrorString(status), __LINE__);
     }
 
     return para;
