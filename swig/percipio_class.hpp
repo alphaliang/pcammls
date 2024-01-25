@@ -283,9 +283,23 @@ void percipio_device_callback(TY_EVENT_INFO *event_info, void *userdata) {
     }
 }
 
+typedef struct PercipioAecROI
+{
+    int32_t  _x;
+    int32_t  _y;
+    int32_t  _w;
+    int32_t  _h;
+};
+
 typedef struct DevParamByteArray
 {
   unsigned char m_data[1024];
+  int real_size;
+};
+
+typedef struct DevParamStruct
+{
+  int m_data[1024];
   int real_size;
 };
 
@@ -321,6 +335,7 @@ typedef union DevParamData
   DevParamDataFloat   f_param;
 
   DevParamByteArray   byteArray;
+  DevParamStruct      st_param;
 };
 
 typedef struct DevParam
@@ -416,6 +431,14 @@ typedef struct DevParam
     }
     return std::vector<unsigned char>(data.byteArray.m_data, data.byteArray.m_data + data.byteArray.real_size);
   }
+
+  std::vector<int> toArray() {
+    if(type != TY_FEATURE_STRUCT) {
+      LOGE("Invalid device param data type.");
+      return std::vector<int>();
+    }
+    return std::vector<int>(data.st_param.m_data, data.st_param.m_data + sizeof(int)*data.st_param.real_size);
+  }
 };
 
 class PercipioSDK
@@ -465,6 +488,19 @@ class PercipioSDK
       memcpy(param.data.byteArray.m_data, &val[0], max_size);
       return param;
     }
+
+    DevParam DevParamFromPercipioAecROI(PercipioAecROI roi)
+    {
+      DevParam param;
+      param.type = TY_FEATURE_STRUCT;
+      param.data.st_param.real_size = 4;
+      param.data.st_param.m_data[0] = roi._x;
+      param.data.st_param.m_data[1] = roi._y;
+      param.data.st_param.m_data[2] = roi._w;
+      param.data.st_param.m_data[3] = roi._h;
+      return param;
+    }
+    //st_param
 
     TY_DEV_HANDLE Open();
     TY_DEV_HANDLE Open(const char* sn);
@@ -904,7 +940,7 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
 bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
     int idx = hasDevice(handle);
     if(idx < 0) {
-        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
         return false;
     }
 
@@ -942,6 +978,22 @@ bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t c
     case TY_FEATURE_BYTEARRAY:
         status = TYSetByteArray(handle, id, feat, value.data.byteArray.m_data, value.data.byteArray.real_size);
         break;
+    case TY_FEATURE_STRUCT:
+        if(feat == TY_STRUCT_AEC_ROI) {
+            if(value.data.st_param.real_size != 4) {
+                LOGE("Invalid feature data %s:%d", __FILE__, __LINE__);
+                return false;
+            }
+
+            TY_AEC_ROI_PARAM roi;
+            roi.x = value.data.st_param.m_data[0];
+            roi.y = value.data.st_param.m_data[1];
+            roi.w = value.data.st_param.m_data[2];
+            roi.h = value.data.st_param.m_data[3];
+            status = TYSetStruct(handle, id, feat, &roi, sizeof(roi));
+        } else 
+            status = TY_STATUS_INVALID_FEATURE;
+        break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
         return false;
@@ -961,7 +1013,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
     memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if(idx < 0) {
-        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
         return para;
     }
 
@@ -1010,6 +1062,20 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
         para.data.byteArray.real_size = count;
         status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
+    case TY_FEATURE_STRUCT:
+        if(feat == TY_STRUCT_AEC_ROI) {
+            TY_AEC_ROI_PARAM roi;
+            status = TYGetStruct(handle, id, feat, &roi, sizeof(roi));
+            if(status == TY_STATUS_OK) {
+              para.data.st_param.m_data[0] = roi.x;
+              para.data.st_param.m_data[1] = roi.y;
+              para.data.st_param.m_data[2] = roi.w;
+              para.data.st_param.m_data[3] = roi.h;
+              para.data.st_param.real_size = 4;
+            }
+        } else 
+            status = TY_STATUS_INVALID_FEATURE;
+        break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
         return para;
@@ -1025,7 +1091,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
 bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t comp, const TY_FEATURE_ID feat, DevParam value) {
     int idx = hasDevice(handle);
     if (idx < 0) {
-        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
         return false;
     }
 
@@ -1063,6 +1129,22 @@ bool PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t 
     case TY_FEATURE_BYTEARRAY:
         status = TYSetByteArray(handle, id, feat, value.data.byteArray.m_data, value.data.byteArray.real_size);
         break;
+    case TY_FEATURE_STRUCT:
+        if(feat == TY_STRUCT_AEC_ROI) {
+            if(value.data.st_param.real_size != 4) {
+                LOGE("Invalid feature data %s:%d", __FILE__, __LINE__);
+                return false;
+            }
+
+            TY_AEC_ROI_PARAM roi;
+            roi.x = value.data.st_param.m_data[0];
+            roi.y = value.data.st_param.m_data[1];
+            roi.w = value.data.st_param.m_data[2];
+            roi.h = value.data.st_param.m_data[3];
+            status = TYSetStruct(handle, id, feat, &roi, sizeof(roi));
+        } else 
+            status = TY_STATUS_INVALID_FEATURE;
+        break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
         return false;
@@ -1082,7 +1164,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
     memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if (idx < 0) {
-        LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
         return para;
     }
 
@@ -1131,6 +1213,20 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
         para.data.byteArray.real_size = count;
         status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
+    case TY_FEATURE_STRUCT:
+        if(feat == TY_STRUCT_AEC_ROI) {
+            TY_AEC_ROI_PARAM roi;
+            status = TYGetStruct(handle, id, feat, &roi, sizeof(roi));
+            if(status == TY_STATUS_OK) {
+              para.data.st_param.m_data[0] = roi.x;
+              para.data.st_param.m_data[1] = roi.y;
+              para.data.st_param.m_data[2] = roi.w;
+              para.data.st_param.m_data[3] = roi.h;
+              para.data.st_param.real_size = 4;
+            }
+        } else 
+            status = TY_STATUS_INVALID_FEATURE;
+        break;
     default:
         LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
         return para;
@@ -1146,7 +1242,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
 void PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable) {
   int idx = hasDevice(handle);
   if(idx < 0) {
-    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+    LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
     return ;
   }
 

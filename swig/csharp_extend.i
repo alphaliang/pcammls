@@ -190,7 +190,7 @@ namespace std
   %template(FrameVector) vector<image_data>;
   %template(CalibDataVector) vector<float>;
   %template(ByteArrayVector) vector<unsigned char>;
-  
+  %template(ArrayVector) vector<int>;
 }
 %CARRAY_ITEM_ASSIGN(DeviceInfoVector, TY_DEVICE_BASE_INFO);
 

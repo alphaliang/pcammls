@@ -134,7 +134,7 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 %template(ty_image_data_vector) std::vector<image_data>;
 %template(ty_float_vector) std::vector<float>;
 %template(ty_uint8_vector) std::vector<unsigned char>;
-
+%template(ty_int32_vector) std::vector<int>;
 
 
 //%constant void cb(TY_EVENT_INFO *event_info, void *userdata);
