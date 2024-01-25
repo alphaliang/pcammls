@@ -338,6 +338,27 @@ typedef union DevParamData
   DevParamStruct      st_param;
 };
 
+#define DevParamTypeErrReminding( type )  \
+    do {switch(type) { \
+        case TY_FEATURE_BOOL:\
+            LOGE("\t try use toBool()");\
+            break;\
+        case TY_FEATURE_INT:\
+            LOGE("\t try use toInt()");\
+            break;\
+        case TY_FEATURE_FLOAT:\
+            LOGE("\t try use toFloat()");\
+            break;\
+        case TY_FEATURE_BYTEARRAY:\
+            LOGE("\t try use toByteArray()");\
+            break;\
+        case TY_FEATURE_STRUCT:\
+            LOGE("\t try use toArray()");\
+            break;\
+        default:\
+            break;\
+    }} while(0);
+
 typedef struct DevParam
 {
   TY_FEATURE_TYPE type;
@@ -346,6 +367,7 @@ typedef struct DevParam
   bool  toBool()  {
     if(type != TY_FEATURE_BOOL) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return false;
     }
     return data.b_param.value;
@@ -354,6 +376,7 @@ typedef struct DevParam
   int   toInt()   {
     if(type != TY_FEATURE_INT) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return 0;
     }
     return data.m_param.value;
@@ -362,6 +385,7 @@ typedef struct DevParam
   float toFloat() {
     if(type != TY_FEATURE_FLOAT) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return 0;
     }
     return data.f_param.value;
@@ -414,6 +438,7 @@ typedef struct DevParam
   std::vector<TY_ENUM_ENTRY> eList() {
     if(type != TY_FEATURE_INT) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return std::vector<TY_ENUM_ENTRY>();
     }
     
@@ -427,6 +452,7 @@ typedef struct DevParam
   std::vector<unsigned char> toByteArray() {
     if(type != TY_FEATURE_BYTEARRAY) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return std::vector<unsigned char>();
     }
     return std::vector<unsigned char>(data.byteArray.m_data, data.byteArray.m_data + data.byteArray.real_size);
@@ -435,9 +461,10 @@ typedef struct DevParam
   std::vector<int> toArray() {
     if(type != TY_FEATURE_STRUCT) {
       LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
       return std::vector<int>();
     }
-    return std::vector<int>(data.st_param.m_data, data.st_param.m_data + sizeof(int)*data.st_param.real_size);
+    return std::vector<int>(data.st_param.m_data, data.st_param.m_data + data.st_param.real_size);
   }
 };
 
