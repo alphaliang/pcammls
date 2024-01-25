@@ -1090,6 +1090,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
         status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
     case TY_FEATURE_STRUCT:
+        para.type = TY_FEATURE_STRUCT;
         if(feat == TY_STRUCT_AEC_ROI) {
             TY_AEC_ROI_PARAM roi;
             status = TYGetStruct(handle, id, feat, &roi, sizeof(roi));
@@ -1241,6 +1242,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
         status = TYGetByteArray(handle, id, feat, para.data.byteArray.m_data, count);
         break;
     case TY_FEATURE_STRUCT:
+        para.type = TY_FEATURE_STRUCT;
         if(feat == TY_STRUCT_AEC_ROI) {
             TY_AEC_ROI_PARAM roi;
             status = TYGetStruct(handle, id, feat, &roi, sizeof(roi));
