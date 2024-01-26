@@ -289,6 +289,13 @@ typedef struct PercipioAecROI
     int32_t  _y;
     int32_t  _w;
     int32_t  _h;
+
+    PercipioAecROI(int32_t x, int32_t y, int32_t w, int32_t h) {
+      _x = x;
+      _y = y;
+      _w = w;
+      _h = h;
+    }
 };
 
 typedef struct DevParamByteArray
