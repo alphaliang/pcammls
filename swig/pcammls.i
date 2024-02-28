@@ -80,6 +80,10 @@
 %C_ARRAY_BUFFER_DEF(pointcloud_data_list);
 
 %extend class TY_DEVICE_BASE_INFO{//deal with nested union which not suported by SWIG
+    TY_INTERFACE_TYPE type() const {
+        return self->iface.type;
+    }
+
     TY_DEVICE_NET_INFO get_netinfo() const {
         return self->netInfo;
     }
@@ -89,6 +93,23 @@
     }
 }
 
+%extend class TY_DEVICE_NET_INFO{
+    const char* mac() const {
+        return self->mac;
+    }
+    const char* ip() const {
+        return self->ip;
+    }
+    const char* netmask() const {
+        return self->netmask;
+    }
+    const char* gateway() const {
+        return self->gateway;
+    }
+    const char* broadcast() const {
+        return self->broadcast;
+    }
+}
 
 %extend class TY_ENUM_ENTRY{
     const char* getDesc() const {
