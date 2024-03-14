@@ -701,6 +701,9 @@ int PercipioSDK::stream_idx(const PERCIPIO_STREAM_ID stream) {
 
 PercipioSDK::PercipioSDK() {
   TYInitLib();
+  TY_VERSION_INFO ver;
+  ASSERT_OK(TYLibVersion(&ver));
+  LOGD("     - lib version: %d.%d.%d", ver.major, ver.minor, ver.patch);
 }
 
 PercipioSDK::~PercipioSDK() {
