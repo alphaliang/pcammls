@@ -997,7 +997,7 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
 }
 
 #define MAX_STORAGE_SIZE    (10*1024*1024)
-int PercipioSDK::DeviceWriteDefaultParameters(const TY_DEV_HANDLE handle, const char* file) {
+int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE handle, const char* file) {
     m_last_error = TY_STATUS_OK;
 
     TY_STATUS status = TY_STATUS_OK;
