@@ -45,7 +45,9 @@ def main():
     for i in range(len(dev_list)):
       handle[i] = cl.Open(sn[i])
       if not cl.isValidHandle(handle[i]):
-        print('no device found')
+        err = cl.TYGetLastErrorCodedescription()
+        print('no device found : ', end='')
+        print(err)
         return
 
     #device stream config
@@ -57,7 +59,15 @@ def main():
       for idx in range(len(depth_fmt_list)):
         fmt = depth_fmt_list[idx]
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
-      cl.DeviceStreamFormatConfig(handle[i], PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])    
+      cl.DeviceStreamFormatConfig(handle[i], PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
+
+      err = cl.DeviceLoadDefaultParameters(handle)
+      if err:
+        print('Load default parameters fail: ', end='')
+        print(cl.TYGetLastErrorCodedescription())
+      else:
+        print('Load default parameters successful')
+        
       cl.DeviceStreamOn(handle[i])
 
     depth_render = [0] * len(dev_list)

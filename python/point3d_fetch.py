@@ -48,7 +48,9 @@ def main():
 
     handle = cl.Open(sn)
     if not cl.isValidHandle(handle):
-      print('no device found')
+      err = cl.TYGetLastErrorCodedescription()
+      print('no device found : ', end='')
+      print(err)
       return
       
     event = PythonPercipioDeviceEvent()
@@ -81,6 +83,13 @@ def main():
     print('\tcalib intr       : {}'.format(depth_calib_intr))
     print('\tcalib extr       : {}'.format(depth_calib_extr))
     print('\tcalib distortion : {}'.format(depth_calib_dis))
+
+    err = cl.DeviceLoadDefaultParameters(handle)
+    if err:
+      print('Load default parameters fail: ', end='')
+      print(cl.TYGetLastErrorCodedescription())
+    else:
+       print('Load default parameters successful')
 
     cl.DeviceStreamOn(handle)
 

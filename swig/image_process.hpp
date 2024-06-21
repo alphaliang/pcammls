@@ -18,6 +18,9 @@
 #include <vector>
 #include <turbojpeg.h>
 
+#include "crc32.hpp"
+#include "ParametersParse.hpp"
+
 #define MAX_DEPTH 0x10000 
 
 static void BGRToRGB(const void* bgrFrame, int width, int height, void* rgbFrame)

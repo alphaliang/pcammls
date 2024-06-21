@@ -48,7 +48,9 @@ def main():
     
     handle = cl.Open(sn)
     if not cl.isValidHandle(handle):
-      print('no device found')
+      err = cl.TYGetLastErrorCodedescription()
+      print('no device found : ', end='')
+      print(err)
       return
 
     event = PythonPercipioDeviceEvent()
@@ -68,6 +70,13 @@ def main():
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
     cl.DeviceControlTriggerModeEnable(handle, 1)
+
+    err = cl.DeviceLoadDefaultParameters(handle)
+    if err:
+      print('Load default parameters fail: ', end='')
+      print(cl.TYGetLastErrorCodedescription())
+    else:
+       print('Load default parameters successful')
 
     depth_render = image_data()
     cl.DeviceStreamOn(handle)
