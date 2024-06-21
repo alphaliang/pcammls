@@ -158,6 +158,12 @@ namespace demo
             Console.WriteLine(string.Format("depth image calib distortion:"));
             dump_calib_data(depth_dist, depth_dist.Count(), 1);
 
+            int err = cl.DeviceLoadDefaultParameters(handle);
+            if (err != TY_STATUS_OK)
+                Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
+            else
+                Console.WriteLine(string.Format("Load default parameters successful!"));
+
             return true;
         }
 

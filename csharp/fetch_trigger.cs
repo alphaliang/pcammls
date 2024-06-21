@@ -98,6 +98,12 @@ namespace demo
             
             cl.DeviceControlTriggerModeEnable(handle, 1);
 
+            int err = cl.DeviceLoadDefaultParameters(handle);
+            if (err != TY_STATUS_OK)
+                Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
+            else 
+                Console.WriteLine(string.Format("Load default parameters successful!"));
+
             return true;
         }
         private void CaptureCamera()
@@ -120,7 +126,7 @@ namespace demo
                 if (_event.isOffLine())
                     break;
 
-                bool ret = cl.DeviceControlTriggerModeSendTriggerSignal(handle);
+                int ret = cl.DeviceControlTriggerModeSendTriggerSignal(handle);
                 Console.WriteLine(string.Format("Send trigger signal ret = {0}.", ret));
                 FrameVector frames = cl.DeviceStreamRead(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)

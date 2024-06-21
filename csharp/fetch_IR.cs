@@ -90,26 +90,12 @@ namespace demo
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            EnumEntryVector ir_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_IR_LEFT);
-			if(ir_fmt_list.Count() != 0)
-			{
-                Console.WriteLine(string.Format("ir image format list:"));
-                for (int i = 0; i < ir_fmt_list.Count(); i++)
-                {
-                    TY_ENUM_ENTRY fmt = ir_fmt_list[i];
-                    Console.WriteLine(string.Format("\t{0} -size[{1}x{2}]\t-\t desc:{3}", i, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()));
-                }
-                cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_COLOR, ir_fmt_list[0]);
-
-                cl.DeviceControlLaserPowerAutoControlEnable(handle, false);
-                cl.DeviceControlLaserPowerConfig(handle, 80);
-
-
-                cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
-            
-	    		return true;
-			}
-			return false;
+            int err = cl.DeviceLoadDefaultParameters(handle);
+            if (err != TY_STATUS_OK)
+                Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
+            else
+                Console.WriteLine(string.Format("Load default parameters successful!"));
+            return true;
         }
 
         private void CaptureCamera()

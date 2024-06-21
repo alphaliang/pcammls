@@ -78,6 +78,13 @@ namespace pcammls_fetch_frame
             }
             cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
 
+            int err = cl.DeviceLoadDefaultParameters(handle);
+            if (err != TY_STATUS_OK)
+                Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
+            else
+                Console.WriteLine(string.Format("Load default parameters successful!"));
+
+
             PercipioCalibData depth_calib_data = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH);
 
             pointcloud_data_list p3d_list = new pointcloud_data_list();
@@ -94,7 +101,7 @@ namespace pcammls_fetch_frame
                     image_data image = frames[i];
                     if (image.streamID == PERCIPIO_STREAM_DEPTH)
                     {
-                        if (cl.DeviceStreamMapDepthImageToPoint3D(image, depth_calib_data, f_depth_scale, p3d_list))
+                        if (cl.DeviceStreamMapDepthImageToPoint3D(image, depth_calib_data, f_depth_scale, p3d_list) == TY_STATUS_OK)
                         {
                             int cnt = p3d_list.size();
                             int center = image.width * image.height / 2 + image.width / 2;

@@ -103,6 +103,12 @@ namespace demo
 
             cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH | PERCIPIO_STREAM_COLOR);
 
+            int err = cl.DeviceLoadDefaultParameters(handle);
+            if (err != TY_STATUS_OK)
+                Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
+            else
+                Console.WriteLine(string.Format("Load default parameters successful!"));
+
             scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle);
             depth_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH);
             color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR);

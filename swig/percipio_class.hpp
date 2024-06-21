@@ -545,7 +545,7 @@ class PercipioSDK
         bool isValidHandle(const TY_DEV_HANDLE handle);
     void Close(const TY_DEV_HANDLE handle);
 
-    int DeviceWriteDefaultParameters(const TY_DEV_HANDLE handle, const char* file);
+    int DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE handle, const char* file);
     int DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle);
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
