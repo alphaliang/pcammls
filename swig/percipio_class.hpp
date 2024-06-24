@@ -559,6 +559,7 @@ class PercipioSDK
     int                           DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool enable);
 
     /*stream control*/
+    bool                          DeviceHasStream(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     int                           DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     int                           DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     const std::vector<TY_ENUM_ENTRY>&   DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
@@ -1450,6 +1451,44 @@ int PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool ena
   }
 
   return m_last_error;
+}
+
+bool PercipioSDK::DeviceHasStream(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
+{
+  TY_STATUS status;
+  TY_COMPONENT_ID allComps;
+  m_last_error = TY_STATUS_OK;
+  status = TYGetComponentIDs(handle, &allComps);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    m_last_error = status;
+    return false;
+  }
+
+  uint32_t m_compID;
+  switch(stream) {
+    case PERCIPIO_STREAM_COLOR:
+      m_compID = TY_COMPONENT_RGB_CAM;
+      break;
+    case PERCIPIO_STREAM_DEPTH:
+      m_compID = TY_COMPONENT_DEPTH_CAM;
+      break;
+    case PERCIPIO_STREAM_IR_LEFT:
+      m_compID = TY_COMPONENT_IR_CAM_LEFT;
+      break;
+    case PERCIPIO_STREAM_IR_RIGHT:
+      m_compID = TY_COMPONENT_IR_CAM_RIGHT;
+      break;
+    default:
+      m_last_error = TY_STATUS_INVALID_PARAMETER;
+      return false;
+  }
+
+  if(allComps & m_compID) {
+    return true;
+  }
+  
+  return false;
 }
 
 int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
