@@ -1514,7 +1514,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       LOGE("The device does not support color stream.\n");
     }
   } else {
-    TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
+      TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
   }
 
   if(stream & PERCIPIO_STREAM_DEPTH) {
@@ -1529,7 +1529,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       LOGE("The device does not support depth stream.\n");
     }
   } else {
-    TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
+      TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
   }
 
   if(stream & PERCIPIO_STREAM_IR_LEFT) {
@@ -1722,7 +1722,6 @@ bool PercipioSDK::FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize)
 
   ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[0], frameSize));
   ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[1], frameSize));
-
   return true;
 }
 
@@ -1739,7 +1738,6 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   free(DevList[idx].frameBuffer[1]);
   DevList[idx].frameBuffer[0] = NULL;
   DevList[idx].frameBuffer[1] = NULL;
-
   return ;
 }
 
@@ -1925,21 +1923,23 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
 const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
   static std::vector<image_data> INVALID_FRAME(0);
 
-  m_last_error = TY_STATUS_OK;
+  std::unique_lock<std::mutex> lock(_mutex);
   int idx = hasDevice(handle);
-  if(idx < 0) {
-    LOGE("Invalid device handle!");
-    m_last_error = TY_STATUS_INVALID_HANDLE;
-    return INVALID_FRAME;
+  if (idx < 0) {
+      LOGE("Invalid device handle!");
+      m_last_error = TY_STATUS_INVALID_HANDLE;
+      return INVALID_FRAME;
   }
 
-  TY_FRAME_DATA frame;
   DevList[idx].image_list.clear();
+
+  m_last_error = TY_STATUS_OK;
+  TY_FRAME_DATA frame;
   TY_STATUS status = TYFetchFrame(handle, &frame, timeout);
   if(status != TY_STATUS_OK) {
     LOGE("TYFetchFrame failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     m_last_error = status;
-    return INVALID_FRAME;
+    return DevList[idx].image_list;
   }
 
   for (int i = 0; i < frame.validCount; i++) {
@@ -1976,12 +1976,12 @@ const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE
     LOGE("TYEnqueueBuffer failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     m_last_error = status;
   }
+
   return DevList[idx].image_list;
 }
 
 int PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
   std::unique_lock<std::mutex> lock(_mutex);
-
   m_last_error = TY_STATUS_OK;
   int idx = hasDevice(handle);
   if(idx < 0) {
@@ -1994,7 +1994,7 @@ int PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
   if(status != TY_STATUS_OK) {
     LOGE("TYStopCapture failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     m_last_error = status;
-    return false;
+    return status;
   }
 
   LOGD("Stream OFF!");
