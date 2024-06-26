@@ -569,7 +569,7 @@ class PercipioSDK
         int  Height(const TY_ENUM_ENTRY fmt);
 
     int  DeviceStreamOn(const TY_DEV_HANDLE handle);
-    const std::vector<image_data>& DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
+    const std::vector<image_data> DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
     int DeviceStreamOff(const TY_DEV_HANDLE handle);
 
     int                   DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, TY_ENUM_ENTRY& enum_desc);
@@ -1920,7 +1920,7 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
   return true;
 }
 
-const std::vector<image_data>& PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
+const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
   static std::vector<image_data> INVALID_FRAME(0);
 
   std::unique_lock<std::mutex> lock(_mutex);
