@@ -562,7 +562,7 @@ class PercipioSDK
     bool                          DeviceHasStream(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     int                           DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     int                           DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
-    const std::vector<TY_ENUM_ENTRY>&   DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    const std::vector<TY_ENUM_ENTRY>   DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     
     int                           DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, const TY_ENUM_ENTRY fmt);
         int  Width(const TY_ENUM_ENTRY fmt);
@@ -575,7 +575,7 @@ class PercipioSDK
     int                   DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, TY_ENUM_ENTRY& enum_desc);
 
     /*read calib data*/
-    PercipioCalibData&          DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    PercipioCalibData          DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle);
 
     /*device control*/
@@ -1602,21 +1602,19 @@ int PercipioSDK::DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_
   return TY_STATUS_OK;
 }
 
-const std::vector<TY_ENUM_ENTRY>& PercipioSDK::DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
-  static std::vector<TY_ENUM_ENTRY>  invalid_enum;
-
+const std::vector<TY_ENUM_ENTRY> PercipioSDK::DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
   m_last_error = TY_STATUS_OK;
   int compIDX = stream_idx(stream);
   if(compIDX == STREMA_FMT_IDX_MAX) {
       m_last_error = TY_STATUS_INVALID_PARAMETER;
-      return invalid_enum;
+      return std::vector<TY_ENUM_ENTRY>();
   }
 
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
     m_last_error = TY_STATUS_INVALID_HANDLE;
-    return invalid_enum;
+    return std::vector<TY_ENUM_ENTRY>();;
   }
 
   return DevList[idx].fmt_list[compIDX];
@@ -1741,22 +1739,19 @@ void PercipioSDK::FrameBufferRelease(TY_DEV_HANDLE handle) {
   return ;
 }
 
-PercipioCalibData& PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
-
-  static PercipioCalibData  invalid_calib_data;
-
+PercipioCalibData PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
   m_last_error = TY_STATUS_OK;
   int idx = hasDevice(handle);
   if(idx < 0) {
     LOGE("Invalid device handle!");
     m_last_error = TY_STATUS_INVALID_HANDLE;
-    return invalid_calib_data;
+    return PercipioCalibData();
   }
 
   int compIDX = stream_idx(stream);
   if(compIDX == STREMA_FMT_IDX_MAX) {
     m_last_error = TY_STATUS_INVALID_PARAMETER;
-    return invalid_calib_data;
+    return PercipioCalibData();
   }
 
   return DevList[idx].calib_data_list[compIDX];
@@ -1921,14 +1916,12 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
 }
 
 const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
-  static std::vector<image_data> INVALID_FRAME(0);
-
   std::unique_lock<std::mutex> lock(_mutex);
   int idx = hasDevice(handle);
   if (idx < 0) {
       LOGE("Invalid device handle!");
       m_last_error = TY_STATUS_INVALID_HANDLE;
-      return INVALID_FRAME;
+      return std::vector<image_data>();
   }
 
   DevList[idx].image_list.clear();
