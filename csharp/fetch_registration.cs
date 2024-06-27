@@ -156,13 +156,13 @@ namespace demo
                         }
                     }
 
-                    cl.DeviceStreamDoUndistortion(color_calib.data(), color, undsitortion_color);
-                    cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib.data(),
+                    cl.DeviceStreamDoUndistortion(color_calib, color, undsitortion_color);
+                    cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib,
                             depth.width,
                             depth.height,
                             scale_unit,
                             depth,
-                            color_calib.data(),
+                            color_calib,
                             undsitortion_color.width,
                             undsitortion_color.height,
                             registration_depth);

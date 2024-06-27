@@ -589,10 +589,10 @@ class PercipioSDK
     int DeviceStreamIRRender(const image_data& src, image_data& dst);
     int DeviceStreamImageDecode(const image_data& src, image_data& dst);
     int DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
-    int DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst);
-    int DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALIB_INFO& depth_calib, const int depthW, const int depthH, const float scale, 
+    int DeviceStreamDoUndistortion(const PercipioCalibData& calib_data, const image_data& src, image_data& dst);
+    int DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const int depthW, const int depthH, const float scale, 
                                                     const image_data& srcDepth, 
-                                                    const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
+                                                    const PercipioCalibData& color_calib, const int targetW, const int targetH, 
                                                     image_data& dstDepth);
 
     //
@@ -2347,7 +2347,7 @@ int PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, con
   return TY_STATUS_OK;
 }
 
-int PercipioSDK::DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_data, const image_data& src, image_data& dst) {
+int PercipioSDK::DeviceStreamDoUndistortion(const PercipioCalibData& calib_data, const image_data& src, image_data& dst) {
 
   m_last_error = TY_STATUS_OK;
   bool is_support = false;
@@ -2401,7 +2401,7 @@ int PercipioSDK::DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_da
   dst_image.height      = dst.height;
   dst_image.pixelFormat = dst.pixelFormat;
 
-  TY_STATUS status = TYUndistortImage(&calib_data, &src_image, NULL, &dst_image);
+  TY_STATUS status = TYUndistortImage(&calib_data.data(), &src_image, NULL, &dst_image);
   if(status != TY_STATUS_OK) {
     LOGE("TYUndistortImage failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
     m_last_error = status;
@@ -2410,9 +2410,9 @@ int PercipioSDK::DeviceStreamDoUndistortion(const TY_CAMERA_CALIB_INFO& calib_da
   return TY_STATUS_OK;
 }
 
-int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALIB_INFO& depth_calib, const int depthW, const int depthH, const float scale, 
+int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const int depthW, const int depthH, const float scale, 
                                                     const image_data& srcDepth, 
-                                                    const TY_CAMERA_CALIB_INFO& color_calib, const int targetW, const int targetH, 
+                                                    const PercipioCalibData& color_calib, const int targetW, const int targetH, 
                                                     image_data& dstDepth)
 {
   m_last_error = TY_STATUS_OK;
@@ -2436,7 +2436,8 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const TY_CAMERA_CALI
   dstDepth.width        = targetW;
   dstDepth.height       = targetH;
   dstDepth.pixelFormat  = srcDepth.pixelFormat;
-  TYMapDepthImageToColorCoordinate(&depth_calib, depthW, depthH, (const uint16_t*)srcDepth.buffer,  &color_calib, targetW, targetH, (uint16_t*)dstDepth.buffer, scale);
+  TYMapDepthImageToColorCoordinate(&depth_calib.data(), depthW, depthH, (const uint16_t*)srcDepth.buffer,  
+      &color_calib.data(), targetW, targetH, (uint16_t*)dstDepth.buffer, scale);
   return TY_STATUS_OK;
 }
 

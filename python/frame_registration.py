@@ -111,14 +111,14 @@ def main():
             img_color = frame
 
         
-        cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib.data(), img_depth.width, img_depth.height, scale_unit,  img_depth,  color_calib.data(), img_color.width, img_color.height, img_registration_depth)
+        cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib, img_depth.width, img_depth.height, scale_unit,  img_depth,  color_calib, img_color.width, img_color.height, img_registration_depth)
         
         cl.DeviceStreamDepthRender(img_registration_depth, img_registration_render)
         mat_depth_render = img_registration_render.as_nparray()
         cv2.imshow('registration', mat_depth_render)
 
         cl.DeviceStreamImageDecode(img_color, img_parsed_color)
-        cl.DeviceStreamDoUndistortion(color_calib.data(), img_parsed_color, img_undistortion_color)
+        cl.DeviceStreamDoUndistortion(color_calib, img_parsed_color, img_undistortion_color)
         mat_undistortion_color = img_undistortion_color.as_nparray()
         cv2.imshow('undistortion rgb', mat_undistortion_color)
         k = cv2.waitKey(10)
