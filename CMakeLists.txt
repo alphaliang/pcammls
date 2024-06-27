@@ -7,7 +7,7 @@ set(CAMPORT_DIR  "${CMAKE_SOURCE_DIR}/camport3" CACHE  PATH "Percipio SDK Path")
 set(CAMPORT_ARCH  x64 CACHE STRING "Percipio SDK Arch")
 set_property(CACHE CAMPORT_ARCH PROPERTY STRINGS x64 i686 Aarch64 armv7hf)
 set(TARGET_LANGUAGE "PYTHON" CACHE STRING "target language")
-set(PYTHON_VERSION "3.6" CACHE STRING "python version")
+set(PYTHON_VERSION "3.8" CACHE STRING "python version")
 set(CSHARP_NET_VERSION  "v4.5.2" CACHE STRING ".NET version")
 
 #set(SWIG_DIR  CACHE PATH "SWIG tool path")
