@@ -102,9 +102,9 @@ def main():
       if event.IsOffline():
         break
       image_list = cl.DeviceStreamRead(handle, 2000)
-      if len(image_list) == 2:
-        for i in range(len(image_list)):
-          frame = image_list[i]
+      if image_list.Count() == 2:
+        for i in range(image_list.Count()):
+          frame = image_list.At(i)
           if frame.streamID == PERCIPIO_STREAM_DEPTH:
             img_depth = frame
           if frame.streamID == PERCIPIO_STREAM_COLOR:

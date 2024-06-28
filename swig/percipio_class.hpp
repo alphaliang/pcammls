@@ -168,6 +168,45 @@ typedef struct image_data {
 
 }image_data;
 
+class image_array
+{
+  public:
+    image_array();
+    ~image_array();
+
+    int Count();
+    void Add(const image_data& image);
+    const image_data& At(int i);
+
+  private:
+    std::vector<image_data> image_lists;
+};
+
+image_array::image_array()
+{
+  image_lists.clear();
+}
+
+image_array::~image_array()
+{
+
+}
+
+int image_array::Count()
+{
+  return image_lists.size();
+}
+
+void image_array::Add(const image_data& image)
+{
+  image_lists.push_back(image);
+}
+
+const image_data& image_array:: At(int i)
+{
+  return image_lists[i];
+}
+
 #include "image_process.hpp"
 
 typedef struct pointcloud_data {
@@ -569,7 +608,10 @@ class PercipioSDK
         int  Height(const TY_ENUM_ENTRY fmt);
 
     int  DeviceStreamOn(const TY_DEV_HANDLE handle);
-    const std::vector<image_data> DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
+
+
+    //const std::vector<image_data> DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
+    const image_array DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
     int DeviceStreamOff(const TY_DEV_HANDLE handle);
 
     int                   DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, TY_ENUM_ENTRY& enum_desc);
@@ -1915,6 +1957,7 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
   return true;
 }
 
+/*
 const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout) {
   std::unique_lock<std::mutex> lock(_mutex);
   int idx = hasDevice(handle);
@@ -1971,6 +2014,65 @@ const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE 
   }
 
   return DevList[idx].image_list;
+}
+*/
+const image_array PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout)
+{
+  std::unique_lock<std::mutex> lock(_mutex);
+
+  image_array array;
+  int idx = hasDevice(handle);
+  if (idx < 0) {
+      LOGE("Invalid device handle!");
+      m_last_error = TY_STATUS_INVALID_HANDLE;
+      return array;
+  }
+
+  m_last_error = TY_STATUS_OK;
+  TY_FRAME_DATA frame;
+  TY_STATUS status = TYFetchFrame(handle, &frame, timeout);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYFetchFrame failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    m_last_error = status;
+    return array;
+  }
+
+  for (int i = 0; i < frame.validCount; i++) {
+    if (frame.image[i].status != TY_STATUS_OK) continue;
+
+    // get depth image
+    if (frame.image[i].componentID == TY_COMPONENT_DEPTH_CAM){
+      array.Add(image_data(frame.image[i]));
+    }
+    
+    // get left ir image
+    if (frame.image[i].componentID == TY_COMPONENT_IR_CAM_LEFT) {
+      array.Add(image_data(frame.image[i]));
+    }
+    
+    // get right ir image
+    if (frame.image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT) {
+      array.Add(image_data(frame.image[i]));
+    }
+
+    // get BGR
+    if (frame.image[i].componentID == TY_COMPONENT_RGB_CAM) {
+      if(DevList[idx].isp && IsBayerColor(frame.image[i].pixelFormat)) {
+        image_data dst;
+        TyBayerColorConvert(handle, frame.image[i], dst);
+        array.Add(dst);
+      } else
+        array.Add(image_data(frame.image[i]));
+    }
+  }
+
+  status = TYEnqueueBuffer(handle, frame.userBuffer, frame.bufferSize);
+  if(status != TY_STATUS_OK) {
+    LOGE("TYEnqueueBuffer failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    m_last_error = status;
+  }
+
+  return array;
 }
 
 int PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {

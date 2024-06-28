@@ -76,8 +76,8 @@ def main():
         break
         
       image_list = cl.DeviceStreamRead(handle, 2000)
-      for i in range(len(image_list)):
-        frame = image_list[i]
+      for i in range(image_list.Count()):
+        frame = image_list.At(i)
         if frame.streamID == PERCIPIO_STREAM_IR_LEFT:
           cl.DeviceStreamIRRender(frame, img_ir)
           arr = img_ir.as_nparray()

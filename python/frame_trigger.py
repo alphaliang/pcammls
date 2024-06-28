@@ -88,8 +88,8 @@ def main():
       
       cl.DeviceControlTriggerModeSendTriggerSignal(handle)
       image_list = cl.DeviceStreamRead(handle, 20000)
-      for i in range(len(image_list)):
-        frame = image_list[i]
+      for i in range(image_list.Count()):
+        frame = image_list.At(i)
         arr = frame.as_nparray()
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
           cl.DeviceStreamDepthRender(frame, depth_render)

@@ -61,7 +61,7 @@ def main():
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
       cl.DeviceStreamFormatConfig(handle[i], PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
-      err = cl.DeviceLoadDefaultParameters(handle)
+      err = cl.DeviceLoadDefaultParameters(handle[i])
       if err:
         print('Load default parameters fail: ', end='')
         print(cl.TYGetLastErrorCodedescription())
@@ -80,8 +80,8 @@ def main():
       
       for m in range(len(dev_list)):
         image_list = cl.DeviceStreamRead(handle[m], -1)
-        for i in range(len(image_list)):
-          frame = image_list[i]
+        for i in range(image_list.Count()):
+          frame = image_list.At(i)
           if frame.streamID == PERCIPIO_STREAM_DEPTH:
             cl.DeviceStreamDepthRender(frame, depth_render[m])
             arr = depth_render[m].as_nparray()

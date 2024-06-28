@@ -99,8 +99,8 @@ def main():
         break
       image_list = cl.DeviceStreamRead(handle, -1)
       
-      for i in range(len(image_list)):
-        frame = image_list[i]
+      for i in range(image_list.Count()):
+        frame = image_list.At(i)
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
           cl.DeviceStreamMapDepthImageToPoint3D(frame, depth_calib_data, scale_unit, pointcloud_data_arr)
           sz = pointcloud_data_arr.size()

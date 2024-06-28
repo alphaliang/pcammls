@@ -116,8 +116,8 @@ def main():
       if event.IsOffline():
         break
       image_list = cl.DeviceStreamRead(handle, -1)
-      for i in range(len(image_list)):
-        frame = image_list[i]
+      for i in range(image_list.Count()):
+        frame = image_list.At(i)
         if frame.streamID == PERCIPIO_STREAM_DEPTH:
           cl.DeviceStreamDepthRender(frame, depth_render)
           arr = depth_render.as_nparray()
