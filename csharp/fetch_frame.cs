@@ -187,21 +187,21 @@ namespace demo
                 if (_event.isOffLine())
                     break;
 
-                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
+                image_array frames = cl.DeviceStreamRead(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)
                 {
-                    if (frames[i].streamID == PERCIPIO_STREAM_DEPTH)
+                    if (frames.At(i).streamID == PERCIPIO_STREAM_DEPTH)
                     {
                         image_data depth = new image_data();
-                        cl.DeviceStreamDepthRender(frames[i], depth);
+                        cl.DeviceStreamDepthRender(frames.At(i), depth);
                         IntPtr pt = depth.buffer.getCPtr();
                         Bitmap bmp_depth = new Bitmap(depth.width, depth.height, depth.width * 3, PixelFormat.Format24bppRgb, pt);
                         pictureBox1.Image = (Image)(new Bitmap(bmp_depth, new Size(640, 480))).Clone();
                     }
-                    if (frames[i].streamID == PERCIPIO_STREAM_COLOR)
+                    if (frames.At(i).streamID == PERCIPIO_STREAM_COLOR)
                     {
                         image_data bgr = new image_data();
-                        cl.DeviceStreamImageDecode(frames[i], bgr);
+                        cl.DeviceStreamImageDecode(frames.At(i), bgr);
                         IntPtr pt = bgr.buffer.getCPtr();
                         Bitmap bmp_color = new Bitmap(bgr.width, bgr.height, bgr.width * 3, PixelFormat.Format24bppRgb, pt);
                         pictureBox2.Image = (Image)(new Bitmap(bmp_color, new Size(640, 480))).Clone();

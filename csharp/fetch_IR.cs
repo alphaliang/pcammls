@@ -122,23 +122,23 @@ namespace demo
                 if (_event.isOffLine())
                     break;
 
-                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
+                image_array frames = cl.DeviceStreamRead(handle, 2000);
                 Console.WriteLine(string.Format("DeviceStreamRead frames:{0}!", frames.Count()));
                 for (int i = 0; i < frames.Count(); i++)
                 {
-                    if (frames[i].streamID == PERCIPIO_STREAM_IR_LEFT)
+                    if (frames.At(i).streamID == PERCIPIO_STREAM_IR_LEFT)
                     {
                         image_data leftIR = new image_data();
-                        cl.DeviceStreamIRRender(frames[i], leftIR);
+                        cl.DeviceStreamIRRender(frames.At(i), leftIR);
                         IntPtr pt = leftIR.buffer.getCPtr();
 						
 						Bitmap leftIR_BMP = new Bitmap(leftIR.width, leftIR.height, 3*leftIR.width, PixelFormat.Format24bppRgb, pt);
                         pictureBox1.Image = (Image)(new Bitmap(leftIR_BMP, new Size(640, 480))).Clone();
                     }
-                    else if (frames[i].streamID == PERCIPIO_STREAM_IR_RIGHT)
+                    else if (frames.At(i).streamID == PERCIPIO_STREAM_IR_RIGHT)
                     {
                         image_data rightIR = new image_data();
-                        cl.DeviceStreamIRRender(frames[i], rightIR);
+                        cl.DeviceStreamIRRender(frames.At(i), rightIR);
                         IntPtr pt = rightIR.buffer.getCPtr();
                         Bitmap rightIR_BMP = new Bitmap(rightIR.width, rightIR.height, 3*rightIR.width, PixelFormat.Format24bppRgb, pt);
                         pictureBox2.Image = (Image)(new Bitmap(rightIR_BMP, new Size(640, 480))).Clone();

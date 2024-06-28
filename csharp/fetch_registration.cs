@@ -140,12 +140,12 @@ namespace demo
                 if (_event.isOffLine())
                     break;
 
-                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
+                image_array frames = cl.DeviceStreamRead(handle, 2000);
                 if (frames.Count() == 2)
                 {
                     for (int i = 0; i < frames.Count(); i++)
                     {
-                        image_data image = frames[i];
+                        image_data image = frames.At(i);
                         if (image.streamID == PERCIPIO_STREAM_DEPTH)
                         {
                             depth = image;

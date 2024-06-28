@@ -95,10 +95,10 @@ namespace pcammls_fetch_frame
                 if (_event.isOffLine())
                     break;
 
-                FrameVector frames = cl.DeviceStreamRead(handle, 2000);
+                image_array frames = cl.DeviceStreamRead(handle, 2000);
                 for (int i = 0; i < frames.Count(); i++)
                 {
-                    image_data image = frames[i];
+                    image_data image = frames.At(i);
                     if (image.streamID == PERCIPIO_STREAM_DEPTH)
                     {
                         if (cl.DeviceStreamMapDepthImageToPoint3D(image, depth_calib_data, f_depth_scale, p3d_list) == TY_STATUS_OK)
