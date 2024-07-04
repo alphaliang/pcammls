@@ -1512,6 +1512,8 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       }
     } else {
       LOGE("The device does not support color stream.\n");
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return status;
     }
   } else {
       TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
@@ -1527,6 +1529,8 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       }
     } else {
       LOGE("The device does not support depth stream.\n");
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return status;
     }
   } else {
       TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
@@ -1542,6 +1546,8 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       }
     } else {
       LOGE("The device does not support left ir stream.\n");
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return status;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
@@ -1557,6 +1563,8 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       }
     } else {
       LOGE("The device does not support right ir stream.\n");
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return status;
     }
   } else {
     TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
