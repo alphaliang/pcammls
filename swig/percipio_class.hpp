@@ -8,6 +8,17 @@
 
 #include <vector>
 
+#define __FILENAME__ (strrchr("/" __FILE__, '/') + 1)
+
+#define TYLIB_API_ASSERT_OK(x)    do{ \
+    int err = (x); \
+    if(err != TY_STATUS_OK) { \
+      LOGE("Assert failed: error %d(%s) at %s:%d", err, TYErrorString(err), __FILENAME__, __LINE__); \
+      LOGE("    : " #x ); \
+      abort(); \
+    } \
+  }while(0)
+
 typedef enum PERCIPIO_STREAM_LIST {
   PERCIPIO_STREAM_COLOR     = 0x00000001,
   PERCIPIO_STREAM_DEPTH     = 0x00000002,
@@ -513,7 +524,7 @@ class PercipioSDK
       DevParam param;
       int max_size = sizeof(param.data.byteArray.m_data);
       if(val.size() > max_size) {
-        LOGE("%s:%d Invalid ByteArray size.",__FILE__, __LINE__);
+        LOGE("%s:%d Invalid ByteArray size.",__FILENAME__, __LINE__);
       } else {
         max_size = val.size();
       }
@@ -711,7 +722,7 @@ int PercipioSDK::stream_idx(const PERCIPIO_STREAM_ID stream) {
 PercipioSDK::PercipioSDK() {
   TYInitLib();
   TY_VERSION_INFO ver;
-  ASSERT_OK(TYLibVersion(&ver));
+  TYLIB_API_ASSERT_OK(TYLibVersion(&ver));
   LOGD("     - lib version: %d.%d.%d", ver.major, ver.minor, ver.patch);
 }
 
@@ -782,13 +793,13 @@ TY_DEV_HANDLE PercipioSDK::Open(const char* sn) {
   
   m_last_error = TYOpenInterface(selectedDev.iface.id, &hIface);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYOpenInterface failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYOpenInterface failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return 0;
   }
 
   m_last_error = TYOpenDevice(hIface, selectedDev.id, &hDevice);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYOpenDevice failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYOpenDevice failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return 0;
   }
 
@@ -810,10 +821,10 @@ TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
   m_last_error = TY_STATUS_OK;
 
   LOGD("Update interface list");
-  ASSERT_OK( TYUpdateInterfaceList() );
+  TYLIB_API_ASSERT_OK( TYUpdateInterfaceList() );
 
   uint32_t n = 0;
-  ASSERT_OK( TYGetInterfaceNumber(&n) );
+  TYLIB_API_ASSERT_OK( TYGetInterfaceNumber(&n) );
   LOGD("Got %u interface list", n);
   if(n == 0){
     LOGE("interface number incorrect");
@@ -825,9 +836,9 @@ TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
   TY_DEV_HANDLE hDevice = NULL;
 
   LOGD("Update interface list");
-  ASSERT_OK( TYUpdateInterfaceList() );
+  TYLIB_API_ASSERT_OK( TYUpdateInterfaceList() );
 
-  ASSERT_OK( TYGetInterfaceNumber(&n) );
+  TYLIB_API_ASSERT_OK( TYGetInterfaceNumber(&n) );
   LOGD("Got %u interface list", n);
   if(n == 0){
     LOGE("interface number incorrect");
@@ -836,12 +847,12 @@ TY_DEV_HANDLE PercipioSDK::OpenDeviceByIP(const char* ip) {
   }
 
   std::vector<TY_INTERFACE_INFO> ifaces(n);
-  ASSERT_OK( TYGetInterfaceList(&ifaces[0], n, &n) );
+  TYLIB_API_ASSERT_OK( TYGetInterfaceList(&ifaces[0], n, &n) );
 
   for(size_t i = 0; i < ifaces.size(); i++) {
     if( (ifaces[i].type == TY_INTERFACE_ETHERNET) || 
         (ifaces[i].type == TY_INTERFACE_IEEE80211)) {
-      ASSERT_OK( TYOpenInterface(ifaces[i].id, &hIface) );
+      TYLIB_API_ASSERT_OK( TYOpenInterface(ifaces[i].id, &hIface) );
       m_last_error =  TYOpenDeviceWithIP(hIface, ip, &hDevice);
       if(m_last_error != TY_STATUS_OK)
         TYCloseInterface(hIface);
@@ -892,7 +903,7 @@ void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
   
   m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
 
   bool hasResend = false;
@@ -912,7 +923,7 @@ void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
 void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
   int idx = hasDevice(handle);
   if(idx < 0) {
-    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILE__, __LINE__);
+    LOGE("DumpDeviceInfo failed: invalid handle %s:%d", __FILENAME__, __LINE__);
     return ;
   }
 
@@ -928,7 +939,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     unsigned int n = 0;
     m_last_error = TYGetEnumEntryCount(handle, compID[cnt], TY_ENUM_IMAGE_MODE, &n);
     if(m_last_error != TY_STATUS_OK) {
-      //LOGE("TYGetEnumEntryCount failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      //LOGE("TYGetEnumEntryCount failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
       continue;
     }
@@ -943,7 +954,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     TY_ENUM_ENTRY* pEntry = &temp[0];
     m_last_error = TYGetEnumEntryInfo(handle, compID[cnt], TY_ENUM_IMAGE_MODE, pEntry, n, &n);
     if(m_last_error != TY_STATUS_OK) {
-      //LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      //LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
       continue;
     }
@@ -960,7 +971,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     TY_CAMERA_CALIB_INFO calib_data;
     m_last_error = TYGetStruct(handle, compID[cnt], TY_STRUCT_CAM_CALIB_DATA, &calib_data, sizeof(TY_CAMERA_CALIB_INFO));
     if(m_last_error != TY_STATUS_OK) {
-      //LOGE("TYGetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      //LOGE("TYGetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
       memset(&DevList[idx].calib_data_list[cnt], 0, sizeof(TY_CAMERA_CALIB_INFO));
     }
 
@@ -971,7 +982,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
   float scale_unit = 1.f;
   m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
   DevList[idx].depth_scale_unit = scale_unit;
 
@@ -1076,7 +1087,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
     m_last_error = TY_STATUS_OK;
     int idx = hasDevice(handle);
     if(idx < 0) {
-        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return TY_STATUS_INVALID_HANDLE;
     }
@@ -1086,7 +1097,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
   
     TYHasFeature(handle, id, feat, &has);
     if(!has) {
-        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return TY_STATUS_INVALID_FEATURE;
     }
@@ -1094,7 +1105,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
     if(type_check != value.type) {
-      LOGE("Invalid parameter type %s:%d", __FILE__, __LINE__);
+      LOGE("Invalid parameter type %s:%d", __FILENAME__, __LINE__);
       m_last_error = TY_STATUS_INVALID_PARAMETER;
       return TY_STATUS_INVALID_PARAMETER;
     }
@@ -1119,7 +1130,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
     case TY_FEATURE_STRUCT:
         if(feat == TY_STRUCT_AEC_ROI) {
             if(value.data.st_param.real_size != 4) {
-                LOGE("Invalid feature data %s:%d", __FILE__, __LINE__);
+                LOGE("Invalid feature data %s:%d", __FILENAME__, __LINE__);
                 m_last_error = TY_STATUS_INVALID_PARAMETER;
                 return TY_STATUS_INVALID_PARAMETER;
             }
@@ -1134,7 +1145,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
             m_last_error = TY_STATUS_INVALID_FEATURE;
         break;
     default:
-        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature type %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_PARAMETER;
         return TY_STATUS_INVALID_PARAMETER;
     }
@@ -1153,7 +1164,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
     memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if(idx < 0) {
-        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return para;
     }
@@ -1162,7 +1173,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
     TYHasFeature(handle, id, feat, &has);
     if(!has) {
-        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return para;
     }
@@ -1220,7 +1231,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
             m_last_error = TY_STATUS_INVALID_FEATURE;
         break;
     default:
-        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature type %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return para;
     }
@@ -1236,7 +1247,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
     m_last_error = TY_STATUS_OK;
     int idx = hasDevice(handle);
     if (idx < 0) {
-        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return TY_STATUS_INVALID_HANDLE;
     }
@@ -1246,7 +1257,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
 
     TYHasFeature(handle, id, feat, &has);
     if (!has) {
-        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return TY_STATUS_INVALID_FEATURE;
     }
@@ -1254,7 +1265,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
     TY_FEATURE_TYPE type = TYFeatureType(feat);
     TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
     if(type_check != value.type) {
-      LOGE("Invalid parameter type %s:%d", __FILE__, __LINE__);
+      LOGE("Invalid parameter type %s:%d", __FILENAME__, __LINE__);
       m_last_error = TY_STATUS_INVALID_PARAMETER;
       return TY_STATUS_INVALID_PARAMETER;
     }
@@ -1279,7 +1290,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
     case TY_FEATURE_STRUCT:
         if(feat == TY_STRUCT_AEC_ROI) {
             if(value.data.st_param.real_size != 4) {
-                LOGE("Invalid feature data %s:%d", __FILE__, __LINE__);
+                LOGE("Invalid feature data %s:%d", __FILENAME__, __LINE__);
                 m_last_error = TY_STATUS_INVALID_PARAMETER;
                 return TY_STATUS_INVALID_PARAMETER;
             }
@@ -1294,7 +1305,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
             m_last_error = TY_STATUS_INVALID_FEATURE;
         break;
     default:
-        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature type %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_PARAMETER;
         return TY_STATUS_INVALID_PARAMETER;
     }
@@ -1313,7 +1324,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
     memset(&para, 0, sizeof(para));
     int idx = hasDevice(handle);
     if (idx < 0) {
-        LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return para;
     }
@@ -1322,7 +1333,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
     TYHasFeature(handle, id, feat, &has);
     if (!has) {
-        LOGE("Invalid feature %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return para;
     }
@@ -1380,7 +1391,7 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
             m_last_error = TY_STATUS_INVALID_FEATURE;
         break;
     default:
-        LOGE("Invalid feature type %s:%d", __FILE__, __LINE__);
+        LOGE("Invalid feature type %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
         return para;
     }
@@ -1396,7 +1407,7 @@ int PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool ena
   m_last_error = TY_STATUS_OK;
   int idx = hasDevice(handle);
   if(idx < 0) {
-    LOGE("Device handle check failed: invalid handle %s:%d", __FILE__, __LINE__);
+    LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
     m_last_error = TY_STATUS_INVALID_HANDLE;
     return m_last_error;
   }
@@ -1404,19 +1415,19 @@ int PercipioSDK::DeviceColorStreamIspEnable(const TY_DEV_HANDLE handle, bool ena
   if(enable && DevList[idx].isp == NULL) {
     m_last_error = TYISPCreate(&DevList[idx].isp);
     if(m_last_error != TY_STATUS_OK) {
-      LOGE("TYISPCreate failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      LOGE("TYISPCreate failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     }
 
     m_last_error = ColorIspInitSetting(DevList[idx].isp, handle);
     if(m_last_error != TY_STATUS_OK) {
-      LOGE("ColorIspInitSetting failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      LOGE("ColorIspInitSetting failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     }
   }
 
   if(!enable && DevList[idx].isp != NULL) {
     m_last_error = TYISPRelease(&DevList[idx].isp);
     if(m_last_error != TY_STATUS_OK) {
-      LOGE("TYISPRelease failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+      LOGE("TYISPRelease failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     }
     DevList[idx].isp = NULL;
   }
@@ -1429,7 +1440,7 @@ bool PercipioSDK::DeviceHasStream(const TY_DEV_HANDLE handle, const PERCIPIO_STR
   TY_COMPONENT_ID allComps;
   m_last_error = TYGetComponentIDs(handle, &allComps);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return false;
   }
 
@@ -1464,7 +1475,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
   m_last_error = TY_STATUS_OK;
   m_last_error = TYGetComponentIDs(handle, &allComps);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return m_last_error;
   }
 
@@ -1472,7 +1483,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
     if(allComps & TY_COMPONENT_RGB_CAM) {
       m_last_error = TYEnableComponents(handle, TY_COMPONENT_RGB_CAM);
       if(m_last_error != TY_STATUS_OK) {
-        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
         return m_last_error;
       }
     } else {
@@ -1488,7 +1499,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
     if(allComps & TY_COMPONENT_DEPTH_CAM) {
       m_last_error = TYEnableComponents(handle, TY_COMPONENT_DEPTH_CAM);
       if(m_last_error != TY_STATUS_OK) {
-        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
         return m_last_error;
       }
     } else {
@@ -1504,7 +1515,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
     if(allComps & TY_COMPONENT_IR_CAM_LEFT) {
       m_last_error = TYEnableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
       if(m_last_error != TY_STATUS_OK) {
-        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
         return m_last_error;
       }
     } else {
@@ -1520,7 +1531,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
     if(allComps & TY_COMPONENT_IR_CAM_RIGHT) {
       m_last_error = TYEnableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
       if(m_last_error != TY_STATUS_OK) {
-        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+        LOGE("TYEnableComponents failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
         return m_last_error;
       }
     } else {
@@ -1680,8 +1691,8 @@ bool PercipioSDK::FrameBufferAlloc(TY_DEV_HANDLE handle, unsigned int frameSize)
   DevList[idx].frameBuffer[0] = (char*)malloc(frameSize);
   DevList[idx].frameBuffer[1] = (char*)malloc(frameSize);
 
-  ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[0], frameSize));
-  ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[1], frameSize));
+  TYLIB_API_ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[0], frameSize));
+  TYLIB_API_ASSERT_OK(TYEnqueueBuffer(handle, DevList[idx].frameBuffer[1], frameSize));
   return true;
 }
 
@@ -1744,7 +1755,7 @@ int PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {
   unsigned int frameSize;
   m_last_error = TYGetFrameBufferSize(handle, &frameSize);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYGetFrameBufferSize failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYGetFrameBufferSize failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return m_last_error;
   }
 
@@ -1808,7 +1819,7 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
     out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
     int res = TYISPProcessImage(DevList[idx].isp, &src, &out_buff);
     if (res != TY_STATUS_OK){
-      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILENAME__, __LINE__);
       return false;
     }
   }
@@ -1831,7 +1842,7 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
     out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
     int res = TYISPProcessImage(DevList[idx].isp, &in_buff, &out_buff);
     if (res != TY_STATUS_OK){
-      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILENAME__, __LINE__);
       return false;
     }
   } 
@@ -1854,7 +1865,7 @@ bool PercipioSDK::TyBayerColorConvert(const TY_DEV_HANDLE handle, const TY_IMAGE
     out_buff.pixelFormat = TY_PIXEL_FORMAT_BGR;
     int res = TYISPProcessImage(DevList[idx].isp, &in_buff, &out_buff);
     if (res != TY_STATUS_OK){
-      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILE__, __LINE__);
+      LOGE("TYISPProcessImage failed: error %d(%s) at %s:%d", res, TYErrorString(res), __FILENAME__, __LINE__);
       return false;
     }
   }
@@ -1888,7 +1899,7 @@ const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE 
   TY_FRAME_DATA frame;
   m_last_error = TYFetchFrame(handle, &frame, timeout);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYFetchFrame failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYFetchFrame failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return DevList[idx].image_list;
   }
 
@@ -1923,7 +1934,7 @@ const std::vector<image_data> PercipioSDK::DeviceStreamRead(const TY_DEV_HANDLE 
 
   m_last_error = TYEnqueueBuffer(handle, frame.userBuffer, frame.bufferSize);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYEnqueueBuffer failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYEnqueueBuffer failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
 
   return DevList[idx].image_list;
@@ -1941,7 +1952,7 @@ int PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
 
   m_last_error = TYStopCapture(handle);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYStopCapture failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYStopCapture failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return m_last_error;
   }
 
@@ -1967,7 +1978,7 @@ int PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, cons
     trigger.mode = TY_TRIGGER_MODE_OFF;
   m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
     return m_last_error;
   }
 
@@ -2004,7 +2015,7 @@ int PercipioSDK::DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE h
   }
 
   if(status != TY_STATUS_OK) {
-    LOGE("TYSendSoftTrigger failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILE__, __LINE__);
+    LOGE("TYSendSoftTrigger failed: error %d(%s) at %s:%d", status, TYErrorString(status), __FILENAME__, __LINE__);
     m_last_error = status;
     return status;
   }
@@ -2023,7 +2034,7 @@ int PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE ha
 
   m_last_error = TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, enable);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYSetBool failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYSetBool failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
   return m_last_error;
 }
@@ -2040,7 +2051,7 @@ int PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int l
 
   m_last_error = TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, laser);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYSetInt failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYSetInt failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
   return m_last_error;
 }
@@ -2352,7 +2363,7 @@ int PercipioSDK::DeviceStreamDoUndistortion(const PercipioCalibData& calib_data,
 
   m_last_error = TYUndistortImage(&calib_data.data(), &src_image, NULL, &dst_image);
   if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYUndistortImage failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILE__, __LINE__);
+    LOGE("TYUndistortImage failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
   }
   return m_last_error;
 }
