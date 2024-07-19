@@ -3,7 +3,7 @@
 #include "TYApi.h"
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
-#include "../sample/common/Utils.hpp"
+#include "Utils.hpp"
 #include "../sample/common/BayerISP.hpp"
 
 #include <vector>

@@ -12,7 +12,7 @@
 #include <vector>
 #include <inttypes.h>
 #include "TYApi.h"
-#include "TYThread.hpp"
+#include "../sample/common/TYThread.hpp"
 
 #ifndef ASSERT
 #define ASSERT(x)   do{ \
