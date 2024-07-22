@@ -56,9 +56,6 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle)
-    print ('depth image scale unit :{}'.format(scale_unit))
-
     cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH)
 
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
@@ -91,6 +88,8 @@ def main():
     else:
        print('Load default parameters successful')
 
+    scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle)
+    print ('depth image scale unit :{}'.format(scale_unit))
     cl.DeviceStreamOn(handle)
 
     pointcloud_data_arr = pointcloud_data_list()

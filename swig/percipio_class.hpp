@@ -1740,7 +1740,14 @@ const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handl
     return NAN;
   }
 
-  return DevList[idx].depth_scale_unit;
+  float scale_unit = 1.f;
+  m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
+  if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+  }
+
+  DevList[idx].depth_scale_unit = scale_unit;
+  return scale_unit;
 }
 
 int PercipioSDK::DeviceStreamOn(const TY_DEV_HANDLE handle) {

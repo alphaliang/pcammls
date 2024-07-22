@@ -65,8 +65,6 @@ namespace pcammls_fetch_frame
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            float f_depth_scale = cl.DeviceReadCalibDepthScaleUnit(handle);
-
             cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
 
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
@@ -84,6 +82,7 @@ namespace pcammls_fetch_frame
             else
                 Console.WriteLine(string.Format("Load default parameters successful!"));
 
+            float f_depth_scale = cl.DeviceReadCalibDepthScaleUnit(handle);
 
             PercipioCalibData depth_calib_data = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH);
 
