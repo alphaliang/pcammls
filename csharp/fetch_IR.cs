@@ -90,11 +90,16 @@ namespace demo
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
+            cl.DeviceControlLaserPowerAutoControlEnable(handle, false);
+            cl.DeviceControlLaserPowerConfig(handle, 80);
+
             int err = cl.DeviceLoadDefaultParameters(handle);
             if (err != TY_STATUS_OK)
                 Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
             else
                 Console.WriteLine(string.Format("Load default parameters successful!"));
+
+            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
             return true;
         }
 
