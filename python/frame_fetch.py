@@ -49,11 +49,6 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    err=cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
-    if err:
-       print('device stream enable err:{}'.format(err))
-       return
-
     color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR)
     if len(color_fmt_list) != 0:
       print ('color image format list:')
@@ -110,6 +105,11 @@ def main():
       print(cl.TYGetLastErrorCodedescription())
     else:
        print('Load default parameters successful')
+
+    err=cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
+    if err:
+       print('device stream enable err:{}'.format(err))
+       return
 
     rgb_image = image_data()
     depth_render = image_data()

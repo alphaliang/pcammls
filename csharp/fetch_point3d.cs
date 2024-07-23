@@ -66,12 +66,6 @@ namespace pcammls_fetch_frame
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
-            if(err != TY_STATUS_OK) {
-                Console.WriteLine(string.Format("enable stream err!"));
-                return;
-            }
-
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
             Console.WriteLine(string.Format("depth image format list:"));
             for (int i = 0; i < depth_fmt_list.Count(); i++)
@@ -88,8 +82,13 @@ namespace pcammls_fetch_frame
                 Console.WriteLine(string.Format("Load default parameters successful!"));
 
             float f_depth_scale = cl.DeviceReadCalibDepthScaleUnit(handle);
-
             PercipioCalibData depth_calib_data = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH);
+
+            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
+            if(err != TY_STATUS_OK) {
+                Console.WriteLine(string.Format("enable stream err!"));
+                return;
+            }
 
             pointcloud_data_list p3d_list = new pointcloud_data_list();
             cl.DeviceStreamOn(handle);

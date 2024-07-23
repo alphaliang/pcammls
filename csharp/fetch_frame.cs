@@ -105,12 +105,6 @@ namespace demo
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH);
-            if(err != TY_STATUS_OK) {
-                Console.WriteLine(string.Format("enable stream err!"));
-                return false;
-            }
-
             EnumEntryVector color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR);
             if(color_fmt_list.Count() != 0) 
             { 
@@ -169,6 +163,12 @@ namespace demo
             else
                 Console.WriteLine(string.Format("Load default parameters successful!"));
 
+            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH);
+            if(err != TY_STATUS_OK) {
+                Console.WriteLine(string.Format("enable stream err!"));
+                return false;
+            }
+            
             return true;
         }
 

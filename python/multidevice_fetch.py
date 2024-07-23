@@ -52,11 +52,6 @@ def main():
 
     #device stream config
     for i in range(len(dev_list)):
-      err = cl.DeviceStreamEnable(handle[i], PERCIPIO_STREAM_DEPTH)
-      if err:
-       print('device stream enable err:{}'.format(err))
-       return
-      
       depth_fmt_list = cl.DeviceStreamFormatDump(handle[i], PERCIPIO_STREAM_DEPTH)
       print ('depth image format list:')
       for idx in range(len(depth_fmt_list)):
@@ -70,7 +65,12 @@ def main():
         print(cl.TYGetLastErrorCodedescription())
       else:
         print('Load default parameters successful')
-        
+      
+      err = cl.DeviceStreamEnable(handle[i], PERCIPIO_STREAM_DEPTH)
+      if err:
+        print('device stream enable err:{}'.format(err))
+        return
+      
       cl.DeviceStreamOn(handle[i])
 
     depth_render = [0] * len(dev_list)

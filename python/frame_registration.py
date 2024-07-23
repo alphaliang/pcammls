@@ -56,11 +56,6 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
-    if err:
-       print('device stream enable err:{}'.format(err))
-       return
-    
     color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR)
     if len(color_fmt_list) == 0:
       print ('device has no color stream.')
@@ -83,9 +78,6 @@ def main():
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
-    depth_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH)
-    color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
-
     err = cl.DeviceLoadDefaultParameters(handle)
     if err:
       print('Load default parameters fail: ', end='')
@@ -95,6 +87,14 @@ def main():
 
     scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle)
     print ('depth image scale unit :{}'.format(scale_unit))
+
+    depth_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH)
+    color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
+
+    err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
+    if err:
+       print('device stream enable err:{}'.format(err))
+       return
     
     cl.DeviceStreamOn(handle)
     img_registration_depth  = image_data()

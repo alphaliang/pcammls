@@ -56,11 +56,6 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH)
-    if err:
-       print('device stream enable err:{}'.format(err))
-       return
-    
     depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH)
     if len(depth_fmt_list) == 0:
       print ('device has no depth stream.')
@@ -81,6 +76,11 @@ def main():
     else:
        print('Load default parameters successful')
 
+    err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH)
+    if err:
+       print('device stream enable err:{}'.format(err))
+       return
+    
     depth_render = image_data()
     cl.DeviceStreamOn(handle)
 
