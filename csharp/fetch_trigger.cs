@@ -92,9 +92,6 @@ namespace demo
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            float depth_scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle);
-            Console.WriteLine(string.Format("depth image scale unit:{0}", depth_scale_unit));
-
             err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH);
             if(err != TY_STATUS_OK) {
                 Console.WriteLine(string.Format("enable stream err!"));
@@ -109,6 +106,9 @@ namespace demo
             else 
                 Console.WriteLine(string.Format("Load default parameters successful!"));
 
+            float depth_scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle);
+            Console.WriteLine(string.Format("depth image scale unit:{0}", depth_scale_unit));
+            
             return true;
         }
         private void CaptureCamera()

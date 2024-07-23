@@ -83,9 +83,6 @@ def main():
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
     cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
-    scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle)
-    print ('depth image scale unit :{}'.format(scale_unit))
-
     depth_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_DEPTH)
     color_calib = cl.DeviceReadCalibData(handle, PERCIPIO_STREAM_COLOR)
 
@@ -96,6 +93,9 @@ def main():
     else:
        print('Load default parameters successful')
 
+    scale_unit = cl.DeviceReadCalibDepthScaleUnit(handle)
+    print ('depth image scale unit :{}'.format(scale_unit))
+    
     cl.DeviceStreamOn(handle)
     img_registration_depth  = image_data()
     img_registration_render = image_data()
