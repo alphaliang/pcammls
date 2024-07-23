@@ -59,7 +59,7 @@ def main():
         print ('\t{} -size[{}x{}]\t-\t desc:{}'.format(idx, cl.Width(fmt), cl.Height(fmt), fmt.getDesc()))
       cl.DeviceStreamFormatConfig(handle[i], PERCIPIO_STREAM_DEPTH, depth_fmt_list[0])
 
-      err = cl.DeviceLoadDefaultParameters(handle)
+      err = cl.DeviceLoadDefaultParameters(handle[i])
       if err:
         print('Load default parameters fail: ', end='')
         print(cl.TYGetLastErrorCodedescription())
