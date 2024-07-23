@@ -56,7 +56,7 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT)
+    err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT)
     if err:
        print('device stream enable err:{}'.format(err))
        return

@@ -52,7 +52,7 @@ def main():
 
     #device stream config
     for i in range(len(dev_list)):
-      cl.DeviceStreamEnable(handle[i], PERCIPIO_STREAM_DEPTH)
+      err = cl.DeviceStreamEnable(handle[i], PERCIPIO_STREAM_DEPTH)
       if err:
        print('device stream enable err:{}'.format(err))
        return
