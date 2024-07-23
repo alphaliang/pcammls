@@ -1097,8 +1097,13 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
-  
-    TYHasFeature(handle, id, feat, &has);
+
+    m_last_error = TYHasFeature(handle, id, feat, &has);
+    if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
+      return m_last_error;
+    }
+
     if(!has) {
         LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
@@ -1174,7 +1179,12 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
-    TYHasFeature(handle, id, feat, &has);
+    m_last_error = TYHasFeature(handle, id, feat, &has);
+    if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
+      return para;
+    }
+
     if(!has) {
         LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
@@ -1258,7 +1268,12 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
 
-    TYHasFeature(handle, id, feat, &has);
+    m_last_error = TYHasFeature(handle, id, feat, &has);
+    if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
+      return m_last_error;
+    }
+
     if (!has) {
         LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
@@ -1334,7 +1349,12 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
-    TYHasFeature(handle, id, feat, &has);
+    m_last_error = TYHasFeature(handle, id, feat, &has);
+    if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
+      return para;
+    }
+
     if (!has) {
         LOGE("Invalid feature %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_FEATURE;
