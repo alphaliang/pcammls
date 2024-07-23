@@ -1044,8 +1044,6 @@ int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE hand
 
 int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
     m_last_error = TY_STATUS_OK;
-
-    m_last_error = TY_STATUS_OK;
     uint32_t block_size;
     uint8_t* blocks = new uint8_t[MAX_STORAGE_SIZE] ();
     m_last_error = TYGetByteArraySize(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, &block_size);
@@ -1076,10 +1074,15 @@ int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
         return TY_STATUS_NO_DATA;
     }
 
-    json_parse(handle, (const char* )js_string);
+    if(!json_parse(handle, (const char* )js_string)) {
+      LOGE("Storage parameters load error.");
+      delete []blocks;
+      m_last_error = TY_STATUS_ERROR;
+      return TY_STATUS_ERROR;
+    }
 
     delete []blocks;
-    return TY_STATUS_OK;
+    return m_last_error;
 
 }
 
