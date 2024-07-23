@@ -69,7 +69,7 @@ namespace pcammls_fetch_frame
             err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
             if(err != TY_STATUS_OK) {
                 Console.WriteLine(string.Format("enable stream err!"));
-                return false;
+                return;
             }
 
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
