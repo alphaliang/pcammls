@@ -34,6 +34,7 @@ namespace pcammls_fetch_frame
     {
         static void Main(string[] args)
         {
+            int err = 0;
             Console.WriteLine("test start\n");
             PercipioSDK cl = new PercipioSDK();
 
@@ -65,7 +66,11 @@ namespace pcammls_fetch_frame
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
+            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH);
+            if(err != TY_STATUS_OK) {
+                Console.WriteLine(string.Format("enable stream err!"));
+                return false;
+            }
 
             EnumEntryVector depth_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_DEPTH);
             Console.WriteLine(string.Format("depth image format list:"));
@@ -76,7 +81,7 @@ namespace pcammls_fetch_frame
             }
             cl.DeviceStreamFormatConfig(handle, PERCIPIO_STREAM_DEPTH, depth_fmt_list[0]);
 
-            int err = cl.DeviceLoadDefaultParameters(handle);
+            err = cl.DeviceLoadDefaultParameters(handle);
             if (err != TY_STATUS_OK)
                 Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
             else

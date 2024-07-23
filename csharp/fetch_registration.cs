@@ -70,6 +70,7 @@ namespace demo
 
         private bool DeviceInit()
         {
+            int err = 0;
             Console.WriteLine("test start\n");
             cl = new PercipioSDK();
 
@@ -101,9 +102,13 @@ namespace demo
 
             cl.DeviceRegiststerCallBackEvent(_event);
 
-            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH | PERCIPIO_STREAM_COLOR);
+            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_DEPTH | PERCIPIO_STREAM_COLOR);
+            if(err != TY_STATUS_OK) {
+                Console.WriteLine(string.Format("enable stream err!"));
+                return false;
+            }
 
-            int err = cl.DeviceLoadDefaultParameters(handle);
+            err = cl.DeviceLoadDefaultParameters(handle);
             if (err != TY_STATUS_OK)
                 Console.WriteLine(string.Format("Load default parameters fail: {0}!", err));
             else

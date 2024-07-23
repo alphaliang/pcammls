@@ -49,7 +49,10 @@ def main():
     event = PythonPercipioDeviceEvent()
     cl.DeviceRegiststerCallBackEvent(event)
 
-    cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
+    err=cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_COLOR | PERCIPIO_STREAM_DEPTH)
+    if err:
+       print('device stream enable err:{}'.format(err))
+       return
 
     color_fmt_list = cl.DeviceStreamFormatDump(handle, PERCIPIO_STREAM_COLOR)
     if len(color_fmt_list) != 0:

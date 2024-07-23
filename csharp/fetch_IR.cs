@@ -99,7 +99,12 @@ namespace demo
             else
                 Console.WriteLine(string.Format("Load default parameters successful!"));
 
-            cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
+            err = cl.DeviceStreamEnable(handle, PERCIPIO_STREAM_IR_LEFT | PERCIPIO_STREAM_IR_RIGHT);
+            if(err != TY_STATUS_OK) {
+                Console.WriteLine(string.Format("enable stream err!"));
+                return false;
+            }
+            
             return true;
         }
 
