@@ -2170,19 +2170,68 @@ int PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
     return TY_STATUS_OK;
 }
 
+
+#define YUV422_FRAME_CHECK(size, width, height) do {\
+  if(size != 2* width * height) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+#define BMP_FRAME_CHECK(size, width, height) do {\
+  if(size != 3* width * height) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+#define RAW8_FRAME_CHECK(size, width, height) do {\
+  if(size != width * height) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+#define RAW16_FRAME_CHECK(size, width, height) do {\
+  if(size != 2 * width * height) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+#define CSI_RAW10_FRAME_CHECK(size, width, height) do {\
+  if(size != (5 * width * height / 4)) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+#define CSI_RAW12_FRAME_CHECK(size, width, height) do {\
+  if(size != (3 * width * height / 2)) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
+
+
 static int parseIrFrame(const image_data& src, image_data& dst) {
   if (src.pixelFormat == TY_PIXEL_FORMAT_MONO16 || src.pixelFormat==TY_PIXEL_FORMAT_TOF_IR_MONO16){
+    RAW16_FRAME_CHECK(src.size, src.width, src.height);
     dst = src;
     return TY_STATUS_OK;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
     //target: TY_PIXEL_FORMAT_MONO16
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     return parseIRCsiRaw10(src, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_MONO) {
     //target: TY_PIXEL_FORMAT_MONO
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     dst = src;
     return TY_STATUS_OK;
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
     //target: TY_PIXEL_FORMAT_MONO16
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     return parseIRCsiRaw12(src, dst);
   } 
   else {
@@ -2196,50 +2245,69 @@ static int parseColorFrame(const image_data& src, image_data& dst) {
   //TODO
   if (src.pixelFormat == TY_PIXEL_FORMAT_JPEG){
     ImgProc::cvtColor(src, ImgProc::IMGPROC_JPEG2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_YVYU) {
+    YUV422_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_YVYU2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_YUYV) {
+    YUV422_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_YUYV2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_RGB) {
+    BMP_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_BGR2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BGR){
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BGR) {
+    BMP_FRAME_CHECK(src.size, src.width, src.height);
     dst = src;
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GBRG) {
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8GB2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BAYER8BGGR) {
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8BG2RGB888, dst);
-  } else if (src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG) {
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BAYER8GRBG) {
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8GR2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_BAYER8RGGB) {
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_BAYER8RG2RGB888, dst);
   } else if (src.pixelFormat == TY_PIXEL_FORMAT_MONO){
+    RAW8_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_MONO2RGB888, dst);
   } 
   
   else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO10) {
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO102RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GBRG) {
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10GB2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10BGGR) {
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10BG2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10GRBG) {
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10GR2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER10RGGB) {
+    CSI_RAW10_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER10RG2RGB888, dst);
   } 
   
   else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_MONO12) {
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_MONO122RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GBRG) {
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GB2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12BGGR) {
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12BG2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12GRBG) {
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12GR2RGB888, dst);
   } else if(src.pixelFormat == TY_PIXEL_FORMAT_CSI_BAYER12RGGB) {
+    CSI_RAW12_FRAME_CHECK(src.size, src.width, src.height);
     ImgProc::cvtColor(src, ImgProc::IMGPROC_CSI_BAYER12RG2RGB888, dst);
-  } else if(src.pixelFormat == TY_PIXEL_FORMAT_BGR) {
-    ImgProc::cvtColor(src, ImgProc::IMGPROC_BGR2RGB888, dst);
+  } else {
+
   }
 
   return TY_STATUS_OK;
@@ -2253,6 +2321,7 @@ int PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst)
     return TY_STATUS_INVALID_PARAMETER;
   }
 
+  RAW16_FRAME_CHECK(src.size, src.width, src.height);
   ImgProc::cvtColor(src, ImgProc::IMGPROC_DEPTH2RGB888, dst);
   return TY_STATUS_OK;
 }
