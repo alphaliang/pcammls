@@ -1059,7 +1059,7 @@ int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
     }
     
     uint32_t crc_data = *(uint32_t*)blocks;
-    if(!crc_data) {
+    if(0 == crc_data || 0xffffffff == crc_data) {
         LOGE("The CRC check code is empty.");
         delete []blocks;
         m_last_error = TY_STATUS_NO_DATA;
