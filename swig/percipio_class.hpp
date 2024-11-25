@@ -325,14 +325,14 @@ typedef struct DevParamDataInt
 {
   int value;
   TY_INT_RANGE  range;
-
-  int entryCount; 
-  TY_ENUM_ENTRY list[100];
 };
 
 typedef struct DevParamDataEnum
 {
   int value;
+
+  int entryCount; 
+  TY_ENUM_ENTRY list[100];
 };
 
 typedef struct DevParamDataFloat
@@ -350,6 +350,7 @@ typedef union DevParamData
 {
   DevParamDataBool    b_param;
   DevParamDataInt     m_param;
+  DevParamDataEnum    u32_param;
   DevParamDataFloat   f_param;
 
   DevParamByteArray   byteArray;
@@ -363,6 +364,9 @@ typedef union DevParamData
             break;\
         case TY_FEATURE_INT:\
             LOGE("\t try use toInt()");\
+            break;\
+        case TY_FEATURE_ENUM:\
+            LOGE("\t try use toEnum()");\
             break;\
         case TY_FEATURE_FLOAT:\
             LOGE("\t try use toFloat()");\
@@ -382,6 +386,11 @@ typedef struct DevParam
   TY_FEATURE_TYPE type;
   DevParamData data;
 
+  bool isEmpty() {
+    if(!type) return true;
+    return false;
+  }
+
   bool  toBool()  {
     if(type != TY_FEATURE_BOOL) {
       LOGE("Invalid device param data type.");
@@ -398,6 +407,15 @@ typedef struct DevParam
       return 0;
     }
     return data.m_param.value;
+  }
+
+  uint32_t toEnum() {
+    if(type != TY_FEATURE_ENUM) {
+      LOGE("Invalid device param data type.");
+      DevParamTypeErrReminding(type);
+      return 0;
+    }
+    return data.u32_param.value;
   }
 
   float toFloat() {
@@ -454,17 +472,17 @@ typedef struct DevParam
   }
 
   std::vector<TY_ENUM_ENTRY> eList() {
-    if(type != TY_FEATURE_INT) {
+    if(type != TY_FEATURE_ENUM) {
       LOGE("Invalid device param data type.");
       DevParamTypeErrReminding(type);
       return std::vector<TY_ENUM_ENTRY>();
     }
     
-    if(0 == data.m_param.entryCount) {
+    if(0 == data.u32_param.entryCount) {
       return std::vector<TY_ENUM_ENTRY>();
     }
 
-    return std::vector<TY_ENUM_ENTRY>(data.m_param.list,  data.m_param.list + data.m_param.entryCount);
+    return std::vector<TY_ENUM_ENTRY>(data.u32_param.list,  data.u32_param.list + data.u32_param.entryCount);
   }
 
   std::vector<unsigned char> toByteArray() {
@@ -500,6 +518,13 @@ class PercipioSDK
       DevParam param;
       param.type = TY_FEATURE_INT;
       param.data.m_param.value = val;
+      return param;
+    }
+
+    DevParam DevParamFromEnum(uint32_t val) {
+      DevParam param;
+      param.type = TY_FEATURE_ENUM;
+      param.data.u32_param.value = val;
       return param;
     }
 
@@ -576,8 +601,10 @@ class PercipioSDK
     const std::vector<TY_ENUM_ENTRY>   DeviceStreamFormatDump(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
     
     int                           DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, const TY_ENUM_ENTRY fmt);
-        int  Width(const TY_ENUM_ENTRY fmt);
-        int  Height(const TY_ENUM_ENTRY fmt);
+        uint32_t Value(const TY_ENUM_ENTRY& fmt);
+        int  Width(const TY_ENUM_ENTRY& fmt);
+        int  Height(const TY_ENUM_ENTRY& fmt);
+        const char* Description(const TY_ENUM_ENTRY& fmt);
 
     int  DeviceStreamOn(const TY_DEV_HANDLE handle);
     const std::vector<image_data> DeviceStreamRead(const TY_DEV_HANDLE handle, int timeout);
@@ -601,10 +628,12 @@ class PercipioSDK
     int DeviceStreamImageDecode(const image_data& src, image_data& dst);
     int DeviceStreamMapDepthImageToPoint3D(const image_data& depth, const PercipioCalibData& calib_data, float scale, pointcloud_data_list& p3d);
     int DeviceStreamDoUndistortion(const PercipioCalibData& calib_data, const image_data& src, image_data& dst);
-    int DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const int depthW, const int depthH, const float scale, 
-                                                    const image_data& srcDepth, 
+    int DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const image_data& srcDepth, const float scale, 
                                                     const PercipioCalibData& color_calib, const int targetW, const int targetH, 
                                                     image_data& dstDepth);
+    int DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibData& depth_calib, const image_data& srcDepth, const float scale, 
+                                                    const PercipioCalibData& color_calib, const image_data& srcColor, 
+                                                    image_data& dstColor);
 
     //
     int DeviceStreamDepthSpeckleFilter(int max_spc_size,  int max_spc_diff, image_data& image);
@@ -1110,9 +1139,8 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
         return TY_STATUS_INVALID_FEATURE;
     }
 
-    TY_FEATURE_TYPE type = TYFeatureType(feat);
-    TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
-    if(type_check != value.type) {
+    TY_FEATURE_TYPE type = TYFeatureType(feat);;
+    if(type != value.type) {
       LOGE("Invalid parameter type %s:%d", __FILENAME__, __LINE__);
       m_last_error = TY_STATUS_INVALID_PARAMETER;
       return TY_STATUS_INVALID_PARAMETER;
@@ -1124,7 +1152,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
         m_last_error = TYSetInt(handle, id, feat, static_cast<int32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_ENUM:
-        m_last_error = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.m_param.value));
+        m_last_error = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.u32_param.value));
         break;
     case  TY_FEATURE_BOOL:
         m_last_error = TYSetBool(handle, id, feat, static_cast<bool>(value.data.b_param.value));
@@ -1201,12 +1229,12 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
         m_last_error = TYGetInt(handle, id, feat, &para.data.m_param.value);
         break;
     case  TY_FEATURE_ENUM:
-        para.type = TY_FEATURE_INT;
+        para.type = TY_FEATURE_ENUM;
         TYGetEnumEntryCount(handle, id, feat, &count);
-        if(count > sizeof(para.data.m_param.list) / sizeof(TY_ENUM_ENTRY))
-          count = sizeof(para.data.m_param.list);
-        TYGetEnumEntryInfo(handle, id, feat, para.data.m_param.list, count, (uint32_t*)(&para.data.m_param.entryCount));
-        m_last_error = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.m_param.value);
+        if(count > sizeof(para.data.u32_param.list) / sizeof(TY_ENUM_ENTRY))
+          count = sizeof(para.data.u32_param.list);
+        TYGetEnumEntryInfo(handle, id, feat, para.data.u32_param.list, count, (uint32_t*)(&para.data.u32_param.entryCount));
+        m_last_error = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.u32_param.value);
         break;
     case  TY_FEATURE_BOOL:
         para.type = TY_FEATURE_BOOL;
@@ -1281,8 +1309,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
     }
 
     TY_FEATURE_TYPE type = TYFeatureType(feat);
-    TY_FEATURE_TYPE type_check = (type == TY_FEATURE_ENUM ? TY_FEATURE_INT : type);
-    if(type_check != value.type) {
+    if(type != value.type) {
       LOGE("Invalid parameter type %s:%d", __FILENAME__, __LINE__);
       m_last_error = TY_STATUS_INVALID_PARAMETER;
       return TY_STATUS_INVALID_PARAMETER;
@@ -1294,7 +1321,7 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
         m_last_error = TYSetInt(handle, id, feat, static_cast<int32_t>(value.data.m_param.value));
         break;
     case  TY_FEATURE_ENUM:
-        m_last_error = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.m_param.value));
+        m_last_error = TYSetEnum(handle, id, feat, static_cast<uint32_t>(value.data.u32_param.value));
         break;
     case  TY_FEATURE_BOOL:
         m_last_error = TYSetBool(handle, id, feat, static_cast<bool>(value.data.b_param.value));
@@ -1371,12 +1398,12 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
         m_last_error = TYGetInt(handle, id, feat, &para.data.m_param.value);
         break;
     case  TY_FEATURE_ENUM:
-        para.type = TY_FEATURE_INT;
+        para.type = TY_FEATURE_ENUM;
         TYGetEnumEntryCount(handle, id, feat, &count);
-        if(count > sizeof(para.data.m_param.list) / sizeof(TY_ENUM_ENTRY))
-          count = sizeof(para.data.m_param.list);
-        TYGetEnumEntryInfo(handle, id, feat, para.data.m_param.list, count, (uint32_t*)(&para.data.m_param.entryCount));
-        m_last_error = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.m_param.value);
+        if(count > sizeof(para.data.u32_param.list) / sizeof(TY_ENUM_ENTRY))
+          count = sizeof(para.data.u32_param.list);
+        TYGetEnumEntryInfo(handle, id, feat, para.data.u32_param.list, count, (uint32_t*)(&para.data.u32_param.entryCount));
+        m_last_error = TYGetEnum(handle, id, feat, (uint32_t*)&para.data.u32_param.value);
         break;
     case  TY_FEATURE_BOOL:
         para.type = TY_FEATURE_BOOL;
@@ -1618,12 +1645,21 @@ const std::vector<TY_ENUM_ENTRY> PercipioSDK::DeviceStreamFormatDump(const TY_DE
   return DevList[idx].fmt_list[compIDX];
 }
 
-int  PercipioSDK::Width(const TY_ENUM_ENTRY fmt) {
+uint32_t PercipioSDK::Value(const TY_ENUM_ENTRY& fmt) {
+  return fmt.value;
+}
+
+int  PercipioSDK::Width(const TY_ENUM_ENTRY& fmt) {
   return TYImageWidth(fmt.value);
 }
 
-int  PercipioSDK::Height(const TY_ENUM_ENTRY fmt) {
+int  PercipioSDK::Height(const TY_ENUM_ENTRY& fmt) {
   return TYImageHeight(fmt.value);
+}
+
+const char* PercipioSDK::Description(const TY_ENUM_ENTRY& fmt) 
+{
+  return fmt.description;
 }
 
 int PercipioSDK::DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream, const TY_ENUM_ENTRY fmt) {
@@ -2467,8 +2503,7 @@ int PercipioSDK::DeviceStreamDoUndistortion(const PercipioCalibData& calib_data,
   return m_last_error;
 }
 
-int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const int depthW, const int depthH, const float scale, 
-                                                    const image_data& srcDepth, 
+int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibData& depth_calib, const image_data& srcDepth, const float scale, 
                                                     const PercipioCalibData& color_calib, const int targetW, const int targetH, 
                                                     image_data& dstDepth)
 {
@@ -2479,7 +2514,7 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibD
     return TY_STATUS_INVALID_PARAMETER;
   }
 
-  if(srcDepth.size != 2*depthW*depthH) {
+  if(srcDepth.size != 2*srcDepth.width*srcDepth.height) {
     LOGE("Invalid stream size: %d.", srcDepth.size);
     m_last_error = TY_STATUS_INVALID_PARAMETER;
     return TY_STATUS_INVALID_PARAMETER;
@@ -2493,8 +2528,72 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibD
   dstDepth.width        = targetW;
   dstDepth.height       = targetH;
   dstDepth.pixelFormat  = srcDepth.pixelFormat;
-  TYMapDepthImageToColorCoordinate(&depth_calib.data(), depthW, depthH, (const uint16_t*)srcDepth.buffer,  
+  TYMapDepthImageToColorCoordinate(&depth_calib.data(), srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,  
       &color_calib.data(), targetW, targetH, (uint16_t*)dstDepth.buffer, scale);
+  return TY_STATUS_OK;
+}
+
+int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibData& depth_calib, const image_data& srcDepth, const float scale, 
+                                                    const PercipioCalibData& color_calib, const image_data& srcColor, 
+                                                    image_data& dstColor)
+{
+  m_last_error = TY_STATUS_OK;
+  if(srcDepth.streamID != PERCIPIO_STREAM_DEPTH) {
+    LOGE("Invalid stream data: %d.", srcDepth.streamID);
+    m_last_error = TY_STATUS_INVALID_PARAMETER;
+    return TY_STATUS_INVALID_PARAMETER;
+  }
+
+  dstColor.resize(srcDepth.width * srcDepth.height * 3);
+  dstColor.streamID     = PERCIPIO_STREAM_COLOR;
+  dstColor.timestamp    = srcColor.timestamp;
+  dstColor.imageIndex   = srcColor.imageIndex;
+  dstColor.pixelFormat  = srcColor.pixelFormat;
+  dstColor.status       = srcColor.status;
+  dstColor.width        = srcDepth.width;
+  dstColor.height       = srcDepth.height;
+  switch(srcColor.pixelFormat) {
+    case TY_PIXEL_FORMAT_MONO:
+    {
+      TYMapMono8ImageToDepthCoordinate(
+                  &depth_calib.data(), 
+                  srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
+                  &color_calib.data(),
+                  srcColor.width, srcColor.height, (const uint8_t*)srcColor.buffer,
+                  dstColor.buffer,
+                  scale);
+      break;
+    }
+    case TY_PIXEL_FORMAT_RGB:
+    case TY_PIXEL_FORMAT_BGR:
+      TYMapRGBImageToDepthCoordinate(
+                  &depth_calib.data(), 
+                  srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
+                  &color_calib.data(),
+                  srcColor.width, srcColor.height, (const uint8_t*)srcColor.buffer,
+                  dstColor.buffer,
+                  scale);
+      break;
+    case TY_PIXEL_FORMAT_RGB48:
+    case TY_PIXEL_FORMAT_BGR48:
+      TYMapRGB48ImageToDepthCoordinate(
+                  &depth_calib.data(), 
+                  srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
+                  &color_calib.data(),
+                  srcColor.width, srcColor.height, (const uint16_t*)srcColor.buffer,
+                  dstColor.buffer,
+                  scale);
+      break;
+    case TY_PIXEL_FORMAT_MONO16:
+      TYMapMono16ImageToDepthCoordinate(
+                  &depth_calib.data(), 
+                  srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
+                  &color_calib.data(),
+                  srcColor.width, srcColor.height, (const uint16_t*)srcColor.buffer,
+                  dstColor.buffer,
+                  scale);
+      break;
+  }
   return TY_STATUS_OK;
 }
 

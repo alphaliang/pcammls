@@ -96,11 +96,18 @@ def main():
        print('device stream enable err:{}'.format(err))
        return
     
+    print ('{} -- {} \t'.format(0,"depth2color"))
+    print ('{} -- {} \t'.format(1,"color2depth"))
+    registration_mode = int(input('select registration mode(0 or 1):'))
+    if selected_idx < 0 or selected_idx >= 2:
+      registration_mode = 0
+
     cl.DeviceStreamOn(handle)
     img_registration_depth  = image_data()
     img_registration_render = image_data()
     img_parsed_color        = image_data()
     img_undistortion_color  = image_data()
+    img_registration_color  = image_data()
     while True:
       if event.IsOffline():
         break
@@ -112,18 +119,31 @@ def main():
             img_depth = frame
           if frame.streamID == PERCIPIO_STREAM_COLOR:
             img_color = frame
-
         
-        cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib, img_depth.width, img_depth.height, scale_unit,  img_depth,  color_calib, img_color.width, img_color.height, img_registration_depth)
-        
-        cl.DeviceStreamDepthRender(img_registration_depth, img_registration_render)
-        mat_depth_render = img_registration_render.as_nparray()
-        cv2.imshow('registration', mat_depth_render)
+        if 0 == registration_mode:
+          cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib, img_depth, scale_unit, color_calib, img_color.width, img_color.height, img_registration_depth)
+          
+          cl.DeviceStreamDepthRender(img_registration_depth, img_registration_render)
+          mat_depth_render = img_registration_render.as_nparray()
+          cv2.imshow('registration', mat_depth_render)
 
-        cl.DeviceStreamImageDecode(img_color, img_parsed_color)
-        cl.DeviceStreamDoUndistortion(color_calib, img_parsed_color, img_undistortion_color)
-        mat_undistortion_color = img_undistortion_color.as_nparray()
-        cv2.imshow('undistortion rgb', mat_undistortion_color)
+          cl.DeviceStreamImageDecode(img_color, img_parsed_color)
+          cl.DeviceStreamDoUndistortion(color_calib, img_parsed_color, img_undistortion_color)
+          mat_undistortion_color = img_undistortion_color.as_nparray()
+          cv2.imshow('undistortion rgb', mat_undistortion_color)
+        else:
+          cl.DeviceStreamImageDecode(img_color, img_parsed_color)
+          cl.DeviceStreamDoUndistortion(color_calib, img_parsed_color, img_undistortion_color)
+
+          cl.DeviceStreamMapRGBImageToDepthCoordinate(depth_calib, img_depth, scale_unit, color_calib, img_undistortion_color, img_registration_color)
+
+          cl.DeviceStreamDepthRender(img_depth, img_registration_render)
+          mat_depth_render = img_registration_render.as_nparray()
+          cv2.imshow('depth', mat_depth_render)
+
+          mat_registration_color = img_registration_color.as_nparray()
+          cv2.imshow('registration rgb', mat_registration_color)
+
         k = cv2.waitKey(10)
         if k==ord('q'): 
           break
