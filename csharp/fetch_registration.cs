@@ -163,10 +163,8 @@ namespace demo
 
                     cl.DeviceStreamDoUndistortion(color_calib, color, undsitortion_color);
                     cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib,
-                            depth.width,
-                            depth.height,
-                            scale_unit,
                             depth,
+                            scale_unit,
                             color_calib,
                             undsitortion_color.width,
                             undsitortion_color.height,

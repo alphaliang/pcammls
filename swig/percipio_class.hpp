@@ -2560,7 +2560,7 @@ int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibDat
                   srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
                   &color_calib.data(),
                   srcColor.width, srcColor.height, (const uint8_t*)srcColor.buffer,
-                  dstColor.buffer,
+                  (uint8_t*)dstColor.buffer,
                   scale);
       break;
     }
@@ -2571,7 +2571,7 @@ int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibDat
                   srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
                   &color_calib.data(),
                   srcColor.width, srcColor.height, (const uint8_t*)srcColor.buffer,
-                  dstColor.buffer,
+                  (uint8_t*)dstColor.buffer,
                   scale);
       break;
     case TY_PIXEL_FORMAT_RGB48:
@@ -2581,7 +2581,7 @@ int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibDat
                   srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
                   &color_calib.data(),
                   srcColor.width, srcColor.height, (const uint16_t*)srcColor.buffer,
-                  dstColor.buffer,
+                  (uint16_t*)dstColor.buffer,
                   scale);
       break;
     case TY_PIXEL_FORMAT_MONO16:
@@ -2590,7 +2590,7 @@ int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibDat
                   srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,
                   &color_calib.data(),
                   srcColor.width, srcColor.height, (const uint16_t*)srcColor.buffer,
-                  dstColor.buffer,
+                  (uint16_t*)dstColor.buffer,
                   scale);
       break;
   }
