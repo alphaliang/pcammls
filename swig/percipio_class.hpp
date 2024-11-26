@@ -2455,7 +2455,7 @@ int PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, con
                                      scale);
   } else if(depth.pixelFormat == TY_PIXEL_FORMAT_XYZ48) {
     TY_VECT_3F* v3p = (TY_VECT_3F*)p3d.getPtr();
-    int16_t* src =  (int16_t*)depth.Ptr();
+    int16_t* src =  (int16_t*)depth.buffer;
     for (int pix = 0; pix < size; pix++) {
       v3p[pix].x = (float)(*(src + 3*pix + 0) * scale + 0.5f);
       v3p[pix].y = (float)(*(src + 3*pix + 1) * scale + 0.5f);
