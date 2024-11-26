@@ -173,7 +173,7 @@ static void Main(string[] args)
 扩展功能或者修改调用可修改swig路径下csharp\_extend.i文件
 
 编译安装详细指南参考官网在线文档:
-https://doc.percipio.xyz/cam/latest/getstarted/sdk-compile.html#build-pc-environment-label
+https://doc.percipio.xyz/cam/latest/index.html
 
 
 
