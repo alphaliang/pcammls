@@ -989,7 +989,7 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     }
 
     for(size_t i = 0; i < n ; i++) {
-      if((compID[cnt] != TY_COMPONENT_DEPTH_CAM) || (TYPixelFormat(temp[i].value) == TY_PIXEL_FORMAT_DEPTH16))
+      //if((compID[cnt] != TY_COMPONENT_DEPTH_CAM) || (TYPixelFormat(temp[i].value) == TY_PIXEL_FORMAT_DEPTH16))
         DevList[idx].fmt_list[cnt].push_back(temp[i]);
     }
 
@@ -2235,6 +2235,14 @@ int PercipioSDK::DeviceStreamIRRender(const image_data& src, image_data& dst) {
   }\
 } while(0)
 
+
+#define XYZ48_FRAME_CHECK(size, width, height) do {\
+  if(size != 6 * width * height) {\
+    LOGE("Invalid image data size: %d", size); \
+    return TY_STATUS_INVALID_PARAMETER; \
+  }\
+} while(0)
+
 #define CSI_RAW10_FRAME_CHECK(size, width, height) do {\
   if(size != (5 * width * height / 4)) {\
     LOGE("Invalid image data size: %d", size); \
@@ -2351,14 +2359,19 @@ static int parseColorFrame(const image_data& src, image_data& dst) {
 
 int PercipioSDK::DeviceStreamDepthRender(const image_data& src, image_data& dst) {
   m_last_error = TY_STATUS_OK;
-  if(src.pixelFormat != TY_PIXEL_FORMAT_DEPTH16){
+  if(src.pixelFormat != TY_PIXEL_FORMAT_DEPTH16 && src.pixelFormat != TY_PIXEL_FORMAT_XYZ48){
     LOGE("Invalid pixel format 0x:%x", src.pixelFormat);
     m_last_error = TY_STATUS_INVALID_PARAMETER;
     return TY_STATUS_INVALID_PARAMETER;
   }
 
-  RAW16_FRAME_CHECK(src.size, src.width, src.height);
-  ImgProc::cvtColor(src, ImgProc::IMGPROC_DEPTH2RGB888, dst);
+  if(src.pixelFormat == TY_PIXEL_FORMAT_DEPTH16) {
+    RAW16_FRAME_CHECK(src.size, src.width, src.height);
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_DEPTH2RGB888, dst);
+  } else if(src.pixelFormat == TY_PIXEL_FORMAT_XYZ48) {
+    XYZ48_FRAME_CHECK(src.size, src.width, src.height);
+    ImgProc::cvtColor(src, ImgProc::IMGPROC_XYZ482RGB888, dst);
+  }
   return TY_STATUS_OK;
 }
 
@@ -2434,11 +2447,21 @@ int PercipioSDK::DeviceStreamMapDepthImageToPoint3D(const image_data& depth, con
   int size = depth.width * depth.height;
   p3d.resize(depth.width, depth.height);
 
-  TYMapDepthImageToPoint3d(&calib_data.data(),
+  if(depth.pixelFormat == TY_PIXEL_FORMAT_DEPTH16) {
+    TYMapDepthImageToPoint3d(&calib_data.data(),
                                      depth.width, depth.height,
                                      (const uint16_t*)depth.buffer,
                                      (TY_VECT_3F*)p3d.getPtr(), 
                                      scale);
+  } else if(depth.pixelFormat == TY_PIXEL_FORMAT_XYZ48) {
+    TY_VECT_3F* v3p = (TY_VECT_3F*)p3d.getPtr();
+    int16_t* src =  (int16_t*)depth.Ptr();
+    for (int pix = 0; pix < size; pix++) {
+      v3p[pix].x = (float)(*(src + 3*pix + 0) * scale + 0.5f);
+      v3p[pix].y = (float)(*(src + 3*pix + 1) * scale + 0.5f);
+      v3p[pix].z = (float)(*(src + 3*pix + 2) * scale + 0.5f);
+    }
+  }
   return TY_STATUS_OK;
 }
 

@@ -197,6 +197,8 @@ public:
         IMGPROC_DEPTH2RGB888,
         IMGPROC_MONO2RGB888,
 
+        IMGPROC_XYZ482RGB888,
+
         IMGPROC_CSI_MONO102RGB888,
 
         //G R
@@ -634,6 +636,18 @@ public:
           int colorHist[MAX_DEPTH];
           update_histogram(colorHist, (uint16_t*)src.buffer, src.width, src.height);
           depthToRGB(src.buffer, src.width, src.height, colorHist, dst.buffer, 1);
+          break;
+        }
+        case IMGPROC_XYZ482RGB888: {
+          std::vector<int16_t> depth16(src.width * src.height);
+          int16_t* _src = (int16_t*)src.buffer;
+          for (int pix = 0; pix < src.width * src.height; pix++) {
+            depth16[pix] = *(_src + 3*pix + 2);
+          }
+
+          int colorHist[MAX_DEPTH];
+          update_histogram(colorHist, (uint16_t*)&depth16[0], src.width, src.height);
+          depthToRGB(depth16.data(), src.width, src.height, colorHist, dst.buffer, 1);
           break;
         }
         case IMGPROC_MONO2RGB888: {
