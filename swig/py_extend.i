@@ -95,7 +95,11 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
 
 %typemap(argout) _HANDLE* OUTPUT{
     PyObject* temp = SWIG_NewPointerObj(SWIG_as_voidptr(*$1), SWIGTYPE_p_void, 0 | 0);
+#if SWIG_VERSION < 0x040300 
     $result = SWIG_Python_AppendOutput($result, temp);
+#else
+    $result = SWIG_Python_AppendOutput($result, temp, 1);
+#endif
 }
 
 // TY_INTERFACE_HANDLE ,TY_DEV_HANDLE
@@ -121,10 +125,16 @@ PyObject* _CreatePyList(const T* data, size_t num,swig_type_info* ptype_info) {
     $1 = &buff;
 }
 
+
+
 %typemap(argout) std::vector<TY_DEVICE_BASE_INFO>& out{//return a list of  TY_DEVICE_BASE_INFO
     std::vector< TY_DEVICE_BASE_INFO > &vec =*$1; 
     PyObject* out_list = _CreatePyList(&vec[0], vec.size(),SWIGTYPE_p_TY_DEVICE_BASE_INFO);
+#if SWIG_VERSION < 0x040300 
     $result = SWIG_Python_AppendOutput($result, out_list);
+#else
+    $result = SWIG_Python_AppendOutput($result, out_list, 1);
+#endif
 }
 
 %include "std_vector.i"
