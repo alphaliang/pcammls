@@ -2537,6 +2537,11 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibD
     return TY_STATUS_INVALID_PARAMETER;
   }
 
+  if(srcDepth.pixelFormat != TY_PIXEL_FORMAT_DEPTH16) {
+    LOGE("Invalid depth stream pixel format!");
+    return TY_STATUS_INVALID_PARAMETER;
+  }
+
   if(srcDepth.size != 2*srcDepth.width*srcDepth.height) {
     LOGE("Invalid stream size: %d.", srcDepth.size);
     m_last_error = TY_STATUS_INVALID_PARAMETER;
@@ -2564,6 +2569,11 @@ int PercipioSDK::DeviceStreamMapRGBImageToDepthCoordinate(const PercipioCalibDat
   if(srcDepth.streamID != PERCIPIO_STREAM_DEPTH) {
     LOGE("Invalid stream data: %d.", srcDepth.streamID);
     m_last_error = TY_STATUS_INVALID_PARAMETER;
+    return TY_STATUS_INVALID_PARAMETER;
+  }
+
+  if(srcDepth.pixelFormat != TY_PIXEL_FORMAT_DEPTH16) {
+    LOGE("Invalid depth stream pixel format!");
     return TY_STATUS_INVALID_PARAMETER;
   }
 
