@@ -1,9 +1,12 @@
-Percipio depth CAMera  MultiLanguage Sdk
+Percipio depth camera MultiLanguage Sdk
 =======================================
 图漾深度相机多语言接口封装库
 
 [![Build status](https://ci.appveyor.com/api/projects/status/yibibephnf1wwu6r/branch/master?svg=true)](https://ci.appveyor.com/project/alphaliang/pcammls/branch/master)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+
+编译安装详细指南参考官网在线文档:
+https://doc.percipio.xyz/cam/latest/index.html
 
 目前支持情况：
 
@@ -18,15 +21,15 @@ liunx   |python          | ok
 另新增PercipioSDK 类封装接口，简化设备操作。
 
 已测试环境：
-1. win10 + python3.6 + vs2019 + swig4.0.0
-2. win10 + c# .net4.0 + vs2019 + swig4.0.0
-3. ubuntu16 + python2.7 + swig4.0.0
+1. win10 + python3.8 + vs2022 + swig4.2.0
+2. win10 + c# .net4.0 + vs2022 + swig4.2.0
+3. ubuntu18 + python3.8 + swig4.2.0
  
-目前版本对应原Camport3 v3.6.33版本
+目前版本对应原Camport3 v3.6.66版本
 ## 预编译版本下载
 预编译版本包含库： 
-- windows：python3 +  c# .net4.0
-- linux：x64 python2
+- windows：python3.8 +  c# .net4.0
+- linux：x64 python3.8
 
 https://github.com/alphaliang/pcammls/releases
 
@@ -34,7 +37,7 @@ https://github.com/alphaliang/pcammls/releases
 
 依赖库&工具：
 
-http://www.swig.org/  swig4.0.0
+http://www.swig.org/  swig4.2.0
 
 https://cmake.org/   cmake3.15+
 
@@ -172,8 +175,6 @@ static void Main(string[] args)
 其他常见调用参考csharp 路径下文件.
 扩展功能或者修改调用可修改swig路径下csharp\_extend.i文件
 
-编译安装详细指南参考官网在线文档:
-https://doc.percipio.xyz/cam/latest/index.html
 
 
 
