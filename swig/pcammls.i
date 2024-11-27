@@ -3,6 +3,7 @@
 %{
 #include "TYApi.h"
 #include "percipio_class.hpp"
+#include "huffman.cpp"
 #include "TyIsp.h"
 #include "Utils.hpp"
 #include "../sample/common/TYThread.hpp"
