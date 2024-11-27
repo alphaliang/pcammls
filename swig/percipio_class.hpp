@@ -4,6 +4,7 @@
 #include "TYCoordinateMapper.h"
 #include "TYImageProc.h"
 #include "Utils.hpp"
+#include "huffman.h"
 #include "../sample/common/BayerISP.hpp"
 
 #include <vector>
@@ -1029,6 +1030,12 @@ bool PercipioSDK::DeviceRegiststerCallBackEvent(DeviceEventHandle handler) {
   }
 }
 
+
+enum EncodingType : uint32_t  
+{
+    HUFFMAN = 0,
+};
+
 #define MAX_STORAGE_SIZE    (10*1024*1024)
 int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE handle, const char* file) {
     m_last_error = TY_STATUS_OK;
@@ -1048,15 +1055,22 @@ int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE hand
         return TY_STATUS_NOT_IMPLEMENTED;
     }
 
-    const char* str = text.c_str();
-    uint32_t crc = crc32_bitwise(str, strlen(str));
+    std::string huffman_string;
+    if(!TextHuffmanCompression(text, huffman_string)) {
+        LOGE("Huffman compression error");
+        m_last_error = TY_STATUS_ERROR;
+        return TY_STATUS_ERROR;
+    }
+
+    const char* str = huffman_string.data();
+    uint32_t crc = crc32_bitwise(str, huffman_string.length());
 
     uint32_t block_size;
     m_last_error = TYGetByteArraySize(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, &block_size);
     if(m_last_error != TY_STATUS_OK) {
         return m_last_error;
     }
-    if(block_size < strlen(str) + sizeof(crc)) {
+    if(block_size < huffman_string.length() + 12) {
         LOGE("The configuration file is too large, the maximum size should not exceed 4000 bytes");
         m_last_error = TY_STATUS_ERROR;
         return TY_STATUS_ERROR;
@@ -1064,8 +1078,9 @@ int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE hand
     
     uint8_t* blocks = new uint8_t[block_size] ();
     *(uint32_t*)blocks = crc;
-
-    strcpy((char*)blocks + sizeof(crc),  str);
+    *(uint32_t*)(blocks + 4) = HUFFMAN;
+    *(uint32_t*)(blocks + 8) = huffman_string.length();
+    memcpy((char*)blocks + 12,  str, huffman_string.length());
     m_last_error = TYSetByteArray(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, blocks, block_size);
     delete []blocks;
     return m_last_error;
@@ -1089,21 +1104,48 @@ int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
     
     uint32_t crc_data = *(uint32_t*)blocks;
     if(0 == crc_data || 0xffffffff == crc_data) {
-        LOGE("The CRC check code is empty.");
-        delete []blocks;
-        m_last_error = TY_STATUS_NO_DATA;
-        return TY_STATUS_NO_DATA;
-    }
-    uint8_t* js_string = blocks + sizeof(uint32_t);
-    uint32_t crc = crc32_bitwise(js_string, strlen((char*)js_string));
-    if(crc_data != crc) {
-        LOGE("The data in the storage area has a CRC check error.");
+        LOGW("The CRC check code is empty.");
         delete []blocks;
         m_last_error = TY_STATUS_NO_DATA;
         return TY_STATUS_NO_DATA;
     }
 
-    if(!json_parse(handle, (const char* )js_string)) {
+    uint32_t crc;
+    uint8_t* js_code = blocks + 4;
+    std::string js_string;
+    crc = crc32_bitwise(js_code, strlen((const char*)js_code));
+    if((crc != crc_data) || !isValidJsonString((const char*)js_code)) {
+        EncodingType type     = *(EncodingType*)(blocks + 4);
+        ASSERT(type == HUFFMAN);
+        uint32_t huffman_size = *(uint32_t*)(blocks + 8);
+        uint8_t* huffman_ptr  = (uint8_t*)(blocks + 12);
+        if(huffman_size > (MAX_STORAGE_SIZE - 12)) {
+            LOGE("Data length error.");
+            delete []blocks;
+            m_last_error = TY_STATUS_ERROR;
+            return m_last_error;
+        }
+        
+        crc = crc32_bitwise(huffman_ptr, huffman_size);
+        if(crc_data != crc) {
+            LOGE("The data in the storage area has a CRC check error.");
+            delete []blocks;
+            m_last_error = TY_STATUS_ERROR;
+            return m_last_error;
+        }
+
+        std::string huffman_string(huffman_ptr, huffman_ptr + huffman_size);
+        if(!TextHuffmanDecompression(huffman_string, js_string)) {
+            LOGE("Huffman decoding error");
+            delete []blocks;
+            m_last_error = TY_STATUS_ERROR;
+            return m_last_error;
+        }
+    } else {
+        js_string = std::string((const char*)js_code);
+    }
+
+    if(!json_parse(handle, js_string.c_str())) {
       LOGE("Storage parameters load error.");
       delete []blocks;
       m_last_error = TY_STATUS_ERROR;
