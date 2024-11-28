@@ -85,6 +85,11 @@ add_executable(parameter_settings_cs
 set_property(TARGET parameter_settings_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
 set_property(TARGET parameter_settings_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
 
+add_executable(offline_reconnection_cs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/offline_reconnection.cs)
+set_property(TARGET offline_reconnection_cs PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION ${NET_VERSION})
+set_property(TARGET offline_reconnection_cs PROPERTY VS_DOTNET_REFERENCES ${REF_LIST} )
+
 target_link_libraries(fetch_frame_cs pcammls_cs)
 target_link_libraries(fetch_ISP pcammls_cs)
 target_link_libraries(fetch_IR_cs pcammls_cs)
@@ -92,3 +97,4 @@ target_link_libraries(fetch_registration_cs pcammls_cs)
 target_link_libraries(fetch_trigger_cs pcammls_cs)
 target_link_libraries(fetch_point3d_cs pcammls_cs)
 target_link_libraries(parameter_settings_cs pcammls_cs)
+target_link_libraries(offline_reconnection_cs pcammls_cs)
