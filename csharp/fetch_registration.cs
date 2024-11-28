@@ -42,8 +42,15 @@ namespace demo
             }
             InitializeComponent();
 
-            textBox1.Text = "depth2color";
-            textBox2.Text = "RGB";
+            if (0 == m_registration_mode)
+            {
+                textBox1.Text = "depth2color";
+                textBox2.Text = "RGB";
+            }
+            else {
+                textBox1.Text = "depth";
+                textBox2.Text = "RGB2Depth";
+            }
 
             CaptureCamera();
         }
@@ -59,6 +66,8 @@ namespace demo
 
         private float scale_unit = 1.0f;
 
+        private int m_registration_mode = 0;
+
         private PercipioCalibData depth_calib;
         private PercipioCalibData color_calib;
 
@@ -67,7 +76,7 @@ namespace demo
 
         private image_data registration_depth = new image_data();
         private image_data undsitortion_color = new image_data();
-
+        private image_data registration_color = new image_data();
         private bool DeviceInit()
         {
             int err = 0;
@@ -97,6 +106,17 @@ namespace demo
                 Console.WriteLine(string.Format("can not open device!"));
                 return false;
             }
+
+            Console.WriteLine(string.Format("registration mode:"));
+            Console.WriteLine("{0} -- {1}", 0, "Map depth to color coordinate");
+            Console.WriteLine("{0} -- {1}", 1, "Map color to depth coordinate");
+            Console.WriteLine("select one:");
+            m_registration_mode = int.Parse(Console.ReadLine());
+            if (m_registration_mode > 1 || m_registration_mode < 0) {
+                Console.WriteLine(string.Format("err registration mode,use default: Map depth to color coordinate!"));
+                m_registration_mode = 0;
+            }
+
 
             _event = new CSharpPercipioDeviceEvent();
 
@@ -160,26 +180,45 @@ namespace demo
                             cl.DeviceStreamImageDecode(image, color);
                         }
                     }
+                    if (0 == m_registration_mode)
+                    {
+                        cl.DeviceStreamDoUndistortion(color_calib, color, undsitortion_color);
+                        cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib,
+                                depth,
+                                scale_unit,
+                                color_calib,
+                                undsitortion_color.width,
+                                undsitortion_color.height,
+                                registration_depth);
 
-                    cl.DeviceStreamDoUndistortion(color_calib, color, undsitortion_color);
-                    cl.DeviceStreamMapDepthImageToColorCoordinate(depth_calib,
+                        image_data depth_render = new image_data();
+                        cl.DeviceStreamDepthRender(registration_depth, depth_render);
+                        IntPtr pt1 = depth_render.buffer.getCPtr();
+                        Bitmap bmp_depth = new Bitmap(depth_render.width, depth_render.height, depth_render.width * 3, PixelFormat.Format24bppRgb, pt1);
+                        pictureBox1.Image = (Image)resizeImage(bmp_depth, new Size(640, 480)).Clone();
+
+                        IntPtr pt2 = undsitortion_color.buffer.getCPtr();
+                        Bitmap bmp_color = new Bitmap(undsitortion_color.width, undsitortion_color.height, 3 * undsitortion_color.width, PixelFormat.Format24bppRgb, pt2);
+                        pictureBox2.Image = (Image)resizeImage(bmp_color, new Size(640, 480)).Clone();
+                    }
+                    else {
+                        cl.DeviceStreamDoUndistortion(color_calib, color, undsitortion_color);
+                        cl.DeviceStreamMapRGBImageToDepthCoordinate(depth_calib,
                             depth,
                             scale_unit,
                             color_calib,
-                            undsitortion_color.width,
-                            undsitortion_color.height,
-                            registration_depth);
+                            undsitortion_color,
+                            registration_color);
+                        image_data depth_render = new image_data();
+                        cl.DeviceStreamDepthRender(depth, depth_render);
+                        IntPtr pt1 = depth_render.buffer.getCPtr();
+                        Bitmap bmp_depth = new Bitmap(depth_render.width, depth_render.height, depth_render.width * 3, PixelFormat.Format24bppRgb, pt1);
+                        pictureBox1.Image = (Image)resizeImage(bmp_depth, new Size(640, 480)).Clone();
 
-                    image_data depth_render = new image_data();
-                    cl.DeviceStreamDepthRender(registration_depth, depth_render);
-                    IntPtr pt1 = depth_render.buffer.getCPtr();
-                    Bitmap bmp_depth = new Bitmap(depth_render.width, depth_render.height, depth_render.width * 3, PixelFormat.Format24bppRgb, pt1);
-                    pictureBox1.Image =(Image)resizeImage(bmp_depth, new Size(640, 480)).Clone();
-
-                    IntPtr pt2 = undsitortion_color.buffer.getCPtr();
-                    Bitmap bmp_color = new Bitmap(undsitortion_color.width, undsitortion_color.height, 3 * undsitortion_color.width, PixelFormat.Format24bppRgb, pt2);
-                    pictureBox2.Image = (Image)resizeImage(bmp_color, new Size(640, 480)).Clone();
-
+                        IntPtr pt2 = registration_color.buffer.getCPtr();
+                        Bitmap bmp_color = new Bitmap(registration_color.width, registration_color.height, 3 * registration_color.width, PixelFormat.Format24bppRgb, pt2);
+                        pictureBox2.Image = (Image)resizeImage(bmp_color, new Size(640, 480)).Clone();
+                    }
                     Thread.Sleep(10);
                 }
             }
