@@ -584,6 +584,7 @@ class PercipioSDK
 
     int DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE handle, const char* file);
     int DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle);
+    int DeviceClearDefaultParameters(const TY_DEV_HANDLE handle);
 
     bool DeviceRegiststerCallBackEvent(DeviceEventHandle handler);
 
@@ -1040,7 +1041,12 @@ enum EncodingType : uint32_t
 int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE handle, const char* file) {
     m_last_error = TY_STATUS_OK;
 
-    m_last_error = TY_STATUS_OK;
+    int idx = hasDevice(handle);
+    if(idx < 0) {
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
+        m_last_error = TY_STATUS_INVALID_HANDLE;
+        return TY_STATUS_INVALID_HANDLE;
+    }
 
     std::ifstream ifs(file);
     std::stringstream buffer;
@@ -1088,6 +1094,14 @@ int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE hand
 
 int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
     m_last_error = TY_STATUS_OK;
+
+    int idx = hasDevice(handle);
+    if(idx < 0) {
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
+        m_last_error = TY_STATUS_INVALID_HANDLE;
+        return TY_STATUS_INVALID_HANDLE;
+    }
+
     uint32_t block_size;
     uint8_t* blocks = new uint8_t[MAX_STORAGE_SIZE] ();
     m_last_error = TYGetByteArraySize(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, &block_size);
@@ -1154,7 +1168,33 @@ int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
 
     delete []blocks;
     return m_last_error;
+}
 
+int PercipioSDK::DeviceClearDefaultParameters(const TY_DEV_HANDLE handle)
+{
+    m_last_error = TY_STATUS_OK;
+    int idx = hasDevice(handle);
+    if(idx < 0) {
+        LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
+        m_last_error = TY_STATUS_INVALID_HANDLE;
+        return TY_STATUS_INVALID_HANDLE;
+    }
+
+    uint32_t block_size;
+    m_last_error = TYGetByteArraySize(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, &block_size);
+    if(m_last_error) {
+        LOGE("Read storage size err %s:%d", __FILENAME__, __LINE__);
+        return m_last_error;
+    }
+
+    uint8_t* blocks = new uint8_t[MAX_STORAGE_SIZE]();
+    m_last_error = TYSetByteArray(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, blocks, block_size);
+    if(m_last_error) {
+        LOGE("Erase storage err %s:%d", __FILENAME__, __LINE__);
+    }
+
+    delete []blocks;
+    return m_last_error;
 }
 
 int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t comp, const TY_FEATURE_ID feat, DevParam value) {
