@@ -108,9 +108,9 @@ namespace demo
             }
 
             Console.WriteLine(string.Format("registration mode:"));
-            Console.WriteLine("{0} -- {1}", 0, "Map depth to color coordinate");
+            Console.WriteLine("{0} -- {1}", 0, "Map depth to color coordinate(suggest)");
             Console.WriteLine("{0} -- {1}", 1, "Map color to depth coordinate");
-            Console.WriteLine("select one:");
+            Console.WriteLine("select registration mode(0 or 1):");
             m_registration_mode = int.Parse(Console.ReadLine());
             if (m_registration_mode > 1 || m_registration_mode < 0) {
                 Console.WriteLine(string.Format("err registration mode,use default: Map depth to color coordinate!"));

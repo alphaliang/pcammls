@@ -96,8 +96,8 @@ def main():
        print('device stream enable err:{}'.format(err))
        return
     
-    print ('{} -- {} \t'.format(0,"depth2color"))
-    print ('{} -- {} \t'.format(1,"color2depth"))
+    print ('{} -- {} \t'.format(0,"Map depth to color coordinate(suggest)"))
+    print ('{} -- {} \t'.format(1,"Map color to depth coordinate"))
     registration_mode = int(input('select registration mode(0 or 1):'))
     if selected_idx < 0 or selected_idx >= 2:
       registration_mode = 0
