@@ -2221,16 +2221,16 @@ static int parseIRCsiRaw10(const image_data& src, image_data& dst) {
   dst.pixelFormat  = TY_PIXEL_FORMAT_MONO16;
   dst.resize(dst.width * dst.height * 2);
 
-  uint16_t* src_ptr = (uint16_t*)src.buffer;
+  uint8_t* src_ptr = (uint8_t*)src.buffer;
   uint16_t* dst_ptr = (uint16_t*)dst.buffer;
   int raw10_line_size = 5 * width / 4;
   for(size_t i = 0, j = 0; i < raw10_line_size * height; i+=5, j+=4)
   {
     //[A2 - A9] | [B2 - B9] | [C2 - C9] | [D2 - D9] | [A0A1-B0B1-C0C1-D0D1]
-    dst_ptr[j + 0] = ((uint16_t)src_ptr[i + 0] << 2) | ((src_ptr[i + 4] & 0x3)  >> 0);
-    dst_ptr[j + 1] = ((uint16_t)src_ptr[i + 1] << 2) | ((src_ptr[i + 4] & 0xc)  >> 2);
-    dst_ptr[j + 2] = ((uint16_t)src_ptr[i + 2] << 2) | ((src_ptr[i + 4] & 0x30) >> 4);
-    dst_ptr[j + 3] = ((uint16_t)src_ptr[i + 3] << 2) | ((src_ptr[i + 4] & 0xc0) >> 6);
+    dst_ptr[j + 0] = (uint16_t)(src_ptr[i + 0] << 2) | ((src_ptr[i + 4] & 0x3)  >> 0);
+    dst_ptr[j + 1] = (uint16_t)(src_ptr[i + 1] << 2) | ((src_ptr[i + 4] & 0xc)  >> 2);
+    dst_ptr[j + 2] = (uint16_t)(src_ptr[i + 2] << 2) | ((src_ptr[i + 4] & 0x30) >> 4);
+    dst_ptr[j + 3] = (uint16_t)(src_ptr[i + 3] << 2) | ((src_ptr[i + 4] & 0xc0) >> 6);
   }
   return TY_STATUS_OK;
 }
@@ -2252,14 +2252,14 @@ static int parseIRCsiRaw12(const image_data& src, image_data& dst) {
   dst.pixelFormat  = TY_PIXEL_FORMAT_MONO16;
   dst.resize(dst.width * dst.height * 2);
 
-  uint16_t* src_ptr = (uint16_t*)src.buffer;
+  uint8_t* src_ptr = (uint8_t*)src.buffer;
   uint16_t* dst_ptr = (uint16_t*)dst.buffer;
   int raw12_line_size = 3 * width / 2;
   for(size_t i = 0, j = 0; i < raw12_line_size * height; i+=3, j+=2)
   {
     //[A4 - A11] | [B4 - B11] | [A0A1A2A3-B0B1B2B3]
-    dst_ptr[j + 0] = ((uint16_t)src_ptr[i + 0] << 4) | ((src_ptr[i + 2] & 0x0f)  >> 0);
-    dst_ptr[j + 1] = ((uint16_t)src_ptr[i + 1] << 4) | ((src_ptr[i + 2] & 0xf0)  >> 4);
+    dst_ptr[j + 0] = (uint16_t)(src_ptr[i + 0] << 4) | ((src_ptr[i + 2] & 0x0f)  >> 0);
+    dst_ptr[j + 1] = (uint16_t)(src_ptr[i + 1] << 4) | ((src_ptr[i + 2] & 0xf0)  >> 4);
   }
   return TY_STATUS_OK;
 }
