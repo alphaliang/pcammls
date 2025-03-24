@@ -223,6 +223,7 @@
 
 %}
 
+%include "TYDefs.h"
 %include "TYApi.h"
 %include "TYImageProc.h"
 %include "TYCoordinateMapper.h"
