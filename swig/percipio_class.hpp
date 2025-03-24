@@ -28,6 +28,43 @@ typedef enum PERCIPIO_STREAM_LIST {
 }PERCIPIO_STREAM_LIST;
 typedef int PERCIPIO_STREAM_ID;
 
+typedef struct PercipioRectifyIntrData
+{
+  public:
+    PercipioRectifyIntrData() {};
+    ~PercipioRectifyIntrData() {};
+    PercipioRectifyIntrData(const TY_CAMERA_INTRINSIC intr) {intr_data = intr;};
+
+    const std::vector<float>   Data();
+  private:
+      TY_CAMERA_INTRINSIC intr_data;
+}PercipioRectifyIntrData;
+
+const std::vector<float>   PercipioRectifyIntrData::Data() {
+  float* ptr = intr_data.data;
+  int cnt = sizeof(intr_data.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+
+typedef struct PercipioRectifyRotaData
+{
+  public:
+    PercipioRectifyRotaData() {};
+    ~PercipioRectifyRotaData() {};
+    PercipioRectifyRotaData(const TY_CAMERA_ROTATION intr) {roata_data = intr;};
+
+    const std::vector<float>   Data();
+  private:
+    TY_CAMERA_ROTATION roata_data;
+}PercipioRectifyRotaData;
+
+const std::vector<float>   PercipioRectifyRotaData::Data() {
+  float* ptr = roata_data.data;
+  int cnt = sizeof(roata_data.data) / sizeof(float);
+  return std::vector<float>(ptr, ptr + cnt);
+}
+
+
 typedef struct PercipioCalibData
 {
   public:
@@ -616,7 +653,14 @@ class PercipioSDK
 
     /*read calib data*/
     PercipioCalibData          DeviceReadCalibData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    PercipioRectifyIntrData    DeviceReadRectifiedIntrData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+    PercipioRectifyRotaData    DeviceReadRectifiedRotationData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream);
+
     const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle);
+
+
+
+
 
     /*device control*/
     int                   DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
@@ -966,7 +1010,12 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
       TY_COMPONENT_IR_CAM_RIGHT
   };
 
+  TY_COMPONENT_ID IDs = 0;
+  TYGetComponentIDs(handle, &IDs);
+
   for(size_t cnt = 0; cnt < STREMA_FMT_IDX_MAX; cnt++) {
+    if(!(IDs & compID[cnt])) continue;
+
     unsigned int n = 0;
     m_last_error = TYGetEnumEntryCount(handle, compID[cnt], TY_ENUM_IMAGE_MODE, &n);
     if(m_last_error != TY_STATUS_OK) {
@@ -994,11 +1043,12 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
       //if((compID[cnt] != TY_COMPONENT_DEPTH_CAM) || (TYPixelFormat(temp[i].value) == TY_PIXEL_FORMAT_DEPTH16))
         DevList[idx].fmt_list[cnt].push_back(temp[i]);
     }
-
   }
 
   //DUMP STREAM CALIB_DATA LIST
   for(size_t cnt = 0; cnt < STREMA_FMT_IDX_MAX; cnt++) {
+    if(!(IDs & compID[cnt])) continue;
+
     TY_CAMERA_CALIB_INFO calib_data;
     m_last_error = TYGetStruct(handle, compID[cnt], TY_STRUCT_CAM_CALIB_DATA, &calib_data, sizeof(TY_CAMERA_CALIB_INFO));
     if(m_last_error != TY_STATUS_OK) {
@@ -1869,6 +1919,86 @@ PercipioCalibData PercipioSDK::DeviceReadCalibData(const TY_DEV_HANDLE handle, c
   }
 
   return DevList[idx].calib_data_list[compIDX];
+}
+
+PercipioRectifyIntrData PercipioSDK::DeviceReadRectifiedIntrData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
+{
+  m_last_error = TY_STATUS_OK;
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    m_last_error = TY_STATUS_INVALID_HANDLE;
+    return PercipioRectifyIntrData();
+  }
+
+  int compIDX = stream_idx(stream);
+  TY_COMPONENT_ID comp;
+  switch(compIDX) {
+    case STREMA_FMT_IDX_COLOR:
+      comp = TY_COMPONENT_RGB_CAM;
+      break;
+    case STREMA_FMT_IDX_DEPTH:
+    comp = TY_COMPONENT_DEPTH_CAM;
+      break;
+    case STREMA_FMT_IDX_IR_LEFT:
+    comp = TY_COMPONENT_IR_CAM_LEFT;
+      break;
+    case STREMA_FMT_IDX_IR_RIGHT:
+    comp = TY_COMPONENT_IR_CAM_RIGHT;
+      break;
+    case STREMA_FMT_IDX_MAX: {
+      m_last_error = TY_STATUS_INVALID_PARAMETER;
+      return PercipioRectifyIntrData();
+    }
+  }
+
+  TY_CAMERA_INTRINSIC intr;
+  m_last_error = TYGetStruct(handle, comp, TY_STRUCT_CAM_RECTIFIED_INTRI, &intr, sizeof(intr));
+  if(m_last_error) {
+    return PercipioRectifyIntrData();
+  }
+
+  return PercipioRectifyIntrData(intr);
+}
+
+PercipioRectifyRotaData PercipioSDK::DeviceReadRectifiedRotationData(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream)
+{
+  m_last_error = TY_STATUS_OK;
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    m_last_error = TY_STATUS_INVALID_HANDLE;
+    return PercipioRectifyRotaData();
+  }
+
+  int compIDX = stream_idx(stream);
+  TY_COMPONENT_ID comp;
+  switch(compIDX) {
+    case STREMA_FMT_IDX_COLOR:
+      comp = TY_COMPONENT_RGB_CAM;
+      break;
+    case STREMA_FMT_IDX_DEPTH:
+    comp = TY_COMPONENT_DEPTH_CAM;
+      break;
+    case STREMA_FMT_IDX_IR_LEFT:
+    comp = TY_COMPONENT_IR_CAM_LEFT;
+      break;
+    case STREMA_FMT_IDX_IR_RIGHT:
+    comp = TY_COMPONENT_IR_CAM_RIGHT;
+      break;
+    case STREMA_FMT_IDX_MAX: {
+      m_last_error = TY_STATUS_INVALID_PARAMETER;
+      return PercipioRectifyRotaData();
+    }
+  }
+
+  TY_CAMERA_ROTATION rotation;
+  m_last_error = TYGetStruct(handle, comp, TY_STRUCT_CAM_RECTIFIED_ROTATION, &rotation, sizeof(rotation));
+  if(m_last_error) {
+    return PercipioRectifyRotaData();
+  }
+
+  return PercipioRectifyRotaData(rotation);
 }
 
 const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle) {
