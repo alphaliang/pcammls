@@ -704,6 +704,7 @@ class PercipioSDK
       TY_ISP_HANDLE       isp;
       std::string         devID;
       PERCIPIO_STREAM_ID  stream;
+      TY_COMPONENT_ID     Comps;
       float               depth_scale_unit;
       char*               frameBuffer[2];
 
@@ -723,6 +724,8 @@ class PercipioSDK
         isp    = NULL;
         devID = std::string(id);
         image_list.clear();
+
+        TYGetComponentIDs(handle, &Comps);
       }
 
       ~device_info() {
@@ -973,39 +976,46 @@ bool PercipioSDK::isValidHandle(const TY_DEV_HANDLE handle) {
 }
 
 void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
+  TY_COMPONENT_ID m_Comps = 0;
+  TYGetComponentIDs(handle, &m_Comps);
 
-  bool hasTriggerParam = false;
-  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &hasTriggerParam);
-  if(hasTriggerParam) {
-    TY_TRIGGER_PARAM trigger;
-    trigger.mode = TY_TRIGGER_MODE_OFF;
-  
-    m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
-    if(m_last_error != TY_STATUS_OK) {
-      LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+  //device init
+  if(m_Comps & TY_COMPONENT_DEVICE) {
+    bool hasTriggerParam = false;
+    TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &hasTriggerParam);
+    if(hasTriggerParam) {
+      TY_TRIGGER_PARAM trigger;
+      trigger.mode = TY_TRIGGER_MODE_OFF;
+    
+      m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
+      if(m_last_error != TY_STATUS_OK) {
+        LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+      }
+    } else {
+      LOGW("=== Not support feature TY_STRUCT_TRIGGER_PARAM");
     }
-  } else {
-    LOGW("=== Not support feature TY_STRUCT_TRIGGER_PARAM");
+
+    bool hasResend = false;
+    TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, &hasResend);
+    if (hasResend) {
+        TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, false);
+    } else {
+      LOGW("=== Not support feature TY_BOOL_GVSP_RESEND");
+    }
   }
 
-  bool hasResend = false;
-  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, &hasResend);
-  if (hasResend) {
-      TYSetBool(handle, TY_COMPONENT_DEVICE, TY_BOOL_GVSP_RESEND, false);
-  } else {
-    LOGW("=== Not support feature TY_BOOL_GVSP_RESEND");
+  //laser init
+  if(m_Comps & TY_COMPONENT_LASER) {
+    bool hasLaserAutoCtrl = false;
+    TYHasFeature(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, &hasLaserAutoCtrl);
+    if(hasLaserAutoCtrl)
+      TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, true);
+
+    bool hasLasePower = false;
+    TYHasFeature(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, &hasLasePower);
+    if(hasLasePower)
+      TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
   }
-
-  bool hasLaserAutoCtrl = false;
-  TYHasFeature(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, &hasLaserAutoCtrl);
-  if(hasLaserAutoCtrl)
-    TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, true);
-
-  bool hasLasePower = false;
-  TYHasFeature(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, &hasLasePower);
-  if(hasLasePower)
-    TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
-
   return ;
 }
 
@@ -1030,10 +1040,13 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
   for(size_t cnt = 0; cnt < STREMA_FMT_IDX_MAX; cnt++) {
     if(!(IDs & compID[cnt])) continue;
 
+    bool has_image_mode = false;
+    TYHasFeature(handle, compID[cnt], TY_ENUM_IMAGE_MODE, &has_image_mode);
+    if(!has_image_mode) continue;
+
     unsigned int n = 0;
     m_last_error = TYGetEnumEntryCount(handle, compID[cnt], TY_ENUM_IMAGE_MODE, &n);
     if(m_last_error != TY_STATUS_OK) {
-      //LOGE("TYGetEnumEntryCount failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
       continue;
     }
@@ -1048,13 +1061,11 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
     TY_ENUM_ENTRY* pEntry = &temp[0];
     m_last_error = TYGetEnumEntryInfo(handle, compID[cnt], TY_ENUM_IMAGE_MODE, pEntry, n, &n);
     if(m_last_error != TY_STATUS_OK) {
-      //LOGE("TYGetEnumEntryInfo failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
       DevList[idx].fmt_list[cnt].clear();
       continue;
     }
 
     for(size_t i = 0; i < n ; i++) {
-      //if((compID[cnt] != TY_COMPONENT_DEPTH_CAM) || (TYPixelFormat(temp[i].value) == TY_PIXEL_FORMAT_DEPTH16))
         DevList[idx].fmt_list[cnt].push_back(temp[i]);
     }
   }
@@ -1075,10 +1086,17 @@ void PercipioSDK::DumpDeviceInfo(const TY_DEV_HANDLE handle) {
 
   //DUMP DEPTH SCAL UNIT
   float scale_unit = 1.f;
-  m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
-  if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
-  }
+  bool has_scale_unit = false;
+
+  if(IDs & TY_COMPONENT_DEPTH_CAM) {
+    TYHasFeature(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &has_scale_unit);
+    if(has_scale_unit) {
+      m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
+      if(m_last_error != TY_STATUS_OK) {
+        LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+      }
+    }
+}
   DevList[idx].depth_scale_unit = scale_unit;
 
   //
@@ -1110,6 +1128,14 @@ int PercipioSDK::DeviceWriteDefaultParametersFromJSFile(const TY_DEV_HANDLE hand
         LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return TY_STATUS_INVALID_HANDLE;
+    }
+
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & TY_COMPONENT_STORAGE)) {
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      LOGE("The device does not support JSON parameter Settings %s:%d", __FILENAME__, __LINE__);
+      return TY_STATUS_INVALID_COMPONENT;
     }
 
     std::ifstream ifs(file);
@@ -1164,6 +1190,14 @@ int PercipioSDK::DeviceLoadDefaultParameters(const TY_DEV_HANDLE handle) {
         LOGE("Device handle check failed: invalid handle %s:%d", __FILENAME__, __LINE__);
         m_last_error = TY_STATUS_INVALID_HANDLE;
         return TY_STATUS_INVALID_HANDLE;
+    }
+
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & TY_COMPONENT_STORAGE)) {
+      m_last_error = TY_STATUS_NO_DATA;
+      LOGE("The device has no JSON parameter Settings %s:%d", __FILENAME__, __LINE__);
+      return TY_STATUS_NO_DATA;
     }
 
     uint32_t block_size;
@@ -1244,6 +1278,14 @@ int PercipioSDK::DeviceClearDefaultParameters(const TY_DEV_HANDLE handle)
         return TY_STATUS_INVALID_HANDLE;
     }
 
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & TY_COMPONENT_STORAGE)) {
+      LOGE("The device does not support JSON parameter Settings %s:%d", __FILENAME__, __LINE__);
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return TY_STATUS_INVALID_COMPONENT;
+    }
+
     uint32_t block_size;
     m_last_error = TYGetByteArraySize(handle, TY_COMPONENT_STORAGE, TY_BYTEARRAY_CUSTOM_BLOCK, &block_size);
     if(m_last_error) {
@@ -1272,6 +1314,13 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const int32_t co
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & id)) {
+      LOGE("Invalid component id %s:%d", __FILENAME__, __LINE__);
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return m_last_error;
+    }
 
     m_last_error = TYHasFeature(handle, id, feat, &has);
     if(m_last_error != TY_STATUS_OK) {
@@ -1353,6 +1402,14 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const int32
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & id)) {
+      LOGE("Invalid component id %s:%d", __FILENAME__, __LINE__);
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return para;
+    }
+
     m_last_error = TYHasFeature(handle, id, feat, &has);
     if(m_last_error != TY_STATUS_OK) {
       LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
@@ -1441,6 +1498,13 @@ int PercipioSDK::DeviceSetParameter(const TY_DEV_HANDLE handle, const uint32_t c
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & id)) {
+      LOGE("Invalid component id %s:%d", __FILENAME__, __LINE__);
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return TY_STATUS_INVALID_COMPONENT;
+    }
 
     m_last_error = TYHasFeature(handle, id, feat, &has);
     if(m_last_error != TY_STATUS_OK) {
@@ -1522,6 +1586,14 @@ DevParam PercipioSDK::DeviceGetParameter(const TY_DEV_HANDLE handle, const uint3
 
     bool has = false;
     TY_COMPONENT_ID  id = static_cast<TY_COMPONENT_ID>(comp);
+    TY_COMPONENT_ID IDs = 0;
+    TYGetComponentIDs(handle, &IDs);
+    if(! (IDs & id)) {
+      LOGE("Invalid component id %s:%d", __FILENAME__, __LINE__);
+      m_last_error = TY_STATUS_INVALID_COMPONENT;
+      return para;
+    }
+
     m_last_error = TYHasFeature(handle, id, feat, &has);
     if(m_last_error != TY_STATUS_OK) {
       LOGE("TYHasFeature failed %s:%d", __FILENAME__, __LINE__);
@@ -1688,6 +1760,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       return m_last_error;
     }
   } else {
+    if(allComps & TY_COMPONENT_RGB_CAM) 
       TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
   }
 
@@ -1704,6 +1777,7 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       return m_last_error;
     }
   } else {
+    if(allComps & TY_COMPONENT_DEPTH_CAM)
       TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
   }
 
@@ -1720,7 +1794,8 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       return m_last_error;
     }
   } else {
-    TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
+    if(allComps & TY_COMPONENT_IR_CAM_LEFT) 
+      TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
   }
 
   if(stream & PERCIPIO_STREAM_IR_RIGHT) {
@@ -1736,38 +1811,62 @@ int PercipioSDK::DeviceStreamEnable(const TY_DEV_HANDLE handle, const PERCIPIO_S
       return m_last_error;
     }
   } else {
-    TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
+    if(allComps & TY_COMPONENT_IR_CAM_RIGHT) 
+      TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
   }
 
   return m_last_error;
 }
 
 int PercipioSDK::DeviceStreamDisable(const TY_DEV_HANDLE handle, const PERCIPIO_STREAM_ID stream) {
-  if(m_last_error & PERCIPIO_STREAM_COLOR) {
-    m_last_error = TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
-    if(m_last_error != TY_STATUS_OK) {
-      return m_last_error;
+  TY_COMPONENT_ID allComps;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(stream & PERCIPIO_STREAM_COLOR) {
+    if(allComps & TY_COMPONENT_RGB_CAM) {
+      m_last_error = TYDisableComponents(handle, TY_COMPONENT_RGB_CAM);
+      if(m_last_error != TY_STATUS_OK) {
+        return m_last_error;
+      }
+    } else {
+      LOGE("The device does not support color stream.\n");
     }
   }
 
   if(stream & PERCIPIO_STREAM_DEPTH) {
-    m_last_error = TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
-    if(m_last_error != TY_STATUS_OK) {
-      return m_last_error;
+    if(allComps & TY_COMPONENT_DEPTH_CAM) {
+      m_last_error = TYDisableComponents(handle, TY_COMPONENT_DEPTH_CAM);
+      if(m_last_error != TY_STATUS_OK) {
+        return m_last_error;
+      }
+    } else {
+      LOGE("The device does not support depth stream.\n");
     }
   }
 
   if(stream & PERCIPIO_STREAM_IR_LEFT) {
-    m_last_error = TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
-    if(m_last_error != TY_STATUS_OK) {
-      return m_last_error;
+    if(allComps & PERCIPIO_STREAM_IR_LEFT) {
+      m_last_error = TYDisableComponents(handle, TY_COMPONENT_IR_CAM_LEFT);
+      if(m_last_error != TY_STATUS_OK) {
+        return m_last_error;
+      }
+    } else {
+      LOGE("The device does not support left ir stream.\n");
     }
   }
 
   if(stream & PERCIPIO_STREAM_IR_RIGHT) {
-    m_last_error = TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
-    if(m_last_error != TY_STATUS_OK) {
-      return m_last_error;
+    if(allComps & TY_COMPONENT_IR_CAM_RIGHT) {
+      m_last_error = TYDisableComponents(handle, TY_COMPONENT_IR_CAM_RIGHT);
+      if(m_last_error != TY_STATUS_OK) {
+        return m_last_error;
+      }
+    } else {
+      LOGE("The device does not support right ir stream.\n");
     }
   }
   return TY_STATUS_OK;
@@ -1831,6 +1930,19 @@ int PercipioSDK::DeviceStreamFormatConfig(const TY_DEV_HANDLE handle, const PERC
       return TY_STATUS_INVALID_PARAMETER;
   }
 
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(!(allComps & compID)) {
+    LOGE("stream mode not support : %d", stream);
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return m_last_error;
+  }
+
   m_last_error = TYSetEnum(handle, compID, TY_ENUM_IMAGE_MODE, fmt.value);
   if(m_last_error != TY_STATUS_OK) {
     LOGE("Stream fmt is not support!");
@@ -1861,6 +1973,27 @@ int PercipioSDK::DeviceReadCurrentEnumData(const TY_DEV_HANDLE handle, const PER
       LOGE("stream mode not support : %d", stream);
       m_last_error = TY_STATUS_INVALID_PARAMETER;
       return TY_STATUS_INVALID_PARAMETER;
+  }
+
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(!(allComps & compID)) {
+    LOGE("stream mode not support : %d", stream);
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return m_last_error;
+  }
+
+  bool has_image_mode = false;
+  TYHasFeature(handle, compID, TY_ENUM_IMAGE_MODE, &has_image_mode);
+  if(!has_image_mode) {
+    m_last_error = TY_STATUS_INVALID_FEATURE;
+    LOGE("Stream fmt is not support!");
+    return m_last_error;
   }
 
   uint32_t value;
@@ -1966,6 +2099,26 @@ PercipioRectifyIntrData PercipioSDK::DeviceReadRectifiedIntrData(const TY_DEV_HA
     }
   }
 
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return PercipioRectifyIntrData();
+  }
+
+  if(!(allComps & comp)) {
+    LOGE("stream mode not support : %d", stream);
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return PercipioRectifyIntrData();;
+  }
+
+  bool hasRectifyIntr = false;
+  TYHasFeature(handle, comp, TY_STRUCT_CAM_RECTIFIED_INTRI, &hasRectifyIntr);
+  if(!hasRectifyIntr) {
+    LOGE("Current stream mode not support rectified intri: %d", stream);
+    return PercipioRectifyIntrData();
+  }
+
   TY_CAMERA_INTRINSIC intr;
   m_last_error = TYGetStruct(handle, comp, TY_STRUCT_CAM_RECTIFIED_INTRI, &intr, sizeof(intr));
   if(m_last_error) {
@@ -2006,6 +2159,26 @@ PercipioRectifyRotaData PercipioSDK::DeviceReadRectifiedRotationData(const TY_DE
     }
   }
 
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return PercipioRectifyRotaData();
+  }
+
+  if(!(allComps & comp)) {
+    LOGE("stream mode not support : %d", stream);
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return PercipioRectifyRotaData();;
+  }
+
+  bool hasRectifyRotation = false;
+  TYHasFeature(handle, comp, TY_STRUCT_CAM_RECTIFIED_ROTATION, &hasRectifyRotation);
+  if(!hasRectifyRotation) {
+    LOGE("Current stream mode not support rectified rotation: %d", stream);
+    return PercipioRectifyRotaData();
+  }
+
   TY_CAMERA_ROTATION rotation;
   m_last_error = TYGetStruct(handle, comp, TY_STRUCT_CAM_RECTIFIED_ROTATION, &rotation, sizeof(rotation));
   if(m_last_error) {
@@ -2025,10 +2198,26 @@ const float PercipioSDK::DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handl
     return NAN;
   }
 
-  float scale_unit = 1.f;
-  m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
   if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return 1.f;
+  }
+
+  if(!(allComps & TY_COMPONENT_DEPTH_CAM)) {
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return 1.f;
+  }
+
+  float scale_unit = 1.f;
+  bool has_scale_unit = false;
+  TYHasFeature(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &has_scale_unit);
+  if(has_scale_unit) {
+    m_last_error = TYGetFloat(handle, TY_COMPONENT_DEPTH_CAM, TY_FLOAT_SCALE_UNIT, &scale_unit);
+    if(m_last_error != TY_STATUS_OK) {
       LOGE("TYGetFloat failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    }
   }
 
   DevList[idx].depth_scale_unit = scale_unit;
@@ -2263,6 +2452,18 @@ int PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, cons
     return TY_STATUS_INVALID_HANDLE;
   }
 
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(!(allComps & TY_COMPONENT_DEVICE)) {
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return m_last_error;
+  }
+
   bool hasTriggerParam = false;
   TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &hasTriggerParam);
   if(!hasTriggerParam) {
@@ -2332,6 +2533,18 @@ int PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE ha
     return TY_STATUS_INVALID_HANDLE;
   }
 
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(!(allComps & TY_COMPONENT_LASER)) {
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return m_last_error;
+  }
+
   bool hasLaserAuto = false;
   TYHasFeature(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, &hasLaserAuto);
   if(!hasLaserAuto) {
@@ -2355,6 +2568,18 @@ int PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int l
     LOGE("Invalid device handle!");
     m_last_error = TY_STATUS_INVALID_HANDLE;
     return TY_STATUS_INVALID_HANDLE;
+  }
+
+  TY_COMPONENT_ID allComps = 0;
+  m_last_error = TYGetComponentIDs(handle, &allComps);
+  if(m_last_error != TY_STATUS_OK) {
+    LOGE("TYGetComponentIDs failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    return m_last_error;
+  }
+
+  if(!(allComps & TY_COMPONENT_LASER)) {
+    m_last_error = TY_STATUS_INVALID_COMPONENT;
+    return m_last_error;
   }
 
   bool hasLaserCtrl = false;
