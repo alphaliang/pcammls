@@ -19,8 +19,8 @@ for:
     install:
       - echo start install
       - sudo apt-get -y install libpcre3-dev python-dev python3.8-dev
-      - sudo python3.8 -m pip install --upgrade pip --force-reinstall
-      - pip --version
+      - python3.8 -m ensurepip --upgrade
+      - python3.8 -m pip --version
       - pip install numpy
       - wget http://prdownloads.sourceforge.net/swig/swig-4.0.0.tar.gz
       - tar -zxf swig-4.0.0.tar.gz
