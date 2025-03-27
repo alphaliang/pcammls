@@ -973,12 +973,19 @@ bool PercipioSDK::isValidHandle(const TY_DEV_HANDLE handle) {
 }
 
 void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
-  TY_TRIGGER_PARAM trigger;
-  trigger.mode = TY_TRIGGER_MODE_OFF;
+
+  bool hasTriggerParam = false;
+  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &hasTriggerParam);
+  if(hasTriggerParam) {
+    TY_TRIGGER_PARAM trigger;
+    trigger.mode = TY_TRIGGER_MODE_OFF;
   
-  m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
-  if(m_last_error != TY_STATUS_OK) {
-    LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    m_last_error = TYSetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &trigger, sizeof(trigger));
+    if(m_last_error != TY_STATUS_OK) {
+      LOGE("TYSetStruct failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
+    }
+  } else {
+    LOGW("=== Not support feature TY_STRUCT_TRIGGER_PARAM");
   }
 
   bool hasResend = false;
@@ -989,8 +996,15 @@ void PercipioSDK::ConfigDevice(const TY_DEV_HANDLE handle) {
     LOGW("=== Not support feature TY_BOOL_GVSP_RESEND");
   }
 
-  TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, true);
-  TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
+  bool hasLaserAutoCtrl = false;
+  TYHasFeature(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, &hasLaserAutoCtrl);
+  if(hasLaserAutoCtrl)
+    TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, true);
+
+  bool hasLasePower = false;
+  TYHasFeature(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, &hasLasePower);
+  if(hasLasePower)
+    TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
 
   return ;
 }
@@ -2249,6 +2263,14 @@ int PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, cons
     return TY_STATUS_INVALID_HANDLE;
   }
 
+  bool hasTriggerParam = false;
+  TYHasFeature(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TRIGGER_PARAM, &hasTriggerParam);
+  if(!hasTriggerParam) {
+    LOGE("=== Not support feature TY_STRUCT_TRIGGER_PARAM");
+    m_last_error = TY_STATUS_INVALID_FEATURE;
+    return m_last_error;
+  }
+
   TY_TRIGGER_PARAM trigger;
   if(enable)
     trigger.mode = TY_TRIGGER_MODE_SLAVE;
@@ -2310,6 +2332,14 @@ int PercipioSDK::DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE ha
     return TY_STATUS_INVALID_HANDLE;
   }
 
+  bool hasLaserAuto = false;
+  TYHasFeature(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, &hasLaserAuto);
+  if(!hasLaserAuto) {
+    LOGE("=== Not support feature TY_BOOL_LASER_AUTO_CTRL");
+    m_last_error = TY_STATUS_INVALID_FEATURE;
+    return m_last_error;
+  }
+
   m_last_error = TYSetBool(handle, TY_COMPONENT_LASER, TY_BOOL_LASER_AUTO_CTRL, enable);
   if(m_last_error != TY_STATUS_OK) {
     LOGE("TYSetBool failed: error %d(%s) at %s:%d", m_last_error, TYErrorString(m_last_error), __FILENAME__, __LINE__);
@@ -2325,6 +2355,14 @@ int PercipioSDK::DeviceControlLaserPowerConfig(const TY_DEV_HANDLE handle, int l
     LOGE("Invalid device handle!");
     m_last_error = TY_STATUS_INVALID_HANDLE;
     return TY_STATUS_INVALID_HANDLE;
+  }
+
+  bool hasLaserCtrl = false;
+  TYHasFeature(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, &hasLaserCtrl);
+  if(!hasLaserCtrl) {
+    LOGE("=== Not support feature TY_INT_LASER_POWER");
+    m_last_error = TY_STATUS_INVALID_FEATURE;
+    return m_last_error;
   }
 
   m_last_error = TYSetInt(handle, TY_COMPONENT_LASER, TY_INT_LASER_POWER, laser);
