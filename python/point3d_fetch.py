@@ -73,7 +73,7 @@ def main():
     depth_calib_intr   = depth_calib_data.Intrinsic()
     depth_calib_extr   = depth_calib_data.Extrinsic()
     depth_calib_dis    = depth_calib_data.Distortion()
-    print('delth calib info:')
+    print('depth calib info:')
     print('\tcalib size       :[{}x{}]'.format(depth_calib_width, depth_calib_height))
     print('\tcalib intr       : {}'.format(depth_calib_intr))
     print('\tcalib extr       : {}'.format(depth_calib_extr))
