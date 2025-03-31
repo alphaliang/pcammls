@@ -659,10 +659,9 @@ class PercipioSDK
     const float                 DeviceReadCalibDepthScaleUnit(const TY_DEV_HANDLE handle);
 
 
-
-
-
     /*device control*/
+    float                 DeviceControlReadTemperature(const TY_DEV_HANDLE handle, TY_TEMPERATURE_ID ID);
+    
     int                   DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable);
     int                   DeviceControlTriggerModeSendTriggerSignal(const TY_DEV_HANDLE handle);
     int                   DeviceControlLaserPowerAutoControlEnable(const TY_DEV_HANDLE handle, bool enable);
@@ -2441,6 +2440,33 @@ int PercipioSDK::DeviceStreamOff(const TY_DEV_HANDLE handle) {
   FrameBufferRelease(handle);
 
   return m_last_error;
+}
+
+float PercipioSDK::DeviceControlReadTemperature(const TY_DEV_HANDLE handle, TY_TEMPERATURE_ID ID)
+{
+  int idx = hasDevice(handle);
+  if(idx < 0) {
+    LOGE("Invalid device handle!");
+    m_last_error = TY_STATUS_INVALID_HANDLE;
+    return NAN;
+  }
+
+  m_last_error = TYSetEnum(handle, TY_COMPONENT_DEVICE, TY_ENUM_TEMPERATURE_ID, ID);
+  if(m_last_error) {
+    LOGE("%s", TYErrorString(m_last_error));
+    return m_last_error;
+  }
+  
+  TY_TEMP_DATA  temp;
+  m_last_error = TYGetStruct(handle, TY_COMPONENT_DEVICE, TY_STRUCT_TEMPERATURE, &temp, sizeof(temp));
+  if(m_last_error) {
+    LOGE("%s", TYErrorString(m_last_error));
+    return m_last_error;
+  }
+
+  float f_temp = 0.f;
+  sscanf(temp.temp, "%f", &f_temp);
+  return f_temp;
 }
 
 int PercipioSDK::DeviceControlTriggerModeEnable(const TY_DEV_HANDLE handle, const int enable) {
