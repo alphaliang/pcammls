@@ -187,20 +187,22 @@ typedef struct image_data {
   }
 
   image_data& operator=(const image_data& d) {
-    this->streamID = d.streamID;
-    this->timestamp = d.timestamp;
-    this->imageIndex = d.imageIndex;
-    this->status = d.status;
-    this->size = d.size;
-  
-    this->width = d.width;
-    this->height = d.height;
-    this->pixelFormat =d.pixelFormat;
+    if(this != &d) {
+      this->streamID = d.streamID;
+      this->timestamp = d.timestamp;
+      this->imageIndex = d.imageIndex;
+      this->status = d.status;
+      this->size = d.size;
+    
+      this->width = d.width;
+      this->height = d.height;
+      this->pixelFormat =d.pixelFormat;
 
-    this->resize(d.size);
+      this->resize(d.size);
 
-    if(d.size)
-      memcpy(this->buffer, d.buffer, d.size);
+      if(d.size)
+        memcpy(this->buffer, d.buffer, d.size);
+    }
     return *this;
   }
 
@@ -3049,6 +3051,13 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibD
     return TY_STATUS_INVALID_PARAMETER;
   }
 
+  std::vector<uint16_t> map_data;
+  int outW = srcDepth.width;
+  int outH = static_cast<int>(1.0 * srcDepth.width * targetH / targetW + 0.5);
+  map_data.resize(outW * outH);
+  TYMapDepthImageToColorCoordinate(&depth_calib.data(), srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,  
+      &color_calib.data(), outW, outH, (uint16_t*)&map_data[0], scale);
+
   dstDepth.resize(targetW * targetH * 2);
   dstDepth.streamID     = PERCIPIO_STREAM_DEPTH;
   dstDepth.timestamp    = srcDepth.timestamp;
@@ -3057,8 +3066,21 @@ int PercipioSDK::DeviceStreamMapDepthImageToColorCoordinate(const PercipioCalibD
   dstDepth.width        = targetW;
   dstDepth.height       = targetH;
   dstDepth.pixelFormat  = srcDepth.pixelFormat;
-  TYMapDepthImageToColorCoordinate(&depth_calib.data(), srcDepth.width, srcDepth.height, (const uint16_t*)srcDepth.buffer,  
-      &color_calib.data(), targetW, targetH, (uint16_t*)dstDepth.buffer, scale);
+  const double scale_x = static_cast<double>(outW) / dstDepth.width;
+  const double scale_y = static_cast<double>(outH) / dstDepth.height;
+
+  uint16_t* dst = static_cast<uint16_t*>(dstDepth.buffer);
+  for (int y = 0; y < dstDepth.height; y++) {
+    for (int x = 0; x < dstDepth.width; x++) {
+      const int src_x = static_cast<int>(std::round(x * scale_x));
+      const int src_y = static_cast<int>(std::round(y * scale_y));
+
+      const int safe_x = std::min(std::max(src_x, 0), outW - 1);
+      const int safe_y = std::min(std::max(src_y, 0), outH - 1);
+
+      dst[y * dstDepth.width + x] = map_data[safe_y * outW + safe_x];
+    }
+  }
   return TY_STATUS_OK;
 }
 
