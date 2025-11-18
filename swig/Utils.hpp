@@ -255,8 +255,11 @@ static inline TY_STATUS selectDevice(TY_INTERFACE_TYPE iface
         if(n > 0){
           std::vector<TY_DEVICE_BASE_INFO> devs(n);
           TYGetDeviceList(hIface, &devs[0], n, &n);
+          
           for(uint32_t j = 0; j < n; j++){
-            if(deviceNum > out.size() && ((ID.empty() && IP.empty())
+            bool isInvalid = (devs[j].modelName != "InvalidNetCam");
+            LOGW("found invalid cam %s, ignore.");
+            if(deviceNum > out.size() && (!isInvalid) && ((ID.empty() && IP.empty())
                 || (!ID.empty() && devs[j].id == ID)
                 || (!IP.empty() && IP == devs[j].netInfo.ip)))
             {
